@@ -1,0 +1,79 @@
+from fastapi import FastAPI, UploadFile, File, Query
+import os, json
+from pdf_utils import extract_text_from_pdf, chunk_text
+from ai_model import generate_analysis
+
+app = FastAPI()
+UPLOAD_FOLDER = "temp"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def clean_text(text: str) -> str:
+    """Clean PDF text for better model analysis"""
+    text = text.replace("\n\n", "\n")  # remove extra blank lines
+    text = text.strip()
+    return text
+
+@app.post("/analyze")
+async def analyze_pdf(
+    file: UploadFile = File(...),
+    analysis_type: int = Query(0, ge=0, le=4,
+        description="0=all, 1=summary, 2=positive, 3=negative, 4=how_to_avoid")
+):
+    """
+    Advanced PDF analysis with chunking and selective section output.
+    """
+    # Save uploaded PDF
+    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+
+    # Extract and clean text
+    text = extract_text_from_pdf(file_path)
+    text = clean_text(text)
+
+    # Chunk text for large PDFs
+    chunks = chunk_text(text, chunk_size=2000)
+
+    # Initialize final result
+    final_result = {
+        "summary": "",
+        "positive_points": [],
+        "negative_points": [],
+        "how_to_avoid": []
+    }
+
+    for chunk in chunks:
+        analysis_output = generate_analysis(chunk)
+
+        # Safely parse JSON if model returns string
+        if isinstance(analysis_output, str):
+            try:
+                analysis = json.loads(analysis_output)
+            except:
+                # fallback: return raw output if JSON parsing fails
+                analysis = {"summary": analysis_output}
+        else:
+            analysis = analysis_output
+
+        # Merge chunk outputs
+        final_result["summary"] += analysis.get("summary", "") + "\n"
+        final_result["positive_points"] += analysis.get("positive_points", [])
+        final_result["negative_points"] += analysis.get("negative_points", [])
+        final_result["how_to_avoid"] += analysis.get("how_to_avoid", [])
+
+    # Deduplicate lists
+    final_result["positive_points"] = list(dict.fromkeys(final_result["positive_points"]))
+    final_result["negative_points"] = list(dict.fromkeys(final_result["negative_points"]))
+    final_result["how_to_avoid"] = list(dict.fromkeys(final_result["how_to_avoid"]))
+
+    # Return only requested section
+    if analysis_type == 0:
+        return final_result
+    elif analysis_type == 1:
+        return {"summary": final_result["summary"]}
+    elif analysis_type == 2:
+        return {"positive_points": final_result["positive_points"]}
+    elif analysis_type == 3:
+        return {"negative_points": final_result["negative_points"]}
+    elif analysis_type == 4:
+        return {"how_to_avoid": final_result["how_to_avoid"]}

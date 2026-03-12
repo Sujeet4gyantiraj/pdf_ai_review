@@ -1,0 +1,10 @@
+torch
+torchvision
+torchaudio
+transformers
+accelerate
+pymupdf
+fastapi
+uvicorn
+langchain
+python-multipart
