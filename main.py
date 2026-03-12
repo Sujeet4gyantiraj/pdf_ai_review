@@ -154,9 +154,9 @@ def extract_json(text: str):
 
     # Safe fallback
     return {
+        "overview": "",
         "summary": "",
-        "key_highlights": [],
-        "risk_analysis": []
+        "highlights": []
     }
 
 
@@ -167,11 +167,14 @@ async def analyze_pdf(
         0,
         ge=0,
         le=3,
-        description="0=all, 1=summary, 2=key_highlights, 3=risk_analysis"
+        description="0=all, 1=overview, 2=summary, 3=highlights"
     )
 ):
     """
-    Analyze uploaded PDF and return structured AI insights.
+    Analyze uploaded PDF and return:
+    - overview
+    - summary
+    - highlights
     """
 
     # Save uploaded file
@@ -180,11 +183,11 @@ async def analyze_pdf(
     with open(file_path, "wb") as f:
         f.write(await file.read())
 
-    # Extract text
+    # Extract text from PDF
     text = extract_text_from_pdf(file_path)
     text = clean_text(text)
 
-    # Split into chunks
+    # Split into chunks (for large PDFs)
     chunks = chunk_text(text)
 
     results = []
@@ -194,31 +197,31 @@ async def analyze_pdf(
         parsed = extract_json(ai_response)
         results.append(parsed)
 
-    # Merge chunk results
+    # Merge results from all chunks
+    combined_overview = " ".join(
+        [r.get("overview", "") for r in results]
+    ).strip()
+
     combined_summary = " ".join(
         [r.get("summary", "") for r in results]
     ).strip()
 
     combined_highlights = list(set(
-        sum([r.get("key_highlights", []) for r in results], [])
-    ))
-
-    combined_risks = list(set(
-        sum([r.get("risk_analysis", []) for r in results], [])
+        sum([r.get("highlights", []) for r in results], [])
     ))
 
     final_output = {
+        "overview": combined_overview,
         "summary": combined_summary,
-        "key_highlights": combined_highlights,
-        "risk_analysis": combined_risks
+        "highlights": combined_highlights
     }
 
-    # Selective response
+    # Return selected section if requested
     if analysis_type == 1:
-        return {"summary": final_output["summary"]}
+        return {"overview": final_output["overview"]}
     elif analysis_type == 2:
-        return {"key_highlights": final_output["key_highlights"]}
+        return {"summary": final_output["summary"]}
     elif analysis_type == 3:
-        return {"risk_analysis": final_output["risk_analysis"]}
+        return {"highlights": final_output["highlights"]}
 
     return final_output
