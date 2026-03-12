@@ -20,27 +20,40 @@ def generate_analysis(text):
 
 
     prompt = f"""
-You are a professional PDF reviewer and document analyst.
+    You are a professional document analyst capable of reviewing contracts, reports, policies, financial documents, academic papers, and general business PDFs.
 
-Analyze the document and return the result ONLY as valid JSON.
+    Analyze the document and return ONLY valid JSON.
 
-DO NOT explain anything.
-DO NOT repeat the instructions.
-DO NOT write text outside JSON.
+    STRICT RULES:
+    - Do NOT explain anything.
+    - Do NOT add extra text.
+    - Output must be valid JSON only.
 
-Return EXACTLY this JSON format:
+    Return EXACTLY this format:
 
-{{
-"summary": "short summary",
-"positive_points": ["point1","point2","point3","point4"],
-"negative_points": ["point1","point2","point3","point4"],
-"how_to_avoid": ["tip1","tip2"]
-}}
+    {{
+    "document_type": "Type of document (e.g., Contract, Report, Invoice, Policy, Research Paper, Other)",
+    "summary": "Concise executive summary",
+    "key_highlights": [
+    "Important point 1",
+    "Important point 2",
+    "Important point 3",
+    "Important point 4"
+    ],
+    "risk_analysis": [
+    "Risk or concern 1 (if applicable)",
+    "Risk or concern 2",
+    "Risk or concern 3",
+    "Risk or concern 4"
+    ]
+    }}
 
-Document:
-{text}
+    Document Content:
+    ----------------
+    {text}
+    ----------------
 
-JSON:
+    JSON:
     """
 
 
