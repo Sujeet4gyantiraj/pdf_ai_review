@@ -71,65 +71,91 @@
 
 
 import torch
-import json
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-# Model name
 model_name = "mistralai/Mistral-7B-Instruct-v0.2"
-
-# Load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-# Load model to GPU
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     torch_dtype=torch.float16,
     device_map="auto"
 )
 
-# Performance optimization
 torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 
 
 def generate_analysis(text: str) -> str:
-    """
-    Generate overview, summary and highlights
-    from given PDF text chunk.
-    """
 
-    prompt = f"""
-You are a professional document analyst capable of reviewing business documents, contracts, reports, policies, and academic PDFs.
+    prompt = f"""<s>[INST]
+You are an expert document analyst with deep knowledge across legal, medical,
+financial, technical, academic, and business domains.
 
-Analyze the document and return ONLY valid JSON.
+Your task is to read any type of document and produce a structured JSON briefing
+that is accurate, professional, and immediately useful to the reader.
 
-STRICT RULES:
-- Do NOT explain anything.
-- Do NOT add extra text.
-- Output must be valid JSON only.
-
-Return EXACTLY this format:
-
+EXAMPLE OUTPUT (follow this structure exactly):
 {{
-"overview": "Short high-level description of what this document is about",
-"summary": "Clear executive summary explaining purpose and key content",
-"highlights": [
-  "Important point 1",
-  "Important point 2",
-  "Important point 3",
-  "Important point 4"
-]
+  "overview": "This is a [document type] about [main subject], intended for [audience/purpose].",
+  "summary": "4-6 sentence executive summary covering the document purpose, key content,
+               important findings or obligations, and conclusions or outcomes.",
+  "highlights": [
+    "Specific important fact, figure, date, obligation, finding, or condition from the document.",
+    "Specific important fact, figure, date, obligation, finding, or condition from the document.",
+    "Specific important fact, figure, date, obligation, finding, or condition from the document.",
+    "Specific important fact, figure, date, obligation, finding, or condition from the document."
+  ]
 }}
 
-Document Content:
+FIELD RULES:
+
+"overview" — 1-2 sentences only.
+  - Identify what TYPE of document this is.
+    Examples of types: employment contract, research paper, medical report,
+    user manual, financial statement, privacy policy, invoice, academic thesis,
+    insurance policy, government notice, product specification, meeting minutes.
+  - State the subject, purpose, and intended audience or parties.
+
+"summary" — 4-6 sentences in professional, neutral tone.
+  - For CONTRACTS/LEGAL: cover parties, obligations, terms, penalties, duration.
+  - For MEDICAL/HEALTH: cover diagnosis, findings, recommendations, medications, follow-up.
+  - For FINANCIAL: cover revenue, expenses, profit/loss, forecasts, risks.
+  - For TECHNICAL/MANUAL: cover product purpose, key features, requirements, warnings.
+  - For RESEARCH/ACADEMIC: cover objective, methodology, key findings, conclusions.
+  - For REPORTS/BUSINESS: cover context, analysis, recommendations, outcomes.
+  - If document type is unclear, summarize the most important information a reader needs.
+
+"highlights" — 4 to 6 items.
+  - Each must be ONE complete, specific, factual sentence.
+  - Always include real values from the document: numbers, dates, names,
+    percentages, durations, prices, dosages, deadlines, versions, scores, or clauses.
+  - Do NOT write vague statements like "The document contains important information."
+  - Do NOT write opinions or analysis — only facts extracted directly from the document.
+  - Prioritize: critical obligations, risks, key figures, deadlines, warnings, or outcomes.
+
+STRICT OUTPUT RULES:
+  - Output ONLY the JSON object.
+  - Do NOT add any explanation, greeting, or commentary.
+  - Do NOT use markdown, code blocks, or backticks.
+  - Do NOT repeat these instructions in your output.
+  - All string values must be properly escaped.
+  - If a section has insufficient information, write "Not enough information available."
+
+Document:
 ----------------
 {text}
 ----------------
-
-JSON:
+[/INST]
 """
 
-    # Tokenize safely (prevent overflow)
+    # Tokenize
+    encoded = tokenizer(prompt, return_tensors="pt", truncation=False)
+    token_count = encoded["input_ids"].shape[1]
+
+    # Warn if truncation will occur
+    if token_count > 6000:
+        print(f"Warning: input is {token_count} tokens, truncating to 6000.")
+
     inputs = tokenizer(
         prompt,
         return_tensors="pt",
@@ -137,17 +163,20 @@ JSON:
         max_length=6000
     ).to("cuda")
 
-    # Generate response
-    output = model.generate(
-        **inputs,
-        max_new_tokens=500,
-        temperature=0.2,          # Low randomness for stable JSON
-        do_sample=False,
-        repetition_penalty=1.1,
-        pad_token_id=tokenizer.eos_token_id
-    )
+    # Generate
+    try:
+        output = model.generate(
+            **inputs,
+            max_new_tokens=600,
+            do_sample=False,
+            repetition_penalty=1.15,
+            pad_token_id=tokenizer.eos_token_id
+        )
+    except torch.cuda.OutOfMemoryError:
+        torch.cuda.empty_cache()
+        raise RuntimeError("GPU out of memory — reduce chunk size or document length.")
 
-    # Extract only generated part
+    # Decode only new tokens
     result = tokenizer.decode(
         output[0][inputs["input_ids"].shape[1]:],
         skip_special_tokens=True
