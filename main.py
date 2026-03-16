@@ -143,21 +143,47 @@ def clean_text(text: str) -> str:
     return text.strip()
 
 
-def extract_json(text: str):
-    """Extract strict JSON from model output"""
-    try:
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            return json.loads(match.group())
-    except Exception as e:
-        print("JSON parse error:", e)
+# def extract_json(text: str):
+#     """Extract strict JSON from model output"""
+#     try:
+#         match = re.search(r"\{.*\}", text, re.DOTALL)
+#         if match:
+#             return json.loads(match.group())
+#     except Exception as e:
+#         print("JSON parse error:", e)
 
-    # Safe fallback
+#     # Safe fallback
+#     return {
+#         "overview": "",
+#         "summary": "",
+#         "highlights": []
+#     }
+
+
+def extract_json(text: str):
+    """Extract and repair JSON from model output"""
+    try:
+        # 1. Find the first '{' and last '}' to strip any preamble or rambling
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1:
+            json_str = text[start:end+1]
+            
+            # 2. Fix common "escape" errors (replaces \ with \\ unless it's a valid escape)
+            # This fixes the "Invalid \escape" error you saw
+            json_str = re.sub(r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', json_str)
+            
+            return json.loads(json_str)
+    except Exception as e:
+        print(f"JSON repair failed: {e}")
+
+    # Fallback to manual regex if JSON is totally mangled
     return {
-        "overview": "",
-        "summary": "",
-        "highlights": []
+        "overview": re.search(r'"overview":\s*"(.*?)"', text).group(1) if '"overview"' in text else "",
+        "summary": re.search(r'"summary":\s*"(.*?)"', text).group(1) if '"summary"' in text else "",
+        "highlights": re.findall(r'"highlights":\s*\[(.*?)\]', text, re.DOTALL) or []
     }
+
 
 
 @app.post("/analyze")
