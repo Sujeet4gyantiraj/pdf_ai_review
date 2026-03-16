@@ -122,10 +122,10 @@ from paddleocr import PaddleOCRVL
 
 # Initialize the 0.9B VLM once
 # Note: Use 'PaddleOCR-VL-1.5-0.9B' to ensure the exact model is loaded
-ocr_vl = PaddleOCRVL(pipeline_config="PaddleOCR-VL-1.5-0.9B", use_gpu=True)
+ocr_vl = PaddleOCRVL("v1.5")
 
 
-def hybrid_extract(file_path: str):
+def extract_text_from_pdf(file_path: str):
     final_content = []
     
     with fitz.open(file_path) as doc:
@@ -156,5 +156,3 @@ def hybrid_extract(file_path: str):
             
     return "\n\n".join(final_content)
 
-# Example usage
-# full_text = hybrid_extract("scanned_or_digital.pdf")
