@@ -1,28 +1,28 @@
-# import fitz  # PyMuPDF
+import fitz  # PyMuPDF
 
 
-# def extract_text_from_pdf(file_path: str) -> str:
-#     """
-#     Extract ONLY real text from PDF.
-#     Image-only pages are skipped.
-#     """
-#     text_content = []
-#     with fitz.open(file_path) as doc:
-#         for page in doc:
-#             text = page.get_text("text")
-#             if not text or not text.strip():
-#                 continue
-#             text_content.append(text.strip())
-#     return "\n".join(text_content)
+def extract_text_from_pdf(file_path: str) -> str:
+    """
+    Extract ONLY real text from PDF.
+    Image-only pages are skipped.
+    """
+    text_content = []
+    with fitz.open(file_path) as doc:
+        for page in doc:
+            text = page.get_text("text")
+            if not text or not text.strip():
+                continue
+            text_content.append(text.strip())
+    return "\n".join(text_content)
 
 
-# def chunk_text(text: str, chunk_size: int = 10000):
-#     """
-#     Split large text into smaller chunks
-#     """
-#     if not text:
-#         return []
-#     return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+def chunk_text(text: str, chunk_size: int = 10000):
+    """
+    Split large text into smaller chunks
+    """
+    if not text:
+        return []
+    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
 
 
 # import re
@@ -115,23 +115,8 @@
 #     return chunks
 
 
-import re
-import fitz  # PyMuPDF
-import numpy as np
-import paddle # Added for memory management
-from paddleocr import PaddleOCRVL
 
-# Initialize the 0.9B VLM once
-# "v1.5" is the correct shorthand for PaddleOCR-VL-1.5-0.9B
-ocr_vl = PaddleOCRVL("v1.5")
 
-def clean_text(text: str) -> str:
-    """Normalize and clean extracted text for better LLM results."""
-    text = re.sub(r"\r", "\n", text)
-    text = re.sub(r"\n{2,}", "\n", text)
-    text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"[^\x00-\x7F]+", " ", text)
-    return text.strip()
 
 
 
@@ -147,46 +132,79 @@ def chunk_text(text: str, chunk_size: int = 10000):
 # Example usage
 
 # full_text = hybrid_extract("scanned_or_digital.pdf")
-def extract_text_from_pdf(file_path: str) -> str:
-    final_text = []
+#def extract_text_from_pdf(file_path: str) -> str:
+#    final_text = []
 
-    with fitz.open(file_path) as doc:
-        for page in doc:
-            # 1. Native Extraction (Fastest)
-            text = page.get_text("text")
-            if len(text.strip()) > 50:
-                final_text.append(text.strip())
-                continue
+# ==============OCR-VL-1.5-0.9B VERSION (PaddleOCRVL)================
 
-            # 2. VLM Extraction (For scanned pages)
-            # Dropping DPI to 150 helps prevent the "MemoryError" you faced
-            pix = page.get_pixmap(dpi=150) 
+# import re
+# import fitz  # PyMuPDF
+# import numpy as np
+# import paddle # Added for memory management
+# from paddleocr import PaddleOCRVL
+
+
+# # Initialize the 0.9B VLM once
+# # "v1.5" is the correct shorthand for PaddleOCR-VL-1.5-0.9B
+# ocr_vl = PaddleOCRVL("v1.5")
+
+# def clean_text(text: str) -> str:
+#     """Normalize and clean extracted text for better LLM results."""
+#     text = re.sub(r"\r", "\n", text)
+#     text = re.sub(r"\n{2,}", "\n", text)
+#     text = re.sub(r"[ \t]+", " ", text)
+#     text = re.sub(r"[^\x00-\x7F]+", " ", text)
+#     return text.strip()
+
+# def chunk_text(text: str, chunk_size: int = 10000):
+#     """Split large text into smaller chunks."""
+#     if not text:
+#         return []
+#     return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+
+# def extract_text_from_pdf(file_path: str) -> str:
+#     final_text = []
+
+#     with fitz.open(file_path) as doc:
+#         for page in doc:
+#             # 1. Native Extraction (Fastest)
+#             text = page.get_text("text")
+#             if len(text.strip()) > 50:
+#                 final_text.append(text.strip())
+#                 continue
+
+#             # 2. VLM Extraction (For scanned pages)
+#             # Dropping DPI to 150 helps prevent the "MemoryError" you faced
+#             pix = page.get_pixmap(dpi=150) 
             
-            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
-            if pix.n == 4: 
-                img = img[:, :, :3]
+#             img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
+#             if pix.n == 4: 
+#                 img = img[:, :, :3]
 
-            # Run prediction
-            results = ocr_vl.predict(img)
+#             # Run prediction
+#             results = ocr_vl.predict(img)
             
-            # --- FIX: Extract text using the correct attribute ---
-            # Most PaddleX/OCR-VL objects use .res for the final string
-            page_parts = []
-            for res in results:
-                if hasattr(res, 'res'):
-                    page_parts.append(res.res)
-                elif isinstance(res, dict) and 'res' in res:
-                    page_parts.append(res['res'])
-                else:
-                    page_parts.append(str(res))
+#             # --- FIX: Extract text using the correct attribute ---
+#             # Most PaddleX/OCR-VL objects use .res for the final string
+#             page_parts = []
+#             for res in results:
+#                 if hasattr(res, 'res'):
+#                     page_parts.append(res.res)
+#                 elif isinstance(res, dict) and 'res' in res:
+#                     page_parts.append(res['res'])
+#                 else:
+#                     page_parts.append(str(res))
             
-            final_text.append("\n".join(page_parts))
+#             final_text.append("\n".join(page_parts))
 
-            # --- MEMORY CLEANUP ---
-            # Critical for preventing OOM crashes on long PDFs
-            del results
-            if paddle.device.is_compiled_with_cuda():
-                paddle.device.cuda.empty_cache()
+#             # --- MEMORY CLEANUP ---
+#             # Critical for preventing OOM crashes on long PDFs
+#             del results
+#             if paddle.device.is_compiled_with_cuda():
+#                 paddle.device.cuda.empty_cache()
 
-    return clean_text("\n".join(final_text))
 
+#    return clean_text("\n".join(final_text))
+
+
+#     return clean_text("\n".join(final_text))
