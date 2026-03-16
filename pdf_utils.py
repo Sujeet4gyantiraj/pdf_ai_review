@@ -122,7 +122,8 @@ from paddleocr import PaddleOCRVL
 
 # Initialize the 0.9B VLM once
 # Note: Use 'PaddleOCR-VL-1.5-0.9B' to ensure the exact model is loaded
-ocr_vl = PaddleOCRVL(model_name="PaddleOCR-VL-1.5-0.9B", use_gpu=True)
+ocr_vl = PaddleOCRVL(pipeline_config="PaddleOCR-VL-1.5-0.9B", use_gpu=True)
+
 
 def hybrid_extract(file_path: str):
     final_content = []
