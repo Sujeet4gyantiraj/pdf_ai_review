@@ -115,7 +115,7 @@
 #     return chunks
 
 
-
+import re
 import fitz  # PyMuPDF
 import numpy as np
 from paddleocr import PaddleOCRVL
@@ -124,37 +124,18 @@ from paddleocr import PaddleOCRVL
 # Note: Use 'PaddleOCR-VL-1.5-0.9B' to ensure the exact model is loaded
 ocr_vl = PaddleOCRVL("v1.5")
 
+def clean_text(text: str) -> str:
+    """
+    Normalize and clean extracted text for better LLM results.
+    """
+    text = re.sub(r"\r", "\n", text)
+    text = re.sub(r"\n{2,}", "\n", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"[^\x00-\x7F]+", " ", text)
+    return text.strip()
 
-def extract_text_from_pdf(file_path: str):
-    final_content = []
-    
-    with fitz.open(file_path) as doc:
-        for page_index, page in enumerate(doc):
-            # 1. Try PyMuPDF native extraction first
-            native_text = page.get_text("text").strip()
-            
-            # Threshold: If more than 50 chars exist, skip OCR (much faster)
-            if len(native_text) > 50:
-                final_content.append(native_text)
-                continue
-            
-            # 2. Page is likely scanned -> Use PaddleOCR-VL-1.5
-            # Render page to image (200-300 DPI is optimal for VLMs)
-            pix = page.get_pixmap(dpi=200)
-            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
-            
-            # Remove Alpha channel if it exists
-            if pix.n == 4:
-                img = img[:, :, :3]
-            
-            # The VLM returns structured text, often preserving reading order
-            results = ocr_vl.predict(img)
-            
-            # Aggregate text from the VLM result object
-            page_text = "\n".join([res.get_text() for res in results])
-            final_content.append(page_text)
-            
-    return "\n\n".join(final_content)
+
+
 
 
 
@@ -168,3 +149,28 @@ def chunk_text(text: str, chunk_size: int = 10000):
 
 # Example usage
 # full_text = hybrid_extract("scanned_or_digital.pdf")
+
+
+def extract_text_from_pdf(file_path: str) -> str:
+    final_text = []
+
+    with fitz.open(file_path) as doc:
+        for page in doc:
+            # 1. Native Extraction
+            text = page.get_text("text")
+            if len(text.strip()) > 50:
+                final_text.append(text.strip())
+                continue
+
+            # 2. VLM Extraction
+            pix = page.get_pixmap(dpi=200)
+            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
+            if pix.n == 4: img = img[:, :, :3]
+
+            results = ocr_vl.predict(img)
+            
+            # Extract from the .data dictionary
+            page_text = "\n".join([res.data['res'] for res in results if 'res' in res.data])
+            final_text.append(page_text)
+
+    return clean_text("\n".join(final_text))
