@@ -1,28 +1,28 @@
 import fitz  # PyMuPDF
 
 
-def extract_text_from_pdf(file_path: str) -> str:
-    """
-    Extract ONLY real text from PDF.
-    Image-only pages are skipped.
-    """
-    text_content = []
-    with fitz.open(file_path) as doc:
-        for page in doc:
-            text = page.get_text("text")
-            if not text or not text.strip():
-                continue
-            text_content.append(text.strip())
-    return "\n".join(text_content)
+# def extract_text_from_pdf(file_path: str) -> str:
+#     """
+#     Extract ONLY real text from PDF.
+#     Image-only pages are skipped.
+#     """
+#     text_content = []
+#     with fitz.open(file_path) as doc:
+#         for page in doc:
+#             text = page.get_text("text")
+#             if not text or not text.strip():
+#                 continue
+#             text_content.append(text.strip())
+#     return "\n".join(text_content)
 
 
-def chunk_text(text: str, chunk_size: int = 10000):
-    """
-    Split large text into smaller chunks
-    """
-    if not text:
-        return []
-    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+# def chunk_text(text: str, chunk_size: int = 10000):
+#     """
+#     Split large text into smaller chunks
+#     """
+#     if not text:
+#         return []
+#     return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
 
 
 # import re
@@ -208,3 +208,71 @@ def chunk_text(text: str, chunk_size: int = 10000):
 
 
 #     return clean_text("\n".join(final_text))
+
+
+
+
+# updated code
+
+
+import fitz  # PyMuPDF
+import re
+
+
+def extract_text_from_pdf(file_path: str) -> str:
+    """
+    Extract ONLY real text from PDF.
+    Image-only pages are skipped.
+    Raises ValueError if the PDF cannot be opened (e.g. encrypted or corrupt).
+    """
+    try:
+        text_content = []
+        with fitz.open(file_path) as doc:
+            for page in doc:
+                text = page.get_text("text")
+                if not text or not text.strip():
+                    continue
+                text_content.append(text.strip())
+        return "\n".join(text_content)
+    except Exception as e:
+        raise ValueError(f"Could not open PDF: {e}")
+
+
+def clean_text(text: str) -> str:
+    """
+    Clean common PDF extraction artifacts:
+    - Rejoin hyphenated line breaks
+    - Collapse excessive blank lines
+    - Collapse repeated spaces
+    """
+    text = re.sub(r'-\n', '', text)        # rejoin hyphenated words
+    text = re.sub(r'\n{3,}', '\n\n', text) # collapse 3+ newlines to double
+    text = re.sub(r' {2,}', ' ', text)     # collapse repeated spaces
+    return text.strip()
+
+
+def chunk_text(text: str, max_chars: int = 10000) -> list:
+    """
+    Split large text into smaller chunks on paragraph boundaries
+    to avoid cutting mid-sentence.
+    """
+    if not text:
+        return []
+
+    paragraphs = text.split("\n")
+    chunks = []
+    current = ""
+
+    for para in paragraphs:
+        if len(current) + len(para) > max_chars:
+            if current.strip():
+                chunks.append(current.strip())
+            current = para
+        else:
+            current += "\n" + para
+
+    if current.strip():
+        chunks.append(current.strip())
+
+    return chunks
+
