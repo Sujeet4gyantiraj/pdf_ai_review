@@ -156,3 +156,18 @@ def extract_text_from_pdf(file_path: str):
             
     return "\n\n".join(final_content)
 
+<<<<<<< HEAD
+=======
+
+
+def chunk_text(text: str, chunk_size: int = 10000):
+    """
+    Split large text into smaller chunks
+    """
+    if not text:
+        return []
+    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+
+# Example usage
+# full_text = hybrid_extract("scanned_or_digital.pdf")
+>>>>>>> 4abc1d39b6168670619a92a940fad9a0f33ffb0b
