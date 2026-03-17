@@ -30,6 +30,7 @@ def extract_text_from_pdf(file_path: str) -> str:
 
     with fitz.open(file_path) as doc:
         for page in doc:
+            print(f"Processing page {page.number + 1}/{len(doc)}...")
             # 1. Native Extraction (Fastest)
             text = page.get_text("text")
             if len(text.strip()) > 50:
