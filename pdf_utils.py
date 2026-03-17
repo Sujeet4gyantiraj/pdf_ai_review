@@ -433,6 +433,7 @@ def chunk_text(text: str, max_chars: int = 10000) -> list:
     return chunks
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 # import re
 # import fitz  # PyMuPDF
@@ -618,3 +619,5 @@ def chunk_text(text: str, max_chars: int = 10000) -> list:
 
 
 
+=======
+>>>>>>> e26f7c499d4a0c51aa929fce1bc22febf6d1f250
