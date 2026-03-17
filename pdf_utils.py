@@ -94,43 +94,43 @@
 #         raise ValueError(f"Could not open PDF: {e}")
 
 
-def clean_text(text: str) -> str:
-    """
-    Clean common PDF extraction artifacts:
-    - Rejoin hyphenated line breaks
-    - Collapse excessive blank lines
-    - Collapse repeated spaces
-    """
-    text = re.sub(r'-\n', '', text)        # rejoin hyphenated words
-    text = re.sub(r'\n{3,}', '\n\n', text) # collapse 3+ newlines to double
-    text = re.sub(r' {2,}', ' ', text)     # collapse repeated spaces
-    return text.strip()
+# def clean_text(text: str) -> str:
+#     """
+#     Clean common PDF extraction artifacts:
+#     - Rejoin hyphenated line breaks
+#     - Collapse excessive blank lines
+#     - Collapse repeated spaces
+#     """
+#     text = re.sub(r'-\n', '', text)        # rejoin hyphenated words
+#     text = re.sub(r'\n{3,}', '\n\n', text) # collapse 3+ newlines to double
+#     text = re.sub(r' {2,}', ' ', text)     # collapse repeated spaces
+#     return text.strip()
 
 
-def chunk_text(text: str, max_chars: int = 10000) -> list:
-    """
-    Split large text into smaller chunks on paragraph boundaries
-    to avoid cutting mid-sentence.
-    """
-    if not text:
-        return []
+# def chunk_text(text: str, max_chars: int = 10000) -> list:
+#     """
+#     Split large text into smaller chunks on paragraph boundaries
+#     to avoid cutting mid-sentence.
+#     """
+#     if not text:
+#         return []
 
-    paragraphs = text.split("\n")
-    chunks = []
-    current = ""
+#     paragraphs = text.split("\n")
+#     chunks = []
+#     current = ""
 
-    for para in paragraphs:
-        if len(current) + len(para) > max_chars:
-            if current.strip():
-                chunks.append(current.strip())
-            current = para
-        else:
-            current += "\n" + para
+#     for para in paragraphs:
+#         if len(current) + len(para) > max_chars:
+#             if current.strip():
+#                 chunks.append(current.strip())
+#             current = para
+#         else:
+#             current += "\n" + para
 
-    if current.strip():
-        chunks.append(current.strip())
+#     if current.strip():
+#         chunks.append(current.strip())
 
-    return chunks
+#     return chunks
 
 import re
 import fitz  # PyMuPDF
