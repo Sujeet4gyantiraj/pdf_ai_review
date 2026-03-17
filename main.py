@@ -132,8 +132,8 @@ import uuid
 import json
 import re
 import logging
-from pdf_utils import extract_text_from_pdf, chunk_text
-from ai_model import generate_analysis
+from pdf_util import extract_text_from_pdf, chunk_text
+from ai_models import generate_analysis
 
 logger = logging.getLogger(__name__)
 
