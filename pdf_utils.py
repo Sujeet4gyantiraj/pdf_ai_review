@@ -132,15 +132,91 @@
 
 #     return chunks
 
+# import re
+# import fitz  # PyMuPDF
+# import numpy as np
+# import paddle # Added for memory management
+# from paddleocr import PaddleOCRVL
+
+# # Initialize the 0.9B VLM once
+# # "v1.5" is the correct shorthand for PaddleOCR-VL-1.5-0.9B
+# ocr_vl = PaddleOCRVL("v1.5")
+
+# def clean_text(text: str) -> str:
+#     """Normalize and clean extracted text for better LLM results."""
+#     text = re.sub(r"\r", "\n", text)
+#     text = re.sub(r"\n{2,}", "\n", text)
+#     text = re.sub(r"[ \t]+", " ", text)
+#     text = re.sub(r"[^\x00-\x7F]+", " ", text)
+#     return text.strip()
+
+# def chunk_text(text: str, chunk_size: int = 10000):
+#     """Split large text into smaller chunks."""
+#     if not text:
+#         return []
+#     return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+
+# def extract_text_from_pdf(file_path: str) -> str:
+#     final_text = []
+
+#     with fitz.open(file_path) as doc:
+#         for page in doc:
+#             # 1. Native Extraction (Fastest)
+#             text = page.get_text("text")
+#             if len(text.strip()) > 50:
+#                 final_text.append(text.strip())
+#                 continue
+
+#             # 2. VLM Extraction (For scanned pages)
+#             # Dropping DPI to 150 helps prevent the "MemoryError" you faced
+#             pix = page.get_pixmap(dpi=150) 
+            
+#             img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
+#             if pix.n == 4: 
+#                 img = img[:, :, :3]
+
+#             # Run prediction
+#             results = ocr_vl.predict(img)
+            
+#             # --- FIX: Extract text using the correct attribute ---
+#             # Most PaddleX/OCR-VL objects use .res for the final string
+#             page_parts = []
+#             for res in results:
+#                 if hasattr(res, 'res'):
+#                     page_parts.append(res.res)
+#                 elif isinstance(res, dict) and 'res' in res:
+#                     page_parts.append(res['res'])
+#                 else:
+#                     page_parts.append(str(res))
+            
+#             final_text.append("\n".join(page_parts))
+
+#             # --- MEMORY CLEANUP ---
+#             # Critical for preventing OOM crashes on long PDFs
+#             del results
+#             if paddle.device.is_compiled_with_cuda():
+#                 paddle.device.cuda.empty_cache()
+
+#     return clean_text("\n".join(final_text))
+
 import re
 import fitz  # PyMuPDF
 import numpy as np
-import paddle # Added for memory management
+import paddle
 from paddleocr import PaddleOCRVL
 
-# Initialize the 0.9B VLM once
-# "v1.5" is the correct shorthand for PaddleOCR-VL-1.5-0.9B
+
+# ============================
+# Initialize OCR Model (Load Once)
+# ============================
+
+# "v1.5" = PaddleOCR-VL-1.5-0.9B
 ocr_vl = PaddleOCRVL("v1.5")
+
+
+# ============================
+# Clean Extracted Text
+# ============================
 
 def clean_text(text: str) -> str:
     """Normalize and clean extracted text for better LLM results."""
@@ -150,53 +226,91 @@ def clean_text(text: str) -> str:
     text = re.sub(r"[^\x00-\x7F]+", " ", text)
     return text.strip()
 
+
+# ============================
+# Chunk Large Text
+# ============================
+
 def chunk_text(text: str, chunk_size: int = 10000):
     """Split large text into smaller chunks."""
     if not text:
         return []
     return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
 
+
+# ============================
+# OCR Extraction (Image Page)
+# ============================
+
+def extract_text_from_image(page):
+    """Run OCR on scanned page."""
+    
+    # DPI 180 = balance between clarity & memory
+    pix = page.get_pixmap(dpi=180)
+
+    img = np.frombuffer(
+        pix.samples,
+        dtype=np.uint8
+    ).reshape(pix.h, pix.w, pix.n)
+
+    # Remove alpha channel if exists
+    if pix.n == 4:
+        img = img[:, :, :3]
+
+    # Run OCR
+    results = ocr_vl.predict(img)
+
+    page_text_parts = []
+
+    for res in results:
+        # New PaddleOCR-VL output format
+        if isinstance(res, dict) and "text" in res:
+            page_text_parts.append(res["text"])
+        else:
+            page_text_parts.append(str(res))
+
+    # Memory cleanup (important for long PDFs)
+    del results
+    if paddle.device.is_compiled_with_cuda():
+        paddle.device.cuda.empty_cache()
+
+    return "\n".join(page_text_parts)
+
+
+# ============================
+# Main PDF Extraction Function
+# ============================
+
 def extract_text_from_pdf(file_path: str) -> str:
+    """
+    Extract text from:
+    - Text-based PDFs
+    - Image/scanned PDFs
+    - Mixed PDFs
+    """
+
     final_text = []
 
     with fitz.open(file_path) as doc:
-        for page in doc:
-            # 1. Native Extraction (Fastest)
+        for page_number, page in enumerate(doc):
+
+            # 1️⃣ Try native text extraction
             text = page.get_text("text")
-            if len(text.strip()) > 50:
+
+            # If real readable text exists → use it
+            if text.strip() and any(c.isalpha() for c in text):
                 final_text.append(text.strip())
                 continue
 
-            # 2. VLM Extraction (For scanned pages)
-            # Dropping DPI to 150 helps prevent the "MemoryError" you faced
-            pix = page.get_pixmap(dpi=150) 
-            
-            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
-            if pix.n == 4: 
-                img = img[:, :, :3]
+            # 2️⃣ Otherwise → Run OCR
+            print(f"Running OCR on page {page_number + 1}...")
+            ocr_text = extract_text_from_image(page)
 
-            # Run prediction
-            results = ocr_vl.predict(img)
-            
-            # --- FIX: Extract text using the correct attribute ---
-            # Most PaddleX/OCR-VL objects use .res for the final string
-            page_parts = []
-            for res in results:
-                if hasattr(res, 'res'):
-                    page_parts.append(res.res)
-                elif isinstance(res, dict) and 'res' in res:
-                    page_parts.append(res['res'])
-                else:
-                    page_parts.append(str(res))
-            
-            final_text.append("\n".join(page_parts))
+            if ocr_text.strip():
+                final_text.append(ocr_text)
 
-            # --- MEMORY CLEANUP ---
-            # Critical for preventing OOM crashes on long PDFs
-            del results
-            if paddle.device.is_compiled_with_cuda():
-                paddle.device.cuda.empty_cache()
+    combined_text = "\n".join(final_text)
 
-    return clean_text("\n".join(final_text))
+    return clean_text(combined_text)
 
 
