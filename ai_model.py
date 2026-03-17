@@ -88,7 +88,7 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 
 
-def generate_analysis(text: str) -> str:
+async def generate_analysis(text: str) -> str:
 
     prompt = f"""<s>[INST]
 You are an expert document analyst with deep knowledge across legal, medical,
