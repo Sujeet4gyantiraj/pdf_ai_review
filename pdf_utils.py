@@ -107,7 +107,7 @@ def clean_text(text: str) -> str:
     return text.strip()
 
 
-def chunk_text(text: str, max_chars: int = 10000) -> list:
+def chunk_text(text: str, max_chars: int = 6000) -> list:
     """
     Split large text into smaller chunks on paragraph boundaries
     to avoid cutting mid-sentence.
