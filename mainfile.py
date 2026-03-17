@@ -6,8 +6,8 @@ from fastapi import FastAPI, UploadFile, File, Query
 import os
 import json
 import re
-from pdf_utils import extract_text_from_pdf, chunk_text
-from ai_model import generate_analysis
+from pdf_util import extract_text_from_pdf, chunk_text
+from ai_models import generate_analysis
 
 app = FastAPI()
 
