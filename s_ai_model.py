@@ -13,14 +13,33 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
 
-# Your server: 39 GB GPU, ~22 GB used by PaddleOCR at startup
-# LLM inference runs after OCR finishes — they never overlap
-# Float16 Mistral-7B needs ~14 GB → safe on 39 GB total
-CHUNK_SIZE            = 40000
-MAX_CHUNKS            = 12
-MAX_INPUT_TOKENS      = 14000
-MAX_NEW_TOKENS_MAP    = 400   # JSON output is ~200-350 tokens — 400 is safe ceiling
-MAX_NEW_TOKENS_REDUCE = 500
+# ---------------------------------------------------------------------------
+# VRAM budget — calibrated from actual run observations:
+#
+#   GPU total          : 39 GB
+#   PaddleOCR-VL       : ~22 GB  (held throughout)
+#   Mistral-7B float16 : ~14 GB
+#   Available for KV   : ~3 GB
+#
+# Mistral-7B v0.2 uses GQA with only 2 KV heads (not 16):
+#   KV per token = 32 layers × 2 (K+V) × 2 heads × 128 dim × 2 bytes = 32 KB
+#   7500 tokens × 32 KB = 240 MB — well within 3 GB
+#
+# CHUNK_SIZE=25000:
+#   25000 chars ÷ 3.5 chars/token ≈ 7100 content tokens
+#   + 400 prompt template = ~7500 total input tokens
+#   KV needed: 240 MB — safe
+#   440K chars ÷ 25000 = ~18 chunks
+#   18 chunks × ~22s = ~6-7 min total
+#
+# If OOM occurs (residual fragmentation from prior runs), the OOM retry
+# logic halves the input automatically — no empty results returned.
+# ---------------------------------------------------------------------------
+CHUNK_SIZE            = 25000  # ~7100 content tokens — 18 chunks for 232-page PDF
+MAX_CHUNKS            = 12     # reference only — no truncation applied
+MAX_INPUT_TOKENS      = 8000   # 7100 content + 400 prompt + 500 buffer
+MAX_NEW_TOKENS_MAP    = 500    # enough for full JSON on dense legislative text
+MAX_NEW_TOKENS_REDUCE = 600
 REDUCE_BATCH_SIZE     = 6
 
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
@@ -316,74 +335,108 @@ def _batched_reduce(results: list[dict], extract_json_fn) -> dict:
 # ---------------------------------------------------------------------------
 def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label: str = "") -> str:
     """
-    Direct model.generate() — always called via run_in_executor.
+    Direct model.generate() with automatic OOM recovery.
 
-    Speed strategies applied:
-    1. torch.inference_mode()     — no gradient tracking, ~10% faster
-    2. use_cache=True             — KV-cache reuse during decoding
-    3. Token reuse                — tokenize once, move to device
-    4. eos_token_id stopping      — stop as soon as JSON closes (})
-    5. Selective empty_cache()    — only when VRAM < 2 GB
-    6. torch.compile (at load)    — fused kernels, 10-30% faster
-    7. Float16 (not 8-bit)        — 2-3x faster on large GPU
-    8. Flash Attention 2          — 2-4x faster for long sequences
+    On CUDA OOM, halves the input token count and retries up to 3 times.
+    This ensures partial content is always returned rather than an empty result,
+    even when a chunk is slightly too large for available VRAM.
+
+    OOM retry sequence:
+      Attempt 1: MAX_INPUT_TOKENS (e.g. 4000)
+      Attempt 2: 2000 tokens  (half)
+      Attempt 3: 1000 tokens  (quarter)
+      Attempt 4: 500 tokens   (eighth) — if this fails, raise
     """
     tag          = f"[{label}] " if label else ""
     model_device = next(_model.parameters()).device
 
+    # Tokenize once to measure length
     encoded     = _tokenizer(prompt, return_tensors="pt", truncation=False)
     token_count = encoded["input_ids"].shape[1]
     logger.info(f"{tag}_run_inference: {token_count} tokens in, max_new={max_new_tokens}")
 
-    if token_count > MAX_INPUT_TOKENS:
-        logger.warning(
-            f"{tag}_run_inference: {token_count} > {MAX_INPUT_TOKENS} — truncating"
-        )
-        inputs = _tokenizer(
-            prompt, return_tensors="pt", truncation=True, max_length=MAX_INPUT_TOKENS
-        ).to(model_device)
-    else:
-        inputs = {k: v.to(model_device) for k, v in encoded.items()}
+    # Start with the configured limit; shrink on OOM
+    current_max_input = min(token_count, MAX_INPUT_TOKENS)
+    max_oom_retries   = 3
 
-    t_gen = time.perf_counter()
-    try:
-        with torch.inference_mode():
-            output = _model.generate(
-                **inputs,
-                max_new_tokens=max_new_tokens,
-                do_sample=False,
-                repetition_penalty=1.1,
-                use_cache=True,
-                # Stop on EOS — model stops as soon as it closes the JSON
-                # instead of generating padding tokens up to max_new_tokens
-                eos_token_id=_EOS_TOKEN_IDS,
-                pad_token_id=_tokenizer.eos_token_id,
+    for attempt in range(max_oom_retries + 1):
+        if token_count > current_max_input:
+            logger.warning(
+                f"{tag}_run_inference: truncating {token_count} → {current_max_input} tokens"
+                + (f" (OOM retry {attempt})" if attempt > 0 else "")
             )
-    except torch.cuda.OutOfMemoryError:
-        torch.cuda.empty_cache()
-        logger.error(f"{tag}_run_inference: CUDA OOM")
-        raise RuntimeError("GPU OOM — lower CHUNK_SIZE and retry.")
-    except Exception as e:
-        logger.exception(f"{tag}_run_inference: generate failed: {e}")
-        raise
-    finally:
-        del inputs
-        if model_device.type == "cuda":
-            free_after = (
-                torch.cuda.get_device_properties(model_device).total_memory
-                - torch.cuda.memory_allocated(model_device)
-            ) / 1024 ** 3
-            if free_after < 2.0:
-                torch.cuda.empty_cache()
+            inputs = _tokenizer(
+                prompt,
+                return_tensors="pt",
+                truncation=True,
+                max_length=current_max_input,
+            ).to(model_device)
+            actual_tokens = current_max_input
+        else:
+            inputs       = {k: v.to(model_device) for k, v in encoded.items()}
+            actual_tokens = token_count
 
-    elapsed    = time.perf_counter() - t_gen
-    new_tokens = output.shape[1] - token_count
-    logger.info(
-        f"{tag}_run_inference: {new_tokens} tokens out in "
-        f"{elapsed:.2f}s ({new_tokens/elapsed:.1f} tok/s)"
-    )
+        t_gen = time.perf_counter()
+        try:
+            with torch.inference_mode():
+                output = _model.generate(
+                    **inputs,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=False,
+                    repetition_penalty=1.1,
+                    use_cache=True,
+                    eos_token_id=_EOS_TOKEN_IDS,
+                    pad_token_id=_tokenizer.eos_token_id,
+                )
 
-    return _tokenizer.decode(output[0][token_count:], skip_special_tokens=True)
+            # Success
+            elapsed    = time.perf_counter() - t_gen
+            new_tokens = output.shape[1] - actual_tokens
+            logger.info(
+                f"{tag}_run_inference: {new_tokens} tokens out in "
+                f"{elapsed:.2f}s ({new_tokens/elapsed:.1f} tok/s)"
+                + (f" [OOM-recovered at {current_max_input} tokens]" if attempt > 0 else "")
+            )
+            del inputs
+            return _tokenizer.decode(output[0][actual_tokens:], skip_special_tokens=True)
+
+        except torch.cuda.OutOfMemoryError:
+            del inputs
+            torch.cuda.empty_cache()
+            time.sleep(0.5)  # let CUDA release memory before retry
+
+            if attempt < max_oom_retries:
+                current_max_input = current_max_input // 2
+                logger.warning(
+                    f"{tag}_run_inference: OOM at {actual_tokens} tokens — "
+                    f"retrying with {current_max_input} tokens (attempt {attempt + 2}/{max_oom_retries + 1})"
+                )
+            else:
+                logger.error(
+                    f"{tag}_run_inference: OOM persists after {max_oom_retries} retries "
+                    f"(final attempt was {actual_tokens} tokens) — giving up"
+                )
+                raise RuntimeError(
+                    f"GPU OOM after {max_oom_retries} retries. "
+                    f"Restart the server to free PaddleOCR-VL memory."
+                )
+
+        except Exception as e:
+            del inputs
+            logger.exception(f"{tag}_run_inference: generate failed: {e}")
+            raise
+
+        finally:
+            if model_device.type == "cuda":
+                free_after = (
+                    torch.cuda.get_device_properties(model_device).total_memory
+                    - torch.cuda.memory_allocated(model_device)
+                ) / 1024 ** 3
+                if free_after < 2.0:
+                    torch.cuda.empty_cache()
+
+    # Should never reach here
+    raise RuntimeError("_run_inference: exhausted all attempts")
 
 
 # ---------------------------------------------------------------------------

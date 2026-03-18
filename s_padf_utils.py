@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Chunking config
 # ---------------------------------------------------------------------------
-CHUNK_SIZE    = 6000   # ~1700 content tokens — fits in 3 GB KV cache budget
+CHUNK_SIZE    = 25000  # ~7100 content tokens — 18 chunks for 232-page PDF
 CHUNK_OVERLAP = 200
 
 # Pre-compiled regex patterns
