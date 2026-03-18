@@ -501,7 +501,7 @@ async def generate_analysis(chunks: list[Document]) -> dict:
     REDUCE — one final inference call synthesizes all map outputs.
              Skipped entirely for single-chunk PDFs.
     """
-    from main import extract_json  # avoid circular import
+    from s_main import extract_json  # avoid circular import
 
     logger.info(f"[generate_analysis] Called with {len(chunks)} chunk(s)")
 
@@ -984,7 +984,7 @@ async def generate_analysis(chunks: list[Document]) -> dict:
 
     Returns a parsed dict {overview, summary, highlights}.
     """
-    from main import extract_json  # avoid circular import
+    from s_main import extract_json  # avoid circular import
 
     logger.info(f"[generate_analysis] Called with {len(chunks)} chunk(s)")
 
