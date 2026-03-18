@@ -206,7 +206,7 @@ def extract_json(text: str) -> dict:
 # /analyze endpoint
 # ---------------------------------------------------------------------------
 
-MAX_PDF_PAGES = 200   # hard page cap — raise if your GPU can handle larger docs
+MAX_PDF_PAGES = 500   # hard page cap — raise if your GPU can handle larger docs
 
 
 @app.post("/analyze")
