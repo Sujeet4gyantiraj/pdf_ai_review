@@ -1,37 +1,79 @@
-import re
 import fitz
+import logging
 import numpy as np
 import paddle
-import logging
-from paddleocr import PaddleOCRVL
+from paddleocr import PaddleOCR
 
-logger = logging.getLogger("pdf_util")
+logger = logging.getLogger(__name__)
 
-paddle.set_device("cpu")
-logger.info("OCR forced to CPU")
+# -------- PaddleOCR GPU --------
+ocr = PaddleOCR(
+    use_angle_cls=True,
+    use_gpu=True,
+    show_log=False
+)
 
-ocr_vl = PaddleOCRVL("v1.5")
-logger.info("OCR model loaded")
-
-
-def clean_text(text: str) -> str:
-    text = re.sub(r'-\n', '', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    text = re.sub(r' {2,}', ' ', text)
-    return text.strip()
+BATCH_SIZE = 4  # Adjust based on GPU VRAM
 
 
-def extract_text_from_pdf(file_path: str) -> str:
-    logger.info(f"Opening PDF: {file_path}")
-    final_text = []
+def extract_text_from_pdf(file_path):
 
-    with fitz.open(file_path) as doc:
-        logger.info(f"PDF has {len(doc)} pages")
+    full_text = ""
 
-        for page in doc:
-            logger.info(f"Processing page {page.number}")
+    doc = fitz.open(file_path)
 
-            text = page.get_text("text")
+    # -------- Native Extraction --------
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        text = page.get_text()
+
+        if len(text.strip()) > 50:
+            full_text += text + "\n"
+
+    if len(full_text.strip()) > 200:
+        logger.info("Native extraction sufficient.")
+        doc.close()
+        return full_text
+
+    logger.warning("Switching to PaddleOCR batch mode...")
+
+    # -------- Batch OCR --------
+    images_batch = []
+    full_text = ""
+
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        pix = page.get_pixmap(dpi=200)
+
+        img = np.frombuffer(pix.samples, dtype=np.uint8)
+        img = img.reshape(pix.height, pix.width, pix.n)
+
+        if pix.n == 4:
+            img = img[:, :, :3]
+
+        images_batch.append(img)
+
+        if len(images_batch) == BATCH_SIZE:
+            full_text += run_ocr_batch(images_batch)
+            images_batch.clear()
+
+    if images_batch:
+        full_text += run_ocr_batch(images_batch)
+
+    doc.close()
+    return full_text.strip()
+
+
+def run_ocr_batch(images):
+
+    text_output = ""
+
+    results = ocr.ocr(images, cls=True)
+
+    for page_result in results:
+        if not page_result:
+            continue
+
 
             print(f"Extracting page {page.number} with native method...")
 
@@ -40,50 +82,29 @@ def extract_text_from_pdf(file_path: str) -> str:
                 final_text.append(text.strip())
                 continue
 
-            logger.info(f"Page {page.number} using OCR")
-
-            pix = page.get_pixmap(dpi=150)
-
-            img = np.frombuffer(
-                pix.samples,
-                dtype=np.uint8
-            ).reshape(pix.h, pix.w, pix.n)
-
-            if pix.n == 4:
-                img = img[:, :, :3]
-
-            results = ocr_vl.predict(img)
-
-            page_parts = []
-            for res in results:
-                if hasattr(res, 'res'):
-                    page_parts.append(res.res)
-                elif isinstance(res, dict) and 'res' in res:
-                    page_parts.append(res['res'])
-                else:
-                    page_parts.append(str(res))
-
-            final_text.append("\n".join(page_parts))
-
-            del results
-
-    logger.info("PDF extraction completed.")
-    return clean_text("\n".join(final_text))
+        for line in page_result:
+            text_output += line[1][0] + " "
 
 
-def chunk_text(text: str, max_chars: int = 15000) -> list:
-    logger.info("Starting text chunking")
-    paragraphs = text.split("\n")
+        text_output += "\n"
+
+    if paddle.device.is_compiled_with_cuda():
+        paddle.device.cuda.empty_cache()
+
+    return text_output
+
+
+# -------- Token-based chunking --------
+def chunk_by_tokens(text, tokenizer, max_tokens=1400):
+
+    tokens = tokenizer.encode(text)
     chunks = []
-    current = ""
 
-    for para in paragraphs:
-        if len(current) + len(para) > max_chars:
-            if current.strip():
-                chunks.append(current.strip())
-            current = para
-        else:
-            current += "\n" + para
+    for i in range(0, len(tokens), max_tokens):
+        chunk_tokens = tokens[i:i + max_tokens]
+        chunk_text = tokenizer.decode(chunk_tokens)
+        chunks.append(chunk_text)
+
 
     if current.strip():
         chunks.append(current.strip())
@@ -92,5 +113,8 @@ def chunk_text(text: str, max_chars: int = 15000) -> list:
     return chunks
 
     logger.info(f"Created {len(chunks)} chunks")
+    return chunks
+
+
     return chunks
 
