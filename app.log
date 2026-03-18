@@ -13902,3 +13902,1434 @@ SyntaxError: invalid decimal literal
 2026-03-18 10:31:08 | INFO     | s_main | extract_json: strategy 3 recovered partial data via regex
 2026-03-18 10:31:08 | INFO     | s_ai_model | [_batched_reduce] reduce-batch-9: 6 results
 2026-03-18 10:31:08 | INFO     | s_ai_model | [reduce-batch-9] _run_inference: 1214 tokens in, max_new=500
+2026-03-18 10:32:27 | INFO     | s_main | Upload folder ready: /home/ubuntu/pdf_ai_review/temp
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[42:61]
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[63:119]
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[121:133]
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[135:150]
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[154:4344]
+2026-03-18 10:32:43 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:26064]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:44 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:45 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:46 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2895]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4343]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1485]
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-18 10:32:49 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-18 10:32:49 | INFO     | s_main | [77b56d13] ── NEW REQUEST ──────────────────────────────
+2026-03-18 10:32:49 | INFO     | s_main | [77b56d13] filename='Finance_Bill 2026.pdf' analysis_type=0
+2026-03-18 10:32:49 | DEBUG    | s_main | [77b56d13] Saving upload to 'temp/074591c6-5eb3-4836-bf2c-a1c98690b0eb.pdf'
+2026-03-18 10:32:49 | INFO     | s_main | [77b56d13] Step 1/5 — saved upload (1,782,371 bytes → '074591c6-5eb3-4836-bf2c-a1c98690b0eb.pdf')
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 232 page(s)
+2026-03-18 10:32:49 | INFO     | s_main | [77b56d13] Step 2/5 — page count: 232 (limit=500)
+2026-03-18 10:32:49 | INFO     | s_main | [77b56d13] Step 3/5 — extracting text from 232 page(s)
+2026-03-18 10:32:49 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/074591c6-5eb3-4836-bf2c-a1c98690b0eb.pdf'
+2026-03-18 10:32:49 | INFO     | s_padf_utils | [pdf_utils] 232 total page(s), processing 232 (all)
+2026-03-18 10:32:49 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 5 page(s), 4 had native text -> 'mixed'
+2026-03-18 10:32:49 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 118 -> 118 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 946 -> 946 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1316 -> 1316 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1419 -> 1419 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1317 -> 1300 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 959 -> 952 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 899 -> 896 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1897 -> 1895 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1955 -> 1951 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1943 -> 1938 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1554 -> 1551 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1172 -> 1170 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1133 -> 1131 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1192 -> 1189 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1305 -> 1305 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1470 -> 1461 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1511 -> 1508 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2141 -> 2138 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1596 -> 1594 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2007 -> 2006 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1421 -> 1421 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1395 -> 1394 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1547 -> 1547 chars
+2026-03-18 10:32:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1382 -> 1381 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1387 -> 1382 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1236 -> 1233 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1688 -> 1685 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1414 -> 1412 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1319 -> 1319 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1103 -> 1099 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 967 -> 962 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1361 -> 1355 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1541 -> 1538 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1803 -> 1801 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1553 -> 1550 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1710 -> 1705 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2101 -> 2098 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1145 -> 1144 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1643 -> 1642 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1384 -> 1380 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1534 -> 1534 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1367 -> 1363 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1412 -> 1411 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1571 -> 1570 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2100 -> 2099 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2271 -> 2268 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1802 -> 1796 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1394 -> 1392 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2182 -> 2178 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2313 -> 2302 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2723 -> 2720 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2320 -> 2314 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2401 -> 2398 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2167 -> 2165 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2100 -> 2095 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2181 -> 2180 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2257 -> 2256 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2093 -> 2089 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2448 -> 2448 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2259 -> 2251 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1785 -> 1784 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2015 -> 2013 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1876 -> 1874 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2512 -> 2510 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1744 -> 1742 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2320 -> 2312 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2101 -> 2098 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1922 -> 1920 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2245 -> 2245 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2464 -> 2464 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1849 -> 1847 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2051 -> 2051 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1491 -> 1488 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1991 -> 1987 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2119 -> 2105 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1872 -> 1868 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2271 -> 2269 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2276 -> 2274 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1294 -> 1288 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1799 -> 1799 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2001 -> 1998 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2108 -> 2105 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2073 -> 2070 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2040 -> 2038 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1456 -> 1454 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2219 -> 2218 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2261 -> 2256 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1856 -> 1853 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1912 -> 1912 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2048 -> 2042 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1938 -> 1936 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2206 -> 2202 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2300 -> 2296 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1362 -> 1361 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1345 -> 1342 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1495 -> 1491 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1599 -> 1599 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1658 -> 1655 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1780 -> 1774 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1716 -> 1716 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2417 -> 2417 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1196 -> 1192 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1649 -> 1644 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2791 -> 2786 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2689 -> 2686 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2168 -> 2161 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1905 -> 1905 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1811 -> 1808 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2191 -> 2183 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1706 -> 1702 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1303 -> 1303 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1963 -> 1937 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1383 -> 1368 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1518 -> 1516 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1949 -> 1949 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1877 -> 1873 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1481 -> 1465 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1814 -> 1784 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1086 -> 1084 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1901 -> 1900 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1599 -> 1595 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1225 -> 1222 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1460 -> 1459 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1382 -> 1382 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1537 -> 1537 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1516 -> 1516 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1423 -> 1421 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1221 -> 1221 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1717 -> 1717 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1457 -> 1455 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2143 -> 2143 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2220 -> 2220 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1867 -> 1864 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2438 -> 2435 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1507 -> 1506 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1095 -> 1083 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1814 -> 1813 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1626 -> 1624 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1254 -> 1251 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2701 -> 2701 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2989 -> 2989 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 3194 -> 3193 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2923 -> 2921 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2904 -> 2904 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2730 -> 2730 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2299 -> 2297 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 492 -> 492 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 267 -> 246 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1129 -> 1093 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1396 -> 1380 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1467 -> 1439 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1436 -> 1429 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1158 -> 1150 chars
+2026-03-18 10:32:50 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1220 -> 1211 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1261 -> 1247 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1349 -> 1343 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1309 -> 1300 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1200 -> 1198 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1129 -> 1128 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1376 -> 1363 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1318 -> 1316 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1355 -> 1349 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 990 -> 987 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1867 -> 1866 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1895 -> 1893 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2107 -> 2106 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1679 -> 1679 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 462 -> 462 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1048 -> 1046 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2605 -> 2602 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1704 -> 1701 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2494 -> 2484 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2701 -> 2688 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 3080 -> 3061 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2719 -> 2709 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2734 -> 2734 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2589 -> 2578 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2953 -> 2951 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2581 -> 2576 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2596 -> 2575 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2733 -> 2715 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2726 -> 2719 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2670 -> 2665 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2369 -> 2362 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2511 -> 2511 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2614 -> 2611 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1874 -> 1867 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2513 -> 2506 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2370 -> 2364 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2288 -> 2280 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2517 -> 2511 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2941 -> 2932 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2868 -> 2862 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2335 -> 2331 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2399 -> 2397 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1722 -> 1721 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2281 -> 2264 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2436 -> 2430 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2589 -> 2584 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2757 -> 2750 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2446 -> 2443 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2268 -> 2250 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2776 -> 2770 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2468 -> 2458 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2283 -> 2282 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2524 -> 2519 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2403 -> 2398 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2849 -> 2847 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2330 -> 2320 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2835 -> 2832 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2249 -> 2246 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2656 -> 2652 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2288 -> 2281 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2577 -> 2566 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2537 -> 2527 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2562 -> 2557 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2791 -> 2785 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2629 -> 2618 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2804 -> 2803 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2901 -> 2857 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2520 -> 2518 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2497 -> 2495 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2769 -> 2759 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2441 -> 2437 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2163 -> 2159 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1414 -> 1414 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2613 -> 2607 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1489 -> 1486 chars
+2026-03-18 10:32:51 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 260 -> 258 chars
+2026-03-18 10:32:51 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (1.71s) -- native=229, need_ocr=3
+2026-03-18 10:32:51 | INFO     | s_padf_utils | [pdf_utils] Pass 2 -- PaddleOCR-VL (serial GPU) for 3 page(s)
+2026-03-18 10:32:51 | INFO     | s_padf_utils | [pdf_utils] Page 2/232: no native text -- running PaddleOCR-VL
+2026-03-18 10:32:54 | INFO     | s_padf_utils | [pdf_utils] Page 2: PaddleOCR-VL OK (attempt 1, dpi=150, 1 block(s), 2.52s)
+2026-03-18 10:32:54 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1030 -> 950 chars
+2026-03-18 10:32:54 | INFO     | s_padf_utils | [pdf_utils] Page 8/232: no native text -- running PaddleOCR-VL
+2026-03-18 10:32:55 | INFO     | s_padf_utils | [pdf_utils] Page 8: PaddleOCR-VL OK (attempt 1, dpi=150, 1 block(s), 1.01s)
+2026-03-18 10:32:55 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1030 -> 950 chars
+2026-03-18 10:32:55 | INFO     | s_padf_utils | [pdf_utils] Page 231/232: no native text -- running PaddleOCR-VL
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] Page 231: PaddleOCR-VL OK (attempt 1, dpi=150, 1 block(s), 1.01s)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1030 -> 950 chars
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (118 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 3: native (946 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 4: native (1316 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 5: native (1419 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 6: native (1300 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 7: native (952 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 9: native (896 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 10: native (1895 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 11: native (1951 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 12: native (1938 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 13: native (1551 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 14: native (1170 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 15: native (1131 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 16: native (1189 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 17: native (1305 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 18: native (1461 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 19: native (1508 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 20: native (2138 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 21: native (1594 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 22: native (2006 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 23: native (1421 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 24: native (1394 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 25: native (1547 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 26: native (1381 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 27: native (1382 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 28: native (1233 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 29: native (1685 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 30: native (1412 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 31: native (1319 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 32: native (1099 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 33: native (962 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 34: native (1355 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 35: native (1538 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 36: native (1801 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 37: native (1550 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 38: native (1705 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 39: native (2098 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 40: native (1144 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 41: native (1642 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 42: native (1380 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 43: native (1534 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 44: native (1363 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 45: native (1411 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 46: native (1570 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 47: native (2099 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 48: native (2268 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 49: native (1796 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 50: native (1392 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 51: native (2178 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 52: native (2302 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 53: native (2720 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 54: native (2314 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 55: native (2398 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 56: native (2165 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 57: native (2095 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 58: native (2180 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 59: native (2256 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 60: native (2089 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 61: native (2448 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 62: native (2251 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 63: native (1784 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 64: native (2013 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 65: native (1874 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 66: native (2510 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 67: native (1742 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 68: native (2312 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 69: native (2098 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 70: native (1920 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 71: native (2245 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 72: native (2464 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 73: native (1847 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 74: native (2051 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 75: native (1488 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 76: native (1987 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 77: native (2105 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 78: native (1868 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 79: native (2269 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 80: native (2274 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 81: native (1288 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 82: native (1799 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 83: native (1998 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 84: native (2105 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 85: native (2070 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 86: native (2038 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 87: native (1454 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 88: native (2218 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 89: native (2256 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 90: native (1853 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 91: native (1912 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 92: native (2042 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 93: native (1936 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 94: native (2202 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 95: native (2296 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 96: native (1361 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 97: native (1342 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 98: native (1491 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 99: native (1599 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 100: native (1655 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 101: native (1774 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 102: native (1716 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 103: native (2417 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 104: native (1192 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 105: native (1644 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 106: native (2786 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 107: native (2686 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 108: native (2161 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 109: native (1905 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 110: native (1808 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 111: native (2183 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 112: native (1702 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 113: native (1303 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 114: native (1937 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 115: native (1368 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 116: native (1516 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 117: native (1949 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 118: native (1873 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 119: native (1465 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 120: native (1784 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 121: native (1084 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 122: native (1900 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 123: native (1595 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 124: native (1222 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 125: native (1459 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 126: native (1382 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 127: native (1537 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 128: native (1516 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 129: native (1421 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 130: native (1221 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 131: native (1717 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 132: native (1455 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 133: native (2143 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 134: native (2220 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 135: native (1864 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 136: native (2435 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 137: native (1506 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 138: native (1083 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 139: native (1813 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 140: native (1624 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 141: native (1251 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 142: native (2701 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 143: native (2989 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 144: native (3193 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 145: native (2921 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 146: native (2904 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 147: native (2730 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 148: native (2297 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 149: native (492 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 150: native (246 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 151: native (1093 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 152: native (1380 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 153: native (1439 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 154: native (1429 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 155: native (1150 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 156: native (1211 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 157: native (1247 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 158: native (1343 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 159: native (1300 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 160: native (1198 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 161: native (1128 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 162: native (1363 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 163: native (1316 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 164: native (1349 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 165: native (987 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 166: native (1866 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 167: native (1893 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 168: native (2106 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 169: native (1679 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 170: native (462 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 171: native (1046 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 172: native (2602 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 173: native (1701 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 174: native (2484 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 175: native (2688 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 176: native (3061 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 177: native (2709 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 178: native (2734 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 179: native (2578 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 180: native (2951 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 181: native (2576 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 182: native (2575 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 183: native (2715 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 184: native (2719 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 185: native (2665 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 186: native (2362 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 187: native (2511 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 188: native (2611 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 189: native (1867 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 190: native (2506 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 191: native (2364 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 192: native (2280 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 193: native (2511 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 194: native (2932 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 195: native (2862 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 196: native (2331 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 197: native (2397 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 198: native (1721 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 199: native (2264 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 200: native (2430 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 201: native (2584 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 202: native (2750 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 203: native (2443 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 204: native (2250 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 205: native (2770 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 206: native (2458 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 207: native (2282 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 208: native (2519 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 209: native (2398 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 210: native (2847 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 211: native (2320 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 212: native (2832 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 213: native (2246 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 214: native (2652 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 215: native (2281 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 216: native (2566 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 217: native (2527 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 218: native (2557 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 219: native (2785 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 220: native (2618 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 221: native (2803 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 222: native (2857 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 223: native (2518 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 224: native (2495 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 225: native (2759 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 226: native (2437 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 227: native (2159 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 228: native (1414 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 229: native (2607 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 230: native (1486 chars)
+2026-03-18 10:32:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 232: native (258 chars)
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] PDF type         : mixed
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 232/232
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] Native text       : 229 page(s)
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 3 page(s)
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 232 page(s)
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] Time              : 6.70s
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-18 10:32:56 | INFO     | s_main | [77b56d13] Step 3/5 — extraction complete: 232 page(s) with text (6.71s)
+2026-03-18 10:32:56 | INFO     | s_main | [77b56d13] Step 4/5 — splitting pages into chunks
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] merge_pages: 232 page(s), 440,537 total chars
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] merge_pages: 440,999 chars (~18 chunks)
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] split_documents: 440,999 chars, chunk_size=25000, overlap=200
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] split_documents: 19 chunk(s) in 0.003s (avg 23209 chars/chunk)
+2026-03-18 10:32:56 | INFO     | s_padf_utils | [pdf_utils] Coverage: ALL 232 page(s) -> 19 inference call(s)
+2026-03-18 10:32:56 | INFO     | s_main | [77b56d13] Step 4/5 — chunking complete: 19 chunk(s) from 232 page(s) (0.00s)
+2026-03-18 10:32:56 | INFO     | s_main | [77b56d13] Step 5/5 — running map-reduce inference (19 chunk(s))
+2026-03-18 10:32:56 | INFO     | s_ai_model | [generate_analysis] 19 chunk(s)
+2026-03-18 10:32:56 | WARNING  | s_ai_model | [generate_analysis] 19 chunks > expected 12 — processing all (no truncation)
+2026-03-18 10:32:56 | INFO     | s_ai_model | [generate_analysis] MAP: 19 chunk(s)
+2026-03-18 10:32:56 | INFO     | s_ai_model | [generate_analysis] [map 1/19] page=1-232, chars=23982
+2026-03-18 10:32:56 | INFO     | s_ai_model | [map 1/19] _run_inference: 11037 tokens in, max_new=500
+2026-03-18 10:32:56 | WARNING  | s_ai_model | [map 1/19] _run_inference: truncating 11037 → 8000 tokens
+2026-03-18 10:33:16 | INFO     | s_ai_model | [map 1/19] _run_inference: 500 tokens out in 20.26s (24.7 tok/s)
+2026-03-18 10:33:16 | DEBUG    | s_main | extract_json: input length 517 chars
+2026-03-18 10:33:16 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:33:16 | DEBUG    | s_main | _fix_json_string: repair complete (25 chars)
+2026-03-18 10:33:16 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:33:16 | DEBUG    | s_main | extract_json: strategy 1 failed — Expecting value: line 1 column 1 (char 0)
+2026-03-18 10:33:16 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:33:16 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:33:16 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:33:16 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:33:16 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:33:16 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:33:16 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:33:16 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:33:16 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:33:16 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:33:16 | INFO     | s_ai_model | [generate_analysis] [map 1/19] done (20.35s) overview=empty highlights=0
+2026-03-18 10:33:16 | INFO     | s_ai_model | [generate_analysis] [map 2/19] page=1-232, chars=23496
+2026-03-18 10:33:16 | INFO     | s_ai_model | [map 2/19] _run_inference: 11151 tokens in, max_new=500
+2026-03-18 10:33:16 | WARNING  | s_ai_model | [map 2/19] _run_inference: truncating 11151 → 8000 tokens
+2026-03-18 10:33:36 | INFO     | s_ai_model | [map 2/19] _run_inference: 500 tokens out in 19.24s (26.0 tok/s)
+2026-03-18 10:33:36 | DEBUG    | s_main | extract_json: input length 651 chars
+2026-03-18 10:33:36 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:33:36 | DEBUG    | s_main | _fix_json_string: repair complete (300 chars)
+2026-03-18 10:33:36 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:33:36 | DEBUG    | s_main | extract_json: strategy 1 failed — Extra data: line 1 column 2 (char 1)
+2026-03-18 10:33:36 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:33:36 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:33:36 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:33:36 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:33:36 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:33:36 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:33:36 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:33:36 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:33:36 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:33:36 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:33:36 | INFO     | s_ai_model | [generate_analysis] [map 2/19] done (19.28s) overview=empty highlights=0
+2026-03-18 10:33:36 | INFO     | s_ai_model | [generate_analysis] [map 3/19] page=1-232, chars=24781
+2026-03-18 10:33:36 | INFO     | s_ai_model | [map 3/19] _run_inference: 10023 tokens in, max_new=500
+2026-03-18 10:33:36 | WARNING  | s_ai_model | [map 3/19] _run_inference: truncating 10023 → 8000 tokens
+2026-03-18 10:33:55 | INFO     | s_ai_model | [map 3/19] _run_inference: 500 tokens out in 19.24s (26.0 tok/s)
+2026-03-18 10:33:55 | DEBUG    | s_main | extract_json: input length 5035 chars
+2026-03-18 10:33:55 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:33:55 | DEBUG    | s_main | _fix_json_string: repair complete (5035 chars)
+2026-03-18 10:33:55 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:33:55 | DEBUG    | s_main | extract_json: strategy 1 failed — Extra data: line 1 column 2 (char 1)
+2026-03-18 10:33:55 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:33:55 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:33:55 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:33:55 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:33:55 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:33:55 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:33:55 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:33:55 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:33:55 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:33:55 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:33:55 | INFO     | s_ai_model | [generate_analysis] [map 3/19] done (19.28s) overview=empty highlights=0
+2026-03-18 10:33:55 | INFO     | s_ai_model | [generate_analysis] [map 4/19] page=1-232, chars=22715
+2026-03-18 10:33:55 | INFO     | s_ai_model | [map 4/19] _run_inference: 7508 tokens in, max_new=500
+2026-03-18 10:34:09 | INFO     | s_ai_model | [map 4/19] _run_inference: 355 tokens out in 14.36s (24.7 tok/s)
+2026-03-18 10:34:09 | DEBUG    | s_main | extract_json: input length 1185 chars
+2026-03-18 10:34:09 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:34:09 | DEBUG    | s_main | _fix_json_string: repair complete (1185 chars)
+2026-03-18 10:34:09 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:34:09 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:34:09 | DEBUG    | s_main | _postprocess_highlights: 5 highlight(s) after cleanup
+2026-03-18 10:34:09 | INFO     | s_ai_model | [generate_analysis] [map 4/19] done (14.38s) overview=yes highlights=5
+2026-03-18 10:34:09 | INFO     | s_ai_model | [generate_analysis] [map 5/19] page=1-232, chars=23217
+2026-03-18 10:34:09 | INFO     | s_ai_model | [map 5/19] _run_inference: 8317 tokens in, max_new=500
+2026-03-18 10:34:09 | WARNING  | s_ai_model | [map 5/19] _run_inference: truncating 8317 → 8000 tokens
+2026-03-18 10:34:29 | INFO     | s_ai_model | [map 5/19] _run_inference: 500 tokens out in 19.34s (25.9 tok/s)
+2026-03-18 10:34:29 | DEBUG    | s_main | extract_json: input length 580 chars
+2026-03-18 10:34:29 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:34:29 | DEBUG    | s_main | _fix_json_string: repair complete (107 chars)
+2026-03-18 10:34:29 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:34:29 | DEBUG    | s_main | extract_json: strategy 1 failed — Expecting value: line 1 column 1 (char 0)
+2026-03-18 10:34:29 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:34:29 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:34:29 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:34:29 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:34:29 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:34:29 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:34:29 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:34:29 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:34:29 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:34:29 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:34:29 | INFO     | s_ai_model | [generate_analysis] [map 5/19] done (19.38s) overview=empty highlights=0
+2026-03-18 10:34:29 | INFO     | s_ai_model | [generate_analysis] [map 6/19] page=1-232, chars=23460
+2026-03-18 10:34:29 | INFO     | s_ai_model | [map 6/19] _run_inference: 8200 tokens in, max_new=500
+2026-03-18 10:34:29 | WARNING  | s_ai_model | [map 6/19] _run_inference: truncating 8200 → 8000 tokens
+2026-03-18 10:34:48 | INFO     | s_ai_model | [map 6/19] _run_inference: 500 tokens out in 19.35s (25.8 tok/s)
+2026-03-18 10:34:48 | DEBUG    | s_main | extract_json: input length 1572 chars
+2026-03-18 10:34:48 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:34:48 | DEBUG    | s_main | _fix_json_string: repair complete (1572 chars)
+2026-03-18 10:34:48 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:34:48 | DEBUG    | s_main | extract_json: strategy 1 failed — Expecting value: line 1 column 1 (char 0)
+2026-03-18 10:34:48 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:34:48 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:34:48 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:34:48 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:34:48 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:34:48 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:34:48 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:34:48 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:34:48 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:34:48 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:34:48 | INFO     | s_ai_model | [generate_analysis] [map 6/19] done (19.38s) overview=empty highlights=0
+2026-03-18 10:34:48 | INFO     | s_ai_model | [generate_analysis] [map 7/19] page=1-232, chars=24404
+2026-03-18 10:34:48 | INFO     | s_ai_model | [map 7/19] _run_inference: 8578 tokens in, max_new=500
+2026-03-18 10:34:48 | WARNING  | s_ai_model | [map 7/19] _run_inference: truncating 8578 → 8000 tokens
+2026-03-18 10:35:07 | INFO     | s_ai_model | [map 7/19] _run_inference: 500 tokens out in 19.40s (25.8 tok/s)
+2026-03-18 10:35:07 | DEBUG    | s_main | extract_json: input length 1312 chars
+2026-03-18 10:35:07 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:35:07 | DEBUG    | s_main | _fix_json_string: repair complete (1311 chars)
+2026-03-18 10:35:07 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:35:07 | DEBUG    | s_main | extract_json: strategy 1 failed — Expecting value: line 1 column 1 (char 0)
+2026-03-18 10:35:07 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:35:07 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:35:07 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:35:07 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:35:07 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:35:07 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:35:07 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:35:07 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:35:07 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:35:07 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:35:07 | INFO     | s_ai_model | [generate_analysis] [map 7/19] done (19.43s) overview=empty highlights=0
+2026-03-18 10:35:07 | INFO     | s_ai_model | [generate_analysis] [map 8/19] page=1-232, chars=23848
+2026-03-18 10:35:07 | INFO     | s_ai_model | [map 8/19] _run_inference: 8417 tokens in, max_new=500
+2026-03-18 10:35:07 | WARNING  | s_ai_model | [map 8/19] _run_inference: truncating 8417 → 8000 tokens
+2026-03-18 10:35:27 | INFO     | s_ai_model | [map 8/19] _run_inference: 500 tokens out in 19.41s (25.8 tok/s)
+2026-03-18 10:35:27 | DEBUG    | s_main | extract_json: input length 548 chars
+2026-03-18 10:35:27 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:35:27 | DEBUG    | s_main | _fix_json_string: repair complete (68 chars)
+2026-03-18 10:35:27 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:35:27 | DEBUG    | s_main | extract_json: strategy 1 failed — Expecting value: line 1 column 1 (char 0)
+2026-03-18 10:35:27 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:35:27 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:35:27 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:35:27 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:35:27 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:35:27 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:35:27 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:35:27 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:35:27 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:35:27 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:35:27 | INFO     | s_ai_model | [generate_analysis] [map 8/19] done (19.45s) overview=empty highlights=0
+2026-03-18 10:35:27 | INFO     | s_ai_model | [generate_analysis] [map 9/19] page=1-232, chars=23803
+2026-03-18 10:35:27 | INFO     | s_ai_model | [map 9/19] _run_inference: 9598 tokens in, max_new=500
+2026-03-18 10:35:27 | WARNING  | s_ai_model | [map 9/19] _run_inference: truncating 9598 → 8000 tokens
+2026-03-18 10:35:46 | INFO     | s_ai_model | [map 9/19] _run_inference: 500 tokens out in 19.42s (25.8 tok/s)
+2026-03-18 10:35:46 | DEBUG    | s_main | extract_json: input length 1162 chars
+2026-03-18 10:35:46 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:35:46 | DEBUG    | s_main | _fix_json_string: repair complete (1158 chars)
+2026-03-18 10:35:46 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:35:46 | DEBUG    | s_main | extract_json: strategy 1 failed — Expecting value: line 1 column 1 (char 0)
+2026-03-18 10:35:46 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:35:46 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:35:46 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:35:46 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:35:46 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:35:46 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:35:46 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:35:46 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:35:46 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:35:46 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:35:46 | INFO     | s_ai_model | [generate_analysis] [map 9/19] done (19.46s) overview=empty highlights=0
+2026-03-18 10:35:46 | INFO     | s_ai_model | [generate_analysis] [map 10/19] page=1-232, chars=24721
+2026-03-18 10:35:46 | INFO     | s_ai_model | [map 10/19] _run_inference: 9810 tokens in, max_new=500
+2026-03-18 10:35:46 | WARNING  | s_ai_model | [map 10/19] _run_inference: truncating 9810 → 8000 tokens
+2026-03-18 10:36:06 | INFO     | s_ai_model | [map 10/19] _run_inference: 500 tokens out in 19.45s (25.7 tok/s)
+2026-03-18 10:36:06 | DEBUG    | s_main | extract_json: input length 1589 chars
+2026-03-18 10:36:06 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:36:06 | DEBUG    | s_main | _fix_json_string: repair complete (1589 chars)
+2026-03-18 10:36:06 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:36:06 | DEBUG    | s_main | extract_json: strategy 1 failed — Expecting value: line 1 column 1 (char 0)
+2026-03-18 10:36:06 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:36:06 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:36:06 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:36:06 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:36:06 | DEBUG    | s_main | _extract_field_by_regex: found 'overview' via regex
+2026-03-18 10:36:06 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:36:06 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:36:06 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:36:06 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:36:06 | INFO     | s_main | extract_json: strategy 3 recovered partial data via regex
+2026-03-18 10:36:06 | INFO     | s_ai_model | [generate_analysis] [map 10/19] done (19.48s) overview=yes highlights=0
+2026-03-18 10:36:06 | INFO     | s_ai_model | [generate_analysis] [map 11/19] page=1-232, chars=23227
+2026-03-18 10:36:06 | INFO     | s_ai_model | [map 11/19] _run_inference: 8376 tokens in, max_new=500
+2026-03-18 10:36:06 | WARNING  | s_ai_model | [map 11/19] _run_inference: truncating 8376 → 8000 tokens
+2026-03-18 10:36:25 | INFO     | s_ai_model | [map 11/19] _run_inference: 500 tokens out in 19.44s (25.7 tok/s)
+2026-03-18 10:36:25 | DEBUG    | s_main | extract_json: input length 1492 chars
+2026-03-18 10:36:25 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:36:25 | DEBUG    | s_main | _fix_json_string: repair complete (1492 chars)
+2026-03-18 10:36:25 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:36:25 | DEBUG    | s_main | extract_json: strategy 1 failed — Expecting value: line 1 column 1 (char 0)
+2026-03-18 10:36:25 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:36:25 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:36:25 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:36:25 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:36:25 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:36:25 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:36:25 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:36:25 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:36:25 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:36:25 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:36:25 | INFO     | s_ai_model | [generate_analysis] [map 11/19] done (19.48s) overview=empty highlights=0
+2026-03-18 10:36:25 | INFO     | s_ai_model | [generate_analysis] [map 12/19] page=1-232, chars=23870
+2026-03-18 10:36:25 | INFO     | s_ai_model | [map 12/19] _run_inference: 12381 tokens in, max_new=500
+2026-03-18 10:36:25 | WARNING  | s_ai_model | [map 12/19] _run_inference: truncating 12381 → 8000 tokens
+2026-03-18 10:36:45 | INFO     | s_ai_model | [map 12/19] _run_inference: 500 tokens out in 19.44s (25.7 tok/s)
+2026-03-18 10:36:45 | DEBUG    | s_main | extract_json: input length 931 chars
+2026-03-18 10:36:45 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:36:45 | DEBUG    | s_main | _fix_json_string: repair complete (924 chars)
+2026-03-18 10:36:45 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:36:45 | DEBUG    | s_main | extract_json: strategy 1 failed — Extra data: line 1 column 6 (char 5)
+2026-03-18 10:36:45 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:36:45 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:36:45 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:36:45 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:36:45 | WARNING  | s_main | _extract_field_by_regex: field 'overview' not found
+2026-03-18 10:36:45 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:36:45 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:36:45 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:36:45 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:36:45 | ERROR    | s_main | extract_json: strategy 3 also failed — returning empty result
+2026-03-18 10:36:45 | INFO     | s_ai_model | [generate_analysis] [map 12/19] done (19.48s) overview=empty highlights=0
+2026-03-18 10:36:45 | INFO     | s_ai_model | [generate_analysis] [map 13/19] page=1-232, chars=22451
+2026-03-18 10:36:45 | INFO     | s_ai_model | [map 13/19] _run_inference: 7388 tokens in, max_new=500
+2026-03-18 10:37:04 | INFO     | s_ai_model | [map 13/19] _run_inference: 500 tokens out in 19.19s (26.1 tok/s)
+2026-03-18 10:37:04 | DEBUG    | s_main | extract_json: input length 1007 chars
+2026-03-18 10:37:04 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:37:04 | DEBUG    | s_main | _fix_json_string: repair complete (1007 chars)
+2026-03-18 10:37:04 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:37:04 | DEBUG    | s_main | extract_json: strategy 1 failed — Unterminated string starting at: line 3 column 14 (char 105)
+2026-03-18 10:37:04 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:37:04 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:37:04 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:37:04 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:37:04 | DEBUG    | s_main | _extract_field_by_regex: found 'overview' via regex
+2026-03-18 10:37:04 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:37:04 | WARNING  | s_main | _extract_field_by_regex: field 'summary' not found
+2026-03-18 10:37:04 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:37:04 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:37:04 | INFO     | s_main | extract_json: strategy 3 recovered partial data via regex
+2026-03-18 10:37:04 | INFO     | s_ai_model | [generate_analysis] [map 13/19] done (19.20s) overview=yes highlights=0
+2026-03-18 10:37:04 | INFO     | s_ai_model | [generate_analysis] [map 14/19] page=1-232, chars=23891
+2026-03-18 10:37:04 | INFO     | s_ai_model | [map 14/19] _run_inference: 6968 tokens in, max_new=500
+2026-03-18 10:37:13 | INFO     | s_ai_model | [map 14/19] _run_inference: 227 tokens out in 9.12s (24.9 tok/s)
+2026-03-18 10:37:13 | DEBUG    | s_main | extract_json: input length 878 chars
+2026-03-18 10:37:13 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:37:13 | DEBUG    | s_main | _fix_json_string: repair complete (878 chars)
+2026-03-18 10:37:13 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:37:13 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:37:13 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-18 10:37:13 | INFO     | s_ai_model | [generate_analysis] [map 14/19] done (9.14s) overview=yes highlights=4
+2026-03-18 10:37:13 | INFO     | s_ai_model | [generate_analysis] [map 15/19] page=1-232, chars=24793
+2026-03-18 10:37:13 | INFO     | s_ai_model | [map 15/19] _run_inference: 7342 tokens in, max_new=500
+2026-03-18 10:37:31 | INFO     | s_ai_model | [map 15/19] _run_inference: 455 tokens out in 17.65s (25.8 tok/s)
+2026-03-18 10:37:31 | DEBUG    | s_main | extract_json: input length 1514 chars
+2026-03-18 10:37:31 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:37:31 | DEBUG    | s_main | _fix_json_string: repair complete (1514 chars)
+2026-03-18 10:37:31 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:37:31 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:37:31 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-18 10:37:31 | INFO     | s_ai_model | [generate_analysis] [map 15/19] done (17.67s) overview=yes highlights=4
+2026-03-18 10:37:31 | INFO     | s_ai_model | [generate_analysis] [map 16/19] page=1-232, chars=24085
+2026-03-18 10:37:31 | INFO     | s_ai_model | [map 16/19] _run_inference: 7247 tokens in, max_new=500
+2026-03-18 10:37:47 | INFO     | s_ai_model | [map 16/19] _run_inference: 398 tokens out in 16.17s (24.6 tok/s)
+2026-03-18 10:37:47 | DEBUG    | s_main | extract_json: input length 1300 chars
+2026-03-18 10:37:47 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:37:47 | DEBUG    | s_main | _fix_json_string: repair complete (1300 chars)
+2026-03-18 10:37:47 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:37:47 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:37:47 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-18 10:37:47 | INFO     | s_ai_model | [generate_analysis] [map 16/19] done (16.19s) overview=yes highlights=4
+2026-03-18 10:37:47 | INFO     | s_ai_model | [generate_analysis] [map 17/19] page=1-232, chars=24961
+2026-03-18 10:37:47 | INFO     | s_ai_model | [map 17/19] _run_inference: 7622 tokens in, max_new=500
+2026-03-18 10:38:04 | INFO     | s_ai_model | [map 17/19] _run_inference: 421 tokens out in 16.89s (24.9 tok/s)
+2026-03-18 10:38:04 | DEBUG    | s_main | extract_json: input length 1677 chars
+2026-03-18 10:38:04 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:38:04 | DEBUG    | s_main | _fix_json_string: repair complete (1677 chars)
+2026-03-18 10:38:04 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:38:04 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:38:04 | DEBUG    | s_main | _postprocess_highlights: 8 highlight(s) after cleanup
+2026-03-18 10:38:04 | INFO     | s_ai_model | [generate_analysis] [map 17/19] done (16.91s) overview=yes highlights=8
+2026-03-18 10:38:04 | INFO     | s_ai_model | [generate_analysis] [map 18/19] page=1-232, chars=23935
+2026-03-18 10:38:04 | INFO     | s_ai_model | [map 18/19] _run_inference: 6910 tokens in, max_new=500
+2026-03-18 10:38:15 | INFO     | s_ai_model | [map 18/19] _run_inference: 288 tokens out in 11.53s (25.0 tok/s)
+2026-03-18 10:38:15 | DEBUG    | s_main | extract_json: input length 1175 chars
+2026-03-18 10:38:15 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:38:15 | DEBUG    | s_main | _fix_json_string: repair complete (1175 chars)
+2026-03-18 10:38:15 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:38:15 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:38:15 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-18 10:38:15 | INFO     | s_ai_model | [generate_analysis] [map 18/19] done (11.55s) overview=yes highlights=4
+2026-03-18 10:38:15 | INFO     | s_ai_model | [generate_analysis] [map 19/19] page=1-232, chars=11323
+2026-03-18 10:38:15 | INFO     | s_ai_model | [map 19/19] _run_inference: 3633 tokens in, max_new=500
+2026-03-18 10:38:26 | INFO     | s_ai_model | [map 19/19] _run_inference: 358 tokens out in 10.59s (33.8 tok/s)
+2026-03-18 10:38:26 | DEBUG    | s_main | extract_json: input length 1471 chars
+2026-03-18 10:38:26 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:38:26 | DEBUG    | s_main | _fix_json_string: repair complete (1471 chars)
+2026-03-18 10:38:26 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:38:26 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:38:26 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-18 10:38:26 | INFO     | s_ai_model | [generate_analysis] [map 19/19] done (10.60s) overview=yes highlights=4
+2026-03-18 10:38:26 | INFO     | s_ai_model | [generate_analysis] MAP complete — 19 result(s)
+2026-03-18 10:38:26 | INFO     | s_ai_model | [generate_analysis] REDUCE: 19 results, batch_size=6
+2026-03-18 10:38:26 | INFO     | s_ai_model | [_batched_reduce] 19 results → batching into groups of 6
+2026-03-18 10:38:26 | INFO     | s_ai_model | [_batched_reduce] reduce-batch-1: 6 results
+2026-03-18 10:38:26 | INFO     | s_ai_model | [reduce-batch-1] _run_inference: 433 tokens in, max_new=600
+2026-03-18 10:38:36 | INFO     | s_ai_model | [reduce-batch-1] _run_inference: 338 tokens out in 9.64s (35.0 tok/s)
+2026-03-18 10:38:36 | DEBUG    | s_main | extract_json: input length 1095 chars
+2026-03-18 10:38:36 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:38:36 | DEBUG    | s_main | _fix_json_string: repair complete (1095 chars)
+2026-03-18 10:38:36 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:38:36 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:38:36 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-18 10:38:36 | INFO     | s_ai_model | [_batched_reduce] reduce-batch-2: 6 results
+2026-03-18 10:38:36 | INFO     | s_ai_model | [reduce-batch-2] _run_inference: 234 tokens in, max_new=600
+2026-03-18 10:38:44 | INFO     | s_ai_model | [reduce-batch-2] _run_inference: 311 tokens out in 8.69s (35.8 tok/s)
+2026-03-18 10:38:44 | DEBUG    | s_main | extract_json: input length 1064 chars
+2026-03-18 10:38:44 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:38:44 | DEBUG    | s_main | _fix_json_string: repair complete (1052 chars)
+2026-03-18 10:38:44 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:38:44 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:38:44 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-18 10:38:44 | INFO     | s_ai_model | [_batched_reduce] reduce-batch-3: 6 results
+2026-03-18 10:38:44 | INFO     | s_ai_model | [reduce-batch-3] _run_inference: 1225 tokens in, max_new=600
+2026-03-18 10:39:01 | INFO     | s_ai_model | [reduce-batch-3] _run_inference: 600 tokens out in 16.38s (36.6 tok/s)
+2026-03-18 10:39:01 | DEBUG    | s_main | extract_json: input length 2421 chars
+2026-03-18 10:39:01 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:39:01 | DEBUG    | s_main | _fix_json_string: repair complete (2421 chars)
+2026-03-18 10:39:01 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:39:01 | DEBUG    | s_main | extract_json: strategy 1 failed — Unterminated string starting at: line 19 column 5 (char 2368)
+2026-03-18 10:39:01 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:39:01 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:39:01 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:39:01 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:39:01 | DEBUG    | s_main | _extract_field_by_regex: found 'overview' via regex
+2026-03-18 10:39:01 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:39:01 | DEBUG    | s_main | _extract_field_by_regex: found 'summary' via regex
+2026-03-18 10:39:01 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:39:01 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:39:01 | INFO     | s_main | extract_json: strategy 3 recovered partial data via regex
+2026-03-18 10:39:01 | INFO     | s_ai_model | [_batched_reduce] reduce-batch-4: 1 results
+2026-03-18 10:39:01 | INFO     | s_ai_model | [reduce-batch-4] _run_inference: 366 tokens in, max_new=600
+2026-03-18 10:39:10 | INFO     | s_ai_model | [reduce-batch-4] _run_inference: 340 tokens out in 9.32s (36.5 tok/s)
+2026-03-18 10:39:10 | DEBUG    | s_main | extract_json: input length 1344 chars
+2026-03-18 10:39:10 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:39:10 | DEBUG    | s_main | _fix_json_string: repair complete (1332 chars)
+2026-03-18 10:39:10 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:39:10 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-18 10:39:10 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-18 10:39:10 | INFO     | s_ai_model | [_batched_reduce] Final reduce: 4 intermediates
+2026-03-18 10:39:10 | INFO     | s_ai_model | [reduce-final] _run_inference: 800 tokens in, max_new=600
+2026-03-18 10:39:26 | INFO     | s_ai_model | [reduce-final] _run_inference: 600 tokens out in 16.31s (36.8 tok/s)
+2026-03-18 10:39:26 | DEBUG    | s_main | extract_json: input length 2093 chars
+2026-03-18 10:39:26 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-18 10:39:26 | DEBUG    | s_main | _fix_json_string: repair complete (2085 chars)
+2026-03-18 10:39:26 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-18 10:39:26 | DEBUG    | s_main | extract_json: strategy 1 failed — Unterminated string starting at: line 12 column 5 (char 2082)
+2026-03-18 10:39:26 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-18 10:39:26 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-18 10:39:26 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-18 10:39:26 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-18 10:39:26 | DEBUG    | s_main | _extract_field_by_regex: found 'overview' via regex
+2026-03-18 10:39:26 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-18 10:39:26 | DEBUG    | s_main | _extract_field_by_regex: found 'summary' via regex
+2026-03-18 10:39:26 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-18 10:39:26 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-18 10:39:26 | INFO     | s_main | extract_json: strategy 3 recovered partial data via regex
+2026-03-18 10:39:26 | INFO     | s_ai_model | [generate_analysis] REDUCE done (60.38s)
+2026-03-18 10:39:26 | INFO     | s_ai_model | [generate_analysis] done — total=390.49s highlights=0
+2026-03-18 10:39:26 | INFO     | s_main | [77b56d13] Step 5/5 — inference complete (390.49s)
+2026-03-18 10:39:26 | DEBUG    | s_main | [77b56d13] Temp file deleted: 'temp/074591c6-5eb3-4836-bf2c-a1c98690b0eb.pdf'
+2026-03-18 10:39:26 | INFO     | s_main | [77b56d13] ── REQUEST COMPLETE — total time: 397.27s ──────
+2026-03-18 10:54:21 | DEBUG    | httpcore.connection | close.started
+2026-03-18 10:54:21 | DEBUG    | httpcore.connection | close.complete
