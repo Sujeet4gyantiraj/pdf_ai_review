@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Chunking config
 # ---------------------------------------------------------------------------
-CHUNK_SIZE    = 25000  # ~7100 content tokens — 18 chunks for 232-page PDF
+CHUNK_SIZE    = 12000  # ~5640 tokens for dense legal text — safe under 7500 token limit
 CHUNK_OVERLAP = 200
 
 # Pre-compiled regex patterns

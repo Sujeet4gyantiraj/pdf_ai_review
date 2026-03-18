@@ -4,53 +4,42 @@ import time
 import torch
 import logging
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from langchain.schema import Document
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Config
+# Config — calibrated from Finance Bill 2026 actual logs
+#
+# Finance Bill tokenizes at ~0.47 chars/token (dense legal text).
+# General prose ~3.5 chars/token. Legal text is 7x denser.
+#
+# TOKEN_CHUNK_SIZE=5500 content tokens:
+#   + ~150 prompt tokens = ~5650 total input (never truncated)
+#   Finance Bill: 440K chars → ~207K tokens → ~38 chunks
+#   38 chunks × ~11s = ~7 min MAP
+#   reduce: 4 batches of 10 + 1 final = ~1 min
+#   Total: ~8 min
+#
+# What failed before:
+#   CHUNK_SIZE=25000 chars → 11000+ tokens → truncated → broken JSON
+#   TOKEN_CHUNK_SIZE=5500  → exactly 5500 tokens every time → always complete JSON
 # ---------------------------------------------------------------------------
 MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
 
-# ---------------------------------------------------------------------------
-# VRAM budget — calibrated from actual run observations:
-#
-#   GPU total          : 39 GB
-#   PaddleOCR-VL       : ~22 GB  (held throughout)
-#   Mistral-7B float16 : ~14 GB
-#   Available for KV   : ~3 GB
-#
-# Mistral-7B v0.2 uses GQA with only 2 KV heads (not 16):
-#   KV per token = 32 layers × 2 (K+V) × 2 heads × 128 dim × 2 bytes = 32 KB
-#   7500 tokens × 32 KB = 240 MB — well within 3 GB
-#
-# CHUNK_SIZE=25000:
-#   25000 chars ÷ 3.5 chars/token ≈ 7100 content tokens
-#   + 400 prompt template = ~7500 total input tokens
-#   KV needed: 240 MB — safe
-#   440K chars ÷ 25000 = ~18 chunks
-#   18 chunks × ~22s = ~6-7 min total
-#
-# If OOM occurs (residual fragmentation from prior runs), the OOM retry
-# logic halves the input automatically — no empty results returned.
-# ---------------------------------------------------------------------------
-CHUNK_SIZE            = 25000  # ~7100 content tokens — 18 chunks for 232-page PDF
-MAX_CHUNKS            = 12     # reference only — no truncation applied
-MAX_INPUT_TOKENS      = 8000   # 7100 content + 400 prompt + 500 buffer
-MAX_NEW_TOKENS_MAP    = 500    # enough for full JSON on dense legislative text
+TOKEN_CHUNK_SIZE      = 5500   # content tokens — measured by tokenizer, not chars
+TOKEN_CHUNK_OVERLAP   = 50     # overlap in tokens
+MAX_INPUT_TOKENS      = 6500   # hard ceiling: 5500 content + 150 prompt + 850 buffer
+MAX_NEW_TOKENS_MAP    = 600    # enough for full JSON output
 MAX_NEW_TOKENS_REDUCE = 600
-REDUCE_BATCH_SIZE     = 6
+REDUCE_BATCH_SIZE     = 10     # 10 results per reduce call → fewer reduce calls
 
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
 torch.backends.cudnn.benchmark        = True
 torch.backends.cuda.matmul.allow_tf32 = True
 
 # ---------------------------------------------------------------------------
-# Tokenizer
+# Tokenizer — loaded once at import time
 # ---------------------------------------------------------------------------
 logger.info(f"[ai_model] Loading tokenizer: {MODEL_NAME}")
 t0         = time.perf_counter()
@@ -67,16 +56,54 @@ logger.info(f"[ai_model] Tokenizer loaded ({time.perf_counter() - t0:.2f}s)")
 def _vram_free_gb() -> float:
     if not torch.cuda.is_available():
         return 0.0
-    props     = torch.cuda.get_device_properties(0)
-    allocated = torch.cuda.memory_allocated(0)
-    reserved  = torch.cuda.memory_reserved(0)
-    return (props.total_memory - reserved - allocated) / 1024 ** 3
+    p = torch.cuda.get_device_properties(0)
+    return (p.total_memory - torch.cuda.memory_allocated(0) - torch.cuda.memory_reserved(0)) / 1024**3
 
 
 def _vram_total_gb() -> float:
     if not torch.cuda.is_available():
         return 0.0
-    return torch.cuda.get_device_properties(0).total_memory / 1024 ** 3
+    return torch.cuda.get_device_properties(0).total_memory / 1024**3
+
+
+# ---------------------------------------------------------------------------
+# Token-accurate chunking
+# ---------------------------------------------------------------------------
+def split_by_tokens(text: str) -> list[str]:
+    """
+    Split text into chunks of exactly TOKEN_CHUNK_SIZE tokens.
+
+    Why token-based instead of char-based:
+      Legal text (Finance Bill) → 0.47 chars/token
+      Normal prose              → 3.5 chars/token
+      A 25000-char chunk = 11750 tokens in legal text → truncated → broken JSON
+      A 5500-token chunk = 5500 tokens every time     → never truncated → clean JSON
+
+    Algorithm: tokenize full document once (fast, CPU-only, O(n)),
+    slice token windows, decode each window back to text.
+    No GPU needed. Runs in <1s for 440K chars.
+    """
+    if not text:
+        return []
+
+    t0       = time.perf_counter()
+    all_ids  = _tokenizer.encode(text, add_special_tokens=False)
+    n_tokens = len(all_ids)
+    logger.info(
+        f"[split_by_tokens] {len(text):,} chars → {n_tokens:,} tokens "
+        f"({len(text)/n_tokens:.2f} chars/token) in {time.perf_counter()-t0:.3f}s"
+    )
+
+    chunks = []
+    start  = 0
+    while start < n_tokens:
+        end       = min(start + TOKEN_CHUNK_SIZE, n_tokens)
+        chunk_ids = all_ids[start:end]
+        chunks.append(_tokenizer.decode(chunk_ids, skip_special_tokens=True))
+        start    += TOKEN_CHUNK_SIZE - TOKEN_CHUNK_OVERLAP
+
+    logger.info(f"[split_by_tokens] → {len(chunks)} chunk(s) of ≤{TOKEN_CHUNK_SIZE} tokens")
+    return chunks
 
 
 # ---------------------------------------------------------------------------
@@ -85,298 +112,142 @@ def _vram_total_gb() -> float:
 def _load_model():
     total_vram = _vram_total_gb()
     free_vram  = _vram_free_gb()
-    logger.info(
-        f"[ai_model] VRAM total={total_vram:.1f} GB, "
-        f"free={free_vram:.1f} GB, "
-        f"other={total_vram - free_vram:.1f} GB"
-    )
+    logger.info(f"[ai_model] VRAM total={total_vram:.1f} GB, free={free_vram:.1f} GB")
 
-    # Flash Attention 2 — 2-4x faster, lower memory for long sequences
     attn_impl = "eager"
     try:
         import flash_attn  # noqa: F401
         attn_impl = "flash_attention_2"
-        logger.info("[ai_model] Flash Attention 2 — enabled")
+        logger.info("[ai_model] Flash Attention 2 enabled")
     except ImportError:
-        logger.info(
-            "[ai_model] Flash Attention 2 not installed — "
-            "install for 2-4x speedup: pip install flash-attn --no-build-isolation"
-        )
+        logger.info("[ai_model] flash-attn not installed — install for 2-4x speedup: pip install flash-attn --no-build-isolation")
 
-    common_kwargs = dict(attn_implementation=attn_impl)
+    kw = dict(attn_implementation=attn_impl)
 
-    # Use total VRAM for dtype decision — PaddleOCR and LLM never run concurrently
     if DEVICE == "cuda" and total_vram >= 35.0:
-        logger.info(
-            f"[ai_model] Large GPU ({total_vram:.1f} GB total) → "
-            "float16 on cuda:0 (fastest)"
-        )
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME,
-            torch_dtype=torch.float16,
-            device_map={"": 0},
-            **common_kwargs,
-        )
-
+        logger.info(f"[ai_model] Large GPU ({total_vram:.1f} GB) → float16")
+        model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16, device_map={"": 0}, **kw)
     elif DEVICE == "cuda" and free_vram >= 14.0:
-        logger.info(f"[ai_model] {free_vram:.1f} GB free → float16 on cuda:0")
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME,
-            torch_dtype=torch.float16,
-            device_map={"": 0},
-            **common_kwargs,
-        )
-
+        logger.info(f"[ai_model] {free_vram:.1f} GB free → float16")
+        model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16, device_map={"": 0}, **kw)
     elif DEVICE == "cuda" and free_vram >= 7.0:
-        logger.info(f"[ai_model] {free_vram:.1f} GB free → 8-bit quantization")
+        logger.info(f"[ai_model] {free_vram:.1f} GB free → 8-bit")
         try:
             from transformers import BitsAndBytesConfig
-            model = AutoModelForCausalLM.from_pretrained(
-                MODEL_NAME,
-                quantization_config=BitsAndBytesConfig(load_in_8bit=True),
-                device_map={"": 0},
-                **common_kwargs,
-            )
+            model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, quantization_config=BitsAndBytesConfig(load_in_8bit=True), device_map={"": 0}, **kw)
         except ImportError:
-            logger.warning("[ai_model] bitsandbytes not installed → float16 fallback")
-            model = AutoModelForCausalLM.from_pretrained(
-                MODEL_NAME,
-                torch_dtype=torch.float16,
-                device_map={"": 0},
-                **common_kwargs,
-            )
-
+            model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16, device_map={"": 0}, **kw)
     elif DEVICE == "cuda" and free_vram >= 4.0:
-        logger.info(f"[ai_model] {free_vram:.1f} GB free → 4-bit quantization")
+        logger.info(f"[ai_model] {free_vram:.1f} GB free → 4-bit")
         try:
             from transformers import BitsAndBytesConfig
             model = AutoModelForCausalLM.from_pretrained(
                 MODEL_NAME,
-                quantization_config=BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_compute_dtype=torch.float16,
-                    bnb_4bit_use_double_quant=True,
-                ),
-                device_map={"": 0},
-                **common_kwargs,
+                quantization_config=BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16, bnb_4bit_use_double_quant=True),
+                device_map={"": 0}, **kw,
             )
         except ImportError:
-            logger.error("[ai_model] bitsandbytes not installed — cannot load 4-bit")
             raise RuntimeError("Install bitsandbytes: pip install bitsandbytes")
-
     else:
-        logger.warning(f"[ai_model] {free_vram:.1f} GB free → CPU float32 (slow)")
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME,
-            torch_dtype=torch.float32,
-            device_map="cpu",
-        )
+        logger.warning("[ai_model] Falling back to CPU float32")
+        model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float32, device_map="cpu")
 
-    # Verify no meta device
-    meta_params = [n for n, p in model.named_parameters() if p.device.type == "meta"]
-    if meta_params:
-        logger.error(f"[ai_model] {len(meta_params)} param(s) on meta: {meta_params[:3]}")
+    meta = [n for n, p in model.named_parameters() if p.device.type == "meta"]
+    if meta:
+        logger.error(f"[ai_model] {len(meta)} params on meta: {meta[:3]}")
     else:
         logger.info("[ai_model] All parameters on real devices")
 
     model.eval()
-
-    # torch.compile — fuses GPU kernels, 10-30% faster on repeated calls
-    # Requires PyTorch 2.0+ and takes ~30s to compile on first call (cached after)
     try:
         model = torch.compile(model, mode="reduce-overhead")
-        logger.info("[ai_model] torch.compile enabled (reduce-overhead mode)")
+        logger.info("[ai_model] torch.compile enabled")
     except Exception as e:
-        logger.info(f"[ai_model] torch.compile not available ({e}) — skipping")
-
+        logger.info(f"[ai_model] torch.compile skipped ({e})")
     return model
 
 
-logger.info(f"[ai_model] Loading model (device='{DEVICE}') ...")
+logger.info(f"[ai_model] Loading model ...")
 t0     = time.perf_counter()
 _model = _load_model()
 logger.info(f"[ai_model] Model ready ({time.perf_counter() - t0:.2f}s)")
 
 if DEVICE == "cuda":
-    allocated = torch.cuda.memory_allocated() / 1024 ** 3
-    reserved  = torch.cuda.memory_reserved()  / 1024 ** 3
     logger.info(
-        f"[ai_model] GPU after load — "
-        f"allocated={allocated:.2f} GB, reserved={reserved:.2f} GB"
+        f"[ai_model] GPU: allocated={torch.cuda.memory_allocated()/1024**3:.2f} GB, "
+        f"reserved={torch.cuda.memory_reserved()/1024**3:.2f} GB"
     )
 
-# Pre-compute EOS token id list for stopping criteria
 _EOS_TOKEN_IDS = [_tokenizer.eos_token_id]
 
 
 # ---------------------------------------------------------------------------
-# Prompt builders
+# Prompts — compact (~150 tokens vs old ~400 tokens)
+# Saving 250 tokens per chunk = more content per call
 # ---------------------------------------------------------------------------
+_MAP_PREFIX = (
+    "<s>[INST]\nAnalyse this document excerpt. Output ONLY valid JSON:\n"
+    '{"overview":"1-2 sentence type and purpose.",'
+    '"summary":"3-4 sentence executive summary.",'
+    '"highlights":["specific fact with number/date/name.","fact.","fact.","fact."]}\n'
+    "No markdown. No commentary. Properly escape all strings.\n\nDocument:\n---\n"
+)
+_MAP_SUFFIX = "\n---\n[/INST]\n"
 
-# Pre-built static prompt prefix and suffix — only the document text changes
-# between calls. Computing the static parts once at module level avoids
-# rebuilding the same ~400-token string on every inference call.
-_MAP_PROMPT_PREFIX = """\
-<s>[INST]
-You are an expert document analyst across medical, financial, technical, \
-academic, and business domains.
-
-Produce a structured JSON briefing from the document below.
-
-OUTPUT FORMAT (follow exactly):
-{
-  "overview": "1-2 sentence document type and purpose.",
-  "summary": "3-4 sentence executive summary.",
-  "highlights": [
-    "Specific fact with real value (number/date/name/%).",
-    "Specific fact with real value.",
-    "Specific fact with real value.",
-    "Specific fact with real value."
-  ]
-}
-
-RULES:
-- Output ONLY the JSON. No markdown, no backticks, no commentary.
-- overview: max 2 sentences.
-- summary: max 4 sentences.
-- highlights: exactly 4 items, max 20 words each, facts only.
-- Escape all strings properly.
-
-Document:
-----------------
-"""
-_MAP_PROMPT_SUFFIX = "\n----------------\n[/INST]\n"
+_REDUCE_PREFIX = (
+    "<s>[INST]\nSynthesize these section analyses into ONE final JSON:\n"
+    '{"overview":"1-2 sentences covering entire document.",'
+    '"summary":"4-5 sentence coherent paragraph.",'
+    '"highlights":["most important fact.","fact.","fact.","fact.","fact."]}\n'
+    "No markdown. No section numbers in output. Properly escape all strings.\n\nSections:\n---\n"
+)
+_REDUCE_SUFFIX = "\n---\n[/INST]\n"
 
 
 def _build_map_prompt(text: str) -> str:
-    """Fast map prompt — prefix and suffix are pre-built constants."""
-    return _MAP_PROMPT_PREFIX + text + _MAP_PROMPT_SUFFIX
+    return _MAP_PREFIX + text + _MAP_SUFFIX
 
 
-_REDUCE_PROMPT_PREFIX = """\
-<s>[INST]
-You are an expert document analyst. Synthesize these section analyses into \
-one final JSON briefing for the entire document.
-
-OUTPUT FORMAT (follow exactly):
-{
-  "overview": "1-2 sentence description of the entire document.",
-  "summary": "4-5 sentence coherent executive summary as one paragraph.",
-  "highlights": [
-    "Most important fact from the entire document.",
-    "Second most important fact.",
-    "Third most important fact.",
-    "Fourth most important fact.",
-    "Fifth most important fact."
-  ]
-}
-
-RULES:
-- Output ONLY the JSON. No markdown. No section numbers in the output.
-- Escape all strings properly.
-
-Section analyses:
-----------------
-"""
-_REDUCE_PROMPT_SUFFIX = "\n----------------\n[/INST]\n"
-
-
-def _build_reduce_prompt(partial_results: list[dict]) -> str:
-    """Compact reduce prompt using only overview + highlights per result."""
+def _build_reduce_prompt(results: list[dict]) -> str:
+    """Overview + highlights only per result — keeps reduce prompt compact."""
     parts = []
-    for i, r in enumerate(partial_results, 1):
-        overview   = r.get("overview", "").strip()
-        highlights = r.get("highlights", [])
-        hl_text    = "\n".join(f"  - {h}" for h in highlights[:4])
-        if overview or hl_text:
-            parts.append(
-                f"[Section {i}]\n"
-                f"Overview: {overview}\n"
-                f"Key facts:\n{hl_text}"
-            )
-    return _REDUCE_PROMPT_PREFIX + "\n\n".join(parts) + _REDUCE_PROMPT_SUFFIX
+    for i, r in enumerate(results, 1):
+        overview = r.get("overview", "").strip()
+        hl       = "\n".join(f"- {h}" for h in r.get("highlights", [])[:4] if h)
+        if overview or hl:
+            parts.append(f"[{i}] {overview}\n{hl}")
+    return _REDUCE_PREFIX + "\n\n".join(parts) + _REDUCE_SUFFIX
 
 
 # ---------------------------------------------------------------------------
-# Batched reduce
-# ---------------------------------------------------------------------------
-def _batched_reduce(results: list[dict], extract_json_fn) -> dict:
-    """
-    Two-level reduce: batch map results → intermediate results → final result.
-    Keeps every reduce prompt well within the token limit.
-    """
-    if len(results) <= REDUCE_BATCH_SIZE:
-        raw = _run_inference(
-            _build_reduce_prompt(results), MAX_NEW_TOKENS_REDUCE, label="reduce"
-        )
-        return extract_json_fn(raw)
-
-    logger.info(
-        f"[_batched_reduce] {len(results)} results → "
-        f"batching into groups of {REDUCE_BATCH_SIZE}"
-    )
-    intermediates = []
-    for i in range(0, len(results), REDUCE_BATCH_SIZE):
-        batch = results[i: i + REDUCE_BATCH_SIZE]
-        lbl   = f"reduce-batch-{i // REDUCE_BATCH_SIZE + 1}"
-        logger.info(f"[_batched_reduce] {lbl}: {len(batch)} results")
-        raw = _run_inference(_build_reduce_prompt(batch), MAX_NEW_TOKENS_REDUCE, label=lbl)
-        intermediates.append(extract_json_fn(raw))
-
-    logger.info(f"[_batched_reduce] Final reduce: {len(intermediates)} intermediates")
-    raw = _run_inference(
-        _build_reduce_prompt(intermediates), MAX_NEW_TOKENS_REDUCE, label="reduce-final"
-    )
-    return extract_json_fn(raw)
-
-
-# ---------------------------------------------------------------------------
-# Core inference
+# Core inference — direct model.generate() with OOM auto-retry
 # ---------------------------------------------------------------------------
 def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label: str = "") -> str:
     """
-    Direct model.generate() with automatic OOM recovery.
-
-    On CUDA OOM, halves the input token count and retries up to 3 times.
-    This ensures partial content is always returned rather than an empty result,
-    even when a chunk is slightly too large for available VRAM.
-
-    OOM retry sequence:
-      Attempt 1: MAX_INPUT_TOKENS (e.g. 4000)
-      Attempt 2: 2000 tokens  (half)
-      Attempt 3: 1000 tokens  (quarter)
-      Attempt 4: 500 tokens   (eighth) — if this fails, raise
+    Run model.generate() on prompt.
+    On CUDA OOM: clear cache, halve input, retry up to 3 times.
+    Token count always measured from actual encoding — no char estimation.
     """
     tag          = f"[{label}] " if label else ""
     model_device = next(_model.parameters()).device
 
-    # Tokenize once to measure length
     encoded     = _tokenizer(prompt, return_tensors="pt", truncation=False)
     token_count = encoded["input_ids"].shape[1]
-    logger.info(f"{tag}_run_inference: {token_count} tokens in, max_new={max_new_tokens}")
+    logger.info(f"{tag}tokens_in={token_count} max_new={max_new_tokens}")
 
-    # Start with the configured limit; shrink on OOM
-    current_max_input = min(token_count, MAX_INPUT_TOKENS)
-    max_oom_retries   = 3
+    current_limit   = min(token_count, MAX_INPUT_TOKENS)
+    max_oom_retries = 3
 
     for attempt in range(max_oom_retries + 1):
-        if token_count > current_max_input:
-            logger.warning(
-                f"{tag}_run_inference: truncating {token_count} → {current_max_input} tokens"
-                + (f" (OOM retry {attempt})" if attempt > 0 else "")
-            )
-            inputs = _tokenizer(
-                prompt,
-                return_tensors="pt",
-                truncation=True,
-                max_length=current_max_input,
-            ).to(model_device)
-            actual_tokens = current_max_input
+        if token_count > current_limit:
+            logger.warning(f"{tag}truncating {token_count}→{current_limit}" + (f" (retry {attempt})" if attempt else ""))
+            inputs        = _tokenizer(prompt, return_tensors="pt", truncation=True, max_length=current_limit).to(model_device)
+            actual_tokens = current_limit
         else:
-            inputs       = {k: v.to(model_device) for k, v in encoded.items()}
+            inputs        = {k: v.to(model_device) for k, v in encoded.items()}
             actual_tokens = token_count
 
-        t_gen = time.perf_counter()
+        t0 = time.perf_counter()
         try:
             with torch.inference_mode():
                 output = _model.generate(
@@ -388,102 +259,109 @@ def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label:
                     eos_token_id=_EOS_TOKEN_IDS,
                     pad_token_id=_tokenizer.eos_token_id,
                 )
-
-            # Success
-            elapsed    = time.perf_counter() - t_gen
+            elapsed    = time.perf_counter() - t0
             new_tokens = output.shape[1] - actual_tokens
-            logger.info(
-                f"{tag}_run_inference: {new_tokens} tokens out in "
-                f"{elapsed:.2f}s ({new_tokens/elapsed:.1f} tok/s)"
-                + (f" [OOM-recovered at {current_max_input} tokens]" if attempt > 0 else "")
-            )
+            logger.info(f"{tag}{new_tokens} tokens_out in {elapsed:.2f}s ({new_tokens/elapsed:.1f} tok/s)" + (" [OOM-recovered]" if attempt else ""))
             del inputs
             return _tokenizer.decode(output[0][actual_tokens:], skip_special_tokens=True)
 
         except torch.cuda.OutOfMemoryError:
             del inputs
             torch.cuda.empty_cache()
-            time.sleep(0.5)  # let CUDA release memory before retry
-
+            time.sleep(0.5)
             if attempt < max_oom_retries:
-                current_max_input = current_max_input // 2
-                logger.warning(
-                    f"{tag}_run_inference: OOM at {actual_tokens} tokens — "
-                    f"retrying with {current_max_input} tokens (attempt {attempt + 2}/{max_oom_retries + 1})"
-                )
+                current_limit = current_limit // 2
+                logger.warning(f"{tag}OOM → retrying with {current_limit} tokens (attempt {attempt+2}/{max_oom_retries+1})")
             else:
-                logger.error(
-                    f"{tag}_run_inference: OOM persists after {max_oom_retries} retries "
-                    f"(final attempt was {actual_tokens} tokens) — giving up"
-                )
-                raise RuntimeError(
-                    f"GPU OOM after {max_oom_retries} retries. "
-                    f"Restart the server to free PaddleOCR-VL memory."
-                )
+                logger.error(f"{tag}OOM after {max_oom_retries} retries — giving up")
+                raise RuntimeError("GPU OOM after retries. Restart server to free memory.")
 
         except Exception as e:
             del inputs
-            logger.exception(f"{tag}_run_inference: generate failed: {e}")
+            logger.exception(f"{tag}generate failed: {e}")
             raise
 
         finally:
             if model_device.type == "cuda":
-                free_after = (
-                    torch.cuda.get_device_properties(model_device).total_memory
-                    - torch.cuda.memory_allocated(model_device)
-                ) / 1024 ** 3
-                if free_after < 2.0:
+                free = (torch.cuda.get_device_properties(model_device).total_memory - torch.cuda.memory_allocated(model_device)) / 1024**3
+                if free < 2.0:
                     torch.cuda.empty_cache()
 
-    # Should never reach here
-    raise RuntimeError("_run_inference: exhausted all attempts")
+    raise RuntimeError("_run_inference: all attempts exhausted")
 
 
 # ---------------------------------------------------------------------------
-# Map-reduce pipeline
+# Batched reduce — filters empty results before batching
 # ---------------------------------------------------------------------------
-async def generate_analysis(chunks: list[Document]) -> dict:
+def _batched_reduce(results: list[dict], extract_json_fn) -> dict:
     """
-    Map-reduce inference pipeline.
-    MAP:    one inference call per chunk (serialised — GPU handles one at a time)
-    REDUCE: batched synthesis of all map results into one final JSON
+    Filter out empty map results (they add noise and waste tokens),
+    then reduce in batches of REDUCE_BATCH_SIZE.
     """
-    from s_main import extract_json  # avoid circular import
-
-    logger.info(f"[generate_analysis] {len(chunks)} chunk(s)")
-
-    if not chunks:
+    valid   = [r for r in results if r.get("overview") or r.get("highlights")]
+    skipped = len(results) - len(valid)
+    if skipped:
+        logger.info(f"[_batched_reduce] Filtered {skipped} empty result(s)")
+    if not valid:
+        logger.warning("[_batched_reduce] All map results empty — returning empty")
         return {"overview": "", "summary": "", "highlights": []}
 
-    if len(chunks) > MAX_CHUNKS:
-        logger.warning(
-            f"[generate_analysis] {len(chunks)} chunks > expected {MAX_CHUNKS} — "
-            "processing all (no truncation)"
-        )
+    if len(valid) <= REDUCE_BATCH_SIZE:
+        return extract_json_fn(_run_inference(_build_reduce_prompt(valid), MAX_NEW_TOKENS_REDUCE, "reduce"))
+
+    logger.info(f"[_batched_reduce] {len(valid)} results → batches of {REDUCE_BATCH_SIZE}")
+    intermediates = []
+    for i in range(0, len(valid), REDUCE_BATCH_SIZE):
+        batch = valid[i: i + REDUCE_BATCH_SIZE]
+        lbl   = f"reduce-batch-{i // REDUCE_BATCH_SIZE + 1}"
+        logger.info(f"[_batched_reduce] {lbl}: {len(batch)} results")
+        raw = _run_inference(_build_reduce_prompt(batch), MAX_NEW_TOKENS_REDUCE, lbl)
+        intermediates.append(extract_json_fn(raw))
+
+    logger.info(f"[_batched_reduce] final reduce: {len(intermediates)} intermediates")
+    return extract_json_fn(_run_inference(_build_reduce_prompt(intermediates), MAX_NEW_TOKENS_REDUCE, "reduce-final"))
+
+
+# ---------------------------------------------------------------------------
+# Public API — called from main.py
+# ---------------------------------------------------------------------------
+async def generate_analysis(merged_text: str) -> dict:
+    """
+    Full map-reduce pipeline.
+
+    Accepts the merged document text string (all pages concatenated).
+    Splits it into token-accurate chunks internally using split_by_tokens()
+    so chunks are always exactly TOKEN_CHUNK_SIZE tokens — no truncation ever.
+
+    main.py calls this as:
+        merged_text = "\\n\\n".join(p.page_content for p in pages)
+        result = await generate_analysis(merged_text)
+    """
+    from s_main import extract_json
+
+    if not merged_text or not merged_text.strip():
+        return {"overview": "", "summary": "", "highlights": []}
+
+    # Token-accurate split — eliminates all truncation
+    t0     = time.perf_counter()
+    chunks = split_by_tokens(merged_text)
+    logger.info(f"[generate_analysis] {len(chunks)} token-accurate chunk(s) in {time.perf_counter()-t0:.3f}s")
 
     loop       = asyncio.get_event_loop()
     t_pipeline = time.perf_counter()
+    map_results = []
 
     # ── MAP ──────────────────────────────────────────────────────────────
     logger.info(f"[generate_analysis] MAP: {len(chunks)} chunk(s)")
-    map_results = []
-
-    for i, chunk in enumerate(chunks):
+    for i, chunk_text in enumerate(chunks):
         lbl = f"map {i+1}/{len(chunks)}"
-        logger.info(
-            f"[generate_analysis] [{lbl}] "
-            f"page={chunk.metadata.get('page','?')}, "
-            f"chars={len(chunk.page_content)}"
-        )
+        logger.info(f"[generate_analysis] [{lbl}] chars={len(chunk_text):,}")
         t_chunk = time.perf_counter()
         try:
-            prompt = _build_map_prompt(chunk.page_content)
-            raw    = await loop.run_in_executor(
-                None,
-                lambda p=prompt, l=lbl: _run_inference(p, MAX_NEW_TOKENS_MAP, l)
-            )
+            prompt = _build_map_prompt(chunk_text)
+            raw    = await loop.run_in_executor(None, lambda p=prompt, l=lbl: _run_inference(p, MAX_NEW_TOKENS_MAP, l))
         except Exception as e:
-            logger.error(f"[generate_analysis] [{lbl}] failed: {e} — empty result")
+            logger.error(f"[generate_analysis] [{lbl}] failed: {e} — inserting empty")
             map_results.append({"overview": "", "summary": "", "highlights": []})
             continue
 
@@ -492,41 +370,28 @@ async def generate_analysis(chunks: list[Document]) -> dict:
         logger.info(
             f"[generate_analysis] [{lbl}] done ({time.perf_counter()-t_chunk:.2f}s) "
             f"overview={'yes' if parsed.get('overview') else 'empty'} "
-            f"highlights={len(parsed.get('highlights',[]))}"
+            f"highlights={len(parsed.get('highlights', []))}"
         )
 
-    logger.info(f"[generate_analysis] MAP complete — {len(map_results)} result(s)")
+    valid_count = sum(1 for r in map_results if r.get("overview") or r.get("highlights"))
+    logger.info(f"[generate_analysis] MAP complete — {len(map_results)} total, {valid_count} with content")
 
     # ── REDUCE ───────────────────────────────────────────────────────────
     if len(map_results) == 1:
-        logger.info("[generate_analysis] Single chunk — skipping reduce")
         result = map_results[0]
     else:
-        logger.info(
-            f"[generate_analysis] REDUCE: {len(map_results)} results, "
-            f"batch_size={REDUCE_BATCH_SIZE}"
-        )
+        logger.info(f"[generate_analysis] REDUCE: {len(map_results)} results, batch_size={REDUCE_BATCH_SIZE}")
         t_reduce = time.perf_counter()
         try:
-            result = await loop.run_in_executor(
-                None,
-                lambda: _batched_reduce(map_results, extract_json)
-            )
-            logger.info(
-                f"[generate_analysis] REDUCE done ({time.perf_counter()-t_reduce:.2f}s)"
-            )
+            result = await loop.run_in_executor(None, lambda: _batched_reduce(map_results, extract_json))
+            logger.info(f"[generate_analysis] REDUCE done ({time.perf_counter()-t_reduce:.2f}s)")
         except Exception as e:
-            logger.error(f"[generate_analysis] Reduce failed: {e} — merging directly")
+            logger.error(f"[generate_analysis] REDUCE failed: {e} — direct merge fallback")
             result = {
                 "overview":   next((r["overview"] for r in map_results if r.get("overview")), ""),
                 "summary":    next((r["summary"]  for r in map_results if r.get("summary")),  ""),
-                "highlights": list({
-                    h for r in map_results for h in r.get("highlights", []) if h
-                })[:6],
+                "highlights": list({h for r in map_results for h in r.get("highlights", []) if h})[:6],
             }
 
-    logger.info(
-        f"[generate_analysis] done — total={time.perf_counter()-t_pipeline:.2f}s "
-        f"highlights={len(result.get('highlights',[]))}"
-    )
+    logger.info(f"[generate_analysis] total={time.perf_counter()-t_pipeline:.2f}s highlights={len(result.get('highlights', []))}")
     return result
