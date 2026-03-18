@@ -115,5 +115,5 @@ async def summarize_pdf(file: UploadFile = File(...)):
 
     return final_output
 
-            os.remove(file_path)
+    
 
