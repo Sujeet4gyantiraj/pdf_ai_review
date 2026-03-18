@@ -6,21 +6,27 @@ from paddleocr import PaddleOCR
 
 logger = logging.getLogger(__name__)
 
-# -------- PaddleOCR GPU --------
+# ---------------- SET DEVICE ----------------
+if paddle.is_compiled_with_cuda():
+    paddle.set_device("gpu")
+    logger.info("PaddleOCR running on GPU")
+else:
+    paddle.set_device("cpu")
+    logger.warning("PaddleOCR running on CPU")
+
+# ---------------- INIT OCR ----------------
 ocr = PaddleOCR(
     use_angle_cls=True,
-    use_gpu=True,
     show_log=False
 )
 
-BATCH_SIZE = 4  # Adjust based on GPU VRAM
+BATCH_SIZE = 4  # Adjust for GPU VRAM
 
 
 def extract_text_from_pdf(file_path):
 
-    full_text = ""
-
     doc = fitz.open(file_path)
+    full_text = ""
 
     # -------- Native Extraction --------
     for page_num in range(len(doc)):
@@ -79,7 +85,7 @@ def run_ocr_batch(images):
 
         text_output += "\n"
 
-    if paddle.device.is_compiled_with_cuda():
+    if paddle.is_compiled_with_cuda():
         paddle.device.cuda.empty_cache()
 
     return text_output
