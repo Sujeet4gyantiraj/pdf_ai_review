@@ -18,21 +18,31 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
 
-# MAX_CHUNKS controls how many map inference calls run.
-# Each call takes ~40s. At 7.5 tok/s with 8-bit:
-#   10 chunks × 40s = ~7 min total inference
-#   Keep low for fast responses, raise for more document coverage.
-MAX_CHUNKS = 10
+# ---------------------------------------------------------------------------
+# Sizing strategy for your server (39 GB GPU, ~8 GB used by PaddleOCR):
+#
+# Finance Bill 2026: 232 pages, ~440K chars total
+#
+# CHUNK_SIZE=40000  → 440K ÷ 40000 = ~11 chunks  (full doc coverage)
+# MAX_CHUNKS=12     → covers all 11 chunks + buffer
+# MAX_INPUT_TOKENS  → 40000 chars ÷ 3.5 chars/token ≈ 11400 tokens
+#                     prompt template ≈ 400 tokens → need ~11800 total
+#                     Mistral context = 32768 tokens (v0.2) → fits easily
+#
+# At 7.7 tok/s with 8-bit:
+#   Map:    11 chunks × ~500 tokens output × (1/7.7) ≈ 11 × 65s = ~12 min
+#   Reduce: 2 batches + 1 final × ~60s = ~3 min
+#   Total:  ~15 min for the full 232-page document
+# ---------------------------------------------------------------------------
+CHUNK_SIZE    = 40000   # large chunks → few calls → full doc coverage
+MAX_CHUNKS    = 12      # 11 chunks for 232 pages + 1 buffer
+MAX_INPUT_TOKENS      = 14000  # 40000 chars ÷ 3.5 + 400 prompt tokens
+MAX_NEW_TOKENS_MAP    = 600    # enough for clean JSON with all fields
+MAX_NEW_TOKENS_REDUCE = 700    # slightly more room for synthesis
 
-# Token budgets
-MAX_INPUT_TOKENS      = 6500   # safe ceiling for 8-bit Mistral (context=8192)
-MAX_NEW_TOKENS_MAP    = 400    # tighter — only need overview+summary+highlights
-MAX_NEW_TOKENS_REDUCE = 600
-
-# How many map results to feed into one reduce call.
-# 30 map results × ~200 chars each ≈ 6000 chars → too many tokens.
-# Batch into groups of 5 → each intermediate reduce stays under token limit.
-REDUCE_BATCH_SIZE = 5
+# Reduce batch size — feed N map results per reduce call
+# 12 results ÷ 6 per batch = 2 batches → 1 final = 3 reduce calls total
+REDUCE_BATCH_SIZE = 6
 
 # Speed: set before any CUDA allocation
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
@@ -82,27 +92,59 @@ def _load_model():
         f"(other processes: {total_vram - free_vram:.1f} GB)"
     )
 
-    # ── Speed optimisation 1: Flash Attention 2 ──────────────────────────
-    # FA2 replaces the standard O(n²) attention kernel with a tiled SRAM
-    # kernel that is 2-4x faster and uses 5-10x less memory for long sequences.
-    # Requires: pip install flash-attn --no-build-isolation
-    # Falls back silently if not installed.
-    attn_impl = "eager"   # default fallback
+    # ── Attention implementation ──────────────────────────────────────────
+    attn_impl = "eager"
     try:
         import flash_attn  # noqa: F401
         attn_impl = "flash_attention_2"
-        logger.info("[ai_model] Flash Attention 2 available — will use FA2 kernel")
+        logger.info("[ai_model] Flash Attention 2 available — using FA2 kernel")
     except ImportError:
         logger.info(
             "[ai_model] flash-attn not installed — using standard attention. "
-            "Install for 2-4x speedup: pip install flash-attn --no-build-isolation"
+            "Install for 2-4x inference speedup: pip install flash-attn --no-build-isolation"
         )
 
-    common_kwargs = dict(
-        attn_implementation=attn_impl,
-    )
+    common_kwargs = dict(attn_implementation=attn_impl)
 
-    if DEVICE == "cuda" and free_vram >= 14.0:
+    # ── Loading strategy ──────────────────────────────────────────────────
+    # Why we use total VRAM (not free VRAM) to decide the loading strategy:
+    #
+    # PaddleOCR-VL is loaded at import time and holds ~22 GB of the 39 GB GPU.
+    # That makes free_vram appear to be only ~8 GB, which would trigger 8-bit
+    # loading — but 8-bit is 2-3x SLOWER than float16 due to dequantization
+    # overhead on every matrix multiply.
+    #
+    # Key insight: PaddleOCR and the LLM never run at the same time.
+    # PaddleOCR finishes all OCR pages during extraction (Step 3), then the
+    # LLM runs during inference (Step 5). They share the GPU sequentially,
+    # not concurrently.
+    #
+    # Therefore: use total VRAM to decide dtype.
+    # If total >= 39 GB (your server) → float16 is safe even with PaddleOCR loaded
+    # because inference never overlaps with OCR.
+    # The ~22 GB PaddleOCR uses is irrelevant during LLM forward passes.
+    #
+    # float16 speed vs 8-bit on your GPU:
+    #   8-bit  : ~7-8 tok/s   (dequant overhead on every matmul)
+    #   float16: ~18-25 tok/s (native tensor cores, no dequant)
+    # That alone cuts inference time by 2-3x.
+
+    if DEVICE == "cuda" and total_vram >= 35.0:
+        # Large GPU (A100 40GB, A100 80GB, H100, etc.)
+        # Load float16 unconditionally — fast, full precision
+        logger.info(
+            f"[ai_model] Large GPU detected ({total_vram:.1f} GB total) — "
+            "loading float16 on cuda:0 for maximum speed"
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME,
+            torch_dtype=torch.float16,
+            device_map={"": 0},
+            **common_kwargs,
+        )
+
+    elif DEVICE == "cuda" and free_vram >= 14.0:
+        # Enough free VRAM right now for float16
         logger.info(f"[ai_model] {free_vram:.1f} GB free ≥ 14 GB — loading float16 on cuda:0")
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
@@ -147,10 +189,9 @@ def _load_model():
                 **common_kwargs,
             )
         except ImportError:
-            logger.error("[ai_model] bitsandbytes not installed — cannot load in 4-bit")
+            logger.error("[ai_model] bitsandbytes not installed — cannot load 4-bit")
             raise RuntimeError(
-                f"Only {free_vram:.1f} GB VRAM free — install bitsandbytes: "
-                "pip install bitsandbytes"
+                f"Only {free_vram:.1f} GB free — install: pip install bitsandbytes"
             )
 
     else:
@@ -160,6 +201,8 @@ def _load_model():
             torch_dtype=torch.float32,
             device_map="cpu",
         )
+
+   
 
     meta_params = [n for n, p in model.named_parameters() if p.device.type == "meta"]
     if meta_params:
@@ -376,7 +419,7 @@ def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label:
     # truncation only if needed — avoids double tokenization in the common case.
     encoded     = _tokenizer(prompt, return_tensors="pt", truncation=False)
     token_count = encoded["input_ids"].shape[1]
-    logger.debug(f"{tag}_run_inference: {token_count} input tokens")
+    logger.info(f"{tag}_run_inference: {token_count} input tokens, max_new={max_new_tokens}")
 
     if token_count > MAX_INPUT_TOKENS:
         logger.warning(
@@ -458,7 +501,7 @@ async def generate_analysis(chunks: list[Document]) -> dict:
     REDUCE — one final inference call synthesizes all map outputs.
              Skipped entirely for single-chunk PDFs.
     """
-    from s_main import extract_json  # avoid circular import
+    from main import extract_json  # avoid circular import
 
     logger.info(f"[generate_analysis] Called with {len(chunks)} chunk(s)")
 
@@ -468,10 +511,11 @@ async def generate_analysis(chunks: list[Document]) -> dict:
 
     if len(chunks) > MAX_CHUNKS:
         logger.warning(
-            f"[generate_analysis] {len(chunks)} chunks > MAX_CHUNKS={MAX_CHUNKS} — truncating. "
-            "Raise MAX_CHUNKS or lower CHUNK_SIZE to cover more content."
+            f"[generate_analysis] {len(chunks)} chunks exceeds expected MAX_CHUNKS={MAX_CHUNKS}. "
+            f"Processing ALL {len(chunks)} chunks — this may take longer than usual. "
+            f"Consider raising MAX_CHUNKS or CHUNK_SIZE if this happens regularly."
         )
-        chunks = chunks[:MAX_CHUNKS]
+        # Do NOT truncate — process every chunk so no content is silently dropped
 
     loop       = asyncio.get_event_loop()
     t_pipeline = time.perf_counter()
@@ -940,7 +984,7 @@ async def generate_analysis(chunks: list[Document]) -> dict:
 
     Returns a parsed dict {overview, summary, highlights}.
     """
-    from s_main import extract_json  # avoid circular import
+    from main import extract_json  # avoid circular import
 
     logger.info(f"[generate_analysis] Called with {len(chunks)} chunk(s)")
 

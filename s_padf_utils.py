@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 # Safe values given ~17 GB VRAM free after PaddleOCR-VL loads:
 #   CHUNK_SIZE=12000 → ~4000 tokens per chunk, well inside Mistral's 8192 limit
 # ---------------------------------------------------------------------------
-CHUNK_SIZE    = 8000   # ~2500 tokens — fits well in Mistral's context with prompt overhead
-CHUNK_OVERLAP = 200    # small overlap is enough between merged page chunks
+CHUNK_SIZE    = 40000  # ~11K tokens per chunk — covers ~20 pages each
+CHUNK_OVERLAP = 200    # small overlap is enough at this chunk size
 
 # Pre-compile regex patterns once at import time — not on every clean_text call
 _RE_HYPHEN    = re.compile(r"-\n")
@@ -298,7 +298,10 @@ def split_documents(pages: list[Document]) -> list[Document]:
         f"[pdf_utils] split_documents: {len(chunks)} chunk(s) in "
         f"{time.perf_counter() - t_split:.3f}s (avg {avg:.0f} chars/chunk)"
     )
-
+    logger.info(
+        f"[pdf_utils] Coverage: ALL {len(pages)} pages will be analysed "
+        f"across {len(chunks)} inference call(s)"
+    )
     return chunks
 
 
