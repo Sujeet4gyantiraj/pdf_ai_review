@@ -1,4 +1,5 @@
 import asyncio
+import os
 import time
 import torch
 import logging
@@ -8,15 +9,465 @@ from langchain.schema import Document
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Model config — tune MAX_CHUNKS / CHUNK_SIZE to your GPU VRAM:
-#   24 GB → MAX_CHUNKS=20  |  16 GB → MAX_CHUNKS=12  |  8 GB → MAX_CHUNKS=6
+# Model config
+# Tune MAX_CHUNKS to how many inference calls you want per request.
+# Tune CHUNK_SIZE in pdf_utils.py to control tokens per call.
+#   39 GB total / ~8 GB used by PaddleOCR → ~31 GB free
+#   Mistral-7B float16 = ~14 GB → ~17 GB left for KV cache and activations
+#   Safe to run MAX_CHUNKS=30 with CHUNK_SIZE=12000
 # ---------------------------------------------------------------------------
 MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
-MAX_CHUNKS = 12
-DEVICE     = "cuda" if torch.cuda.is_available() else "cpu"
+MAX_CHUNKS = 30                          # raised — more coverage per request
+MAX_INPUT_TOKENS = 7000                  # raised — Mistral context is 8192
+MAX_NEW_TOKENS_MAP    = 600
+MAX_NEW_TOKENS_REDUCE = 800
+
+# Speed: set before any CUDA allocation
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 torch.backends.cudnn.benchmark        = True
 torch.backends.cuda.matmul.allow_tf32 = True
+
+# ---------------------------------------------------------------------------
+# Load model once at import time
+# ---------------------------------------------------------------------------
+logger.info(f"[ai_model] Loading tokenizer: {MODEL_NAME}")
+t0         = time.perf_counter()
+_tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, use_fast=True)
+
+# Left-padding is required for batched generation with decoder-only models.
+# For single-sequence inference it has no effect but sets us up for future batching.
+_tokenizer.padding_side = "left"
+if _tokenizer.pad_token is None:
+    _tokenizer.pad_token = _tokenizer.eos_token
+
+logger.info(f"[ai_model] Tokenizer loaded ({time.perf_counter() - t0:.2f}s)")
+
+
+def _vram_free_gb() -> float:
+    if not torch.cuda.is_available():
+        return 0.0
+    props     = torch.cuda.get_device_properties(0)
+    allocated = torch.cuda.memory_allocated(0)
+    reserved  = torch.cuda.memory_reserved(0)
+    return (props.total_memory - reserved - allocated) / 1024 ** 3
+
+
+def _vram_total_gb() -> float:
+    if not torch.cuda.is_available():
+        return 0.0
+    return torch.cuda.get_device_properties(0).total_memory / 1024 ** 3
+
+
+def _load_model():
+    total_vram = _vram_total_gb()
+    free_vram  = _vram_free_gb()
+    logger.info(
+        f"[ai_model] VRAM — total: {total_vram:.1f} GB, "
+        f"free: {free_vram:.1f} GB "
+        f"(other processes: {total_vram - free_vram:.1f} GB)"
+    )
+
+    # ── Speed optimisation 1: Flash Attention 2 ──────────────────────────
+    # FA2 replaces the standard O(n²) attention kernel with a tiled SRAM
+    # kernel that is 2-4x faster and uses 5-10x less memory for long sequences.
+    # Requires: pip install flash-attn --no-build-isolation
+    # Falls back silently if not installed.
+    attn_impl = "eager"   # default fallback
+    try:
+        import flash_attn  # noqa: F401
+        attn_impl = "flash_attention_2"
+        logger.info("[ai_model] Flash Attention 2 available — will use FA2 kernel")
+    except ImportError:
+        logger.info(
+            "[ai_model] flash-attn not installed — using standard attention. "
+            "Install for 2-4x speedup: pip install flash-attn --no-build-isolation"
+        )
+
+    common_kwargs = dict(
+        attn_implementation=attn_impl,
+    )
+
+    if DEVICE == "cuda" and free_vram >= 14.0:
+        logger.info(f"[ai_model] {free_vram:.1f} GB free ≥ 14 GB — loading float16 on cuda:0")
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME,
+            torch_dtype=torch.float16,
+            device_map={"": 0},
+            **common_kwargs,
+        )
+
+    elif DEVICE == "cuda" and free_vram >= 7.0:
+        logger.info(f"[ai_model] {free_vram:.1f} GB free — loading 8-bit via bitsandbytes")
+        try:
+            from transformers import BitsAndBytesConfig
+            bnb_cfg = BitsAndBytesConfig(load_in_8bit=True)
+            model = AutoModelForCausalLM.from_pretrained(
+                MODEL_NAME,
+                quantization_config=bnb_cfg,
+                device_map={"": 0},
+                **common_kwargs,
+            )
+        except ImportError:
+            logger.warning("[ai_model] bitsandbytes not installed — trying float16")
+            model = AutoModelForCausalLM.from_pretrained(
+                MODEL_NAME,
+                torch_dtype=torch.float16,
+                device_map={"": 0},
+                **common_kwargs,
+            )
+
+    elif DEVICE == "cuda" and free_vram >= 4.0:
+        logger.info(f"[ai_model] {free_vram:.1f} GB free — loading 4-bit via bitsandbytes")
+        try:
+            from transformers import BitsAndBytesConfig
+            bnb_cfg = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_use_double_quant=True,
+            )
+            model = AutoModelForCausalLM.from_pretrained(
+                MODEL_NAME,
+                quantization_config=bnb_cfg,
+                device_map={"": 0},
+                **common_kwargs,
+            )
+        except ImportError:
+            logger.error("[ai_model] bitsandbytes not installed — cannot load in 4-bit")
+            raise RuntimeError(
+                f"Only {free_vram:.1f} GB VRAM free — install bitsandbytes: "
+                "pip install bitsandbytes"
+            )
+
+    else:
+        logger.warning(f"[ai_model] Only {free_vram:.1f} GB free — falling back to CPU float32")
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME,
+            torch_dtype=torch.float32,
+            device_map="cpu",
+        )
+
+    meta_params = [n for n, p in model.named_parameters() if p.device.type == "meta"]
+    if meta_params:
+        logger.error(f"[ai_model] {len(meta_params)} param(s) on meta — first: {meta_params[:3]}")
+    else:
+        logger.info("[ai_model] All parameters on real devices (no meta offloading)")
+
+    model.eval()
+    return model
+
+
+logger.info(f"[ai_model] Loading model (device='{DEVICE}') ...")
+t0     = time.perf_counter()
+_model = _load_model()
+logger.info(f"[ai_model] Model ready ({time.perf_counter() - t0:.2f}s)")
+
+if DEVICE == "cuda":
+    allocated = torch.cuda.memory_allocated() / 1024 ** 3
+    reserved  = torch.cuda.memory_reserved()  / 1024 ** 3
+    logger.info(
+        f"[ai_model] GPU memory after load — "
+        f"allocated: {allocated:.2f} GB, reserved: {reserved:.2f} GB"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Prompt builders
+# ---------------------------------------------------------------------------
+
+def _build_map_prompt(text: str) -> str:
+    """Map prompt — applied to every individual chunk."""
+    return f"""<s>[INST]
+You are an expert document analyst with deep knowledge across medical,
+financial, technical, academic, and business domains.
+
+Your task is to read any type of document and produce a structured JSON briefing
+that is accurate, professional, and immediately useful to the reader.
+
+EXAMPLE OUTPUT (follow this structure exactly):
+{{
+  "overview": "This is a [document type] about [main subject], intended for [audience/purpose].",
+  "summary": "4-6 sentence executive summary covering the document purpose, key content,
+               important findings or obligations, and conclusions or outcomes.",
+  "highlights": [
+    "Specific important fact, figure, date, obligation, finding, or condition from the document.",
+    "Specific important fact, figure, date, obligation, finding, or condition from the document.",
+    "Specific important fact, figure, date, obligation, finding, or condition from the document.",
+    "Specific important fact, figure, date, obligation, finding, or condition from the document."
+  ]
+}}
+
+FIELD RULES:
+
+"overview" — 1-2 sentences only.
+  - Identify what TYPE of document this is.
+    Examples: research paper, medical report, user manual, financial statement,
+    privacy policy, invoice, academic thesis, insurance policy, government notice,
+    product specification, meeting minutes.
+  - State the subject, purpose, and intended audience or parties.
+
+"summary" — 4-6 sentences in professional, neutral tone.
+  - For MEDICAL/HEALTH: cover diagnosis, findings, recommendations, medications, follow-up.
+  - For FINANCIAL: cover revenue, expenses, profit/loss, forecasts, risks.
+  - For TECHNICAL/MANUAL: cover product purpose, key features, requirements, warnings.
+  - For RESEARCH/ACADEMIC: cover objective, methodology, key findings, conclusions.
+  - For REPORTS/BUSINESS: cover context, analysis, recommendations, outcomes.
+  - If document type is unclear, summarize the most important information a reader needs.
+
+"highlights" — 4 to 6 items.
+  - Each must be ONE complete, specific, factual sentence.
+  - Always include real values: numbers, dates, names, percentages, durations,
+    prices, dosages, deadlines, versions, or scores.
+  - Do NOT write vague statements.
+  - Do NOT write opinions — only facts extracted directly from the document.
+  - Prioritize: critical risks, key figures, deadlines, warnings, or outcomes.
+
+STRICT OUTPUT RULES:
+  - Output ONLY the JSON object.
+  - Do NOT add any explanation, greeting, or commentary.
+  - Do NOT use markdown, code blocks, or backticks.
+  - Do NOT repeat these instructions.
+  - All string values must be properly escaped.
+  - If a section has insufficient information, write "Not enough information available."
+
+Document:
+----------------
+{text}
+----------------
+[/INST]
+"""
+
+
+def _build_reduce_prompt(partial_results: list[dict]) -> str:
+    """Reduce prompt — synthesizes all map results into one final output."""
+    parts = []
+    for i, r in enumerate(partial_results, 1):
+        overview   = r.get("overview", "")
+        summary    = r.get("summary",  "")
+        highlights = "\n".join(f"  - {h}" for h in r.get("highlights", []))
+        parts.append(
+            f"[Part {i}]\n"
+            f"Overview: {overview}\n"
+            f"Summary: {summary}\n"
+            f"Highlights:\n{highlights}"
+        )
+
+    return f"""<s>[INST]
+You are an expert document analyst. Synthesize these partial analyses of different
+sections of the same document into one single coherent JSON briefing.
+
+Partial analyses:
+----------------
+{chr(10).join(parts)}
+----------------
+
+Produce a final unified JSON:
+{{
+  "overview": "1-2 sentence description of the entire document and its purpose.",
+  "summary": "4-6 sentence coherent executive summary — one flowing paragraph, not a list.",
+  "highlights": [
+    "Most important specific fact from the entire document.",
+    "Second most important specific fact.",
+    "Third most important specific fact.",
+    "Fourth most important specific fact.",
+    "Fifth most important specific fact."
+  ]
+}}
+
+STRICT OUTPUT RULES:
+  - Output ONLY the JSON object.
+  - Do NOT mention Part 1, Part 2, or chunk numbers.
+  - Do NOT add explanation, greeting, or commentary.
+  - Do NOT use markdown, code blocks, or backticks.
+  - All string values must be properly escaped.
+[/INST]
+"""
+
+
+# ---------------------------------------------------------------------------
+# Core inference — direct model.generate()
+# ---------------------------------------------------------------------------
+
+def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label: str = "") -> str:
+    """
+    Synchronous direct inference — always called via run_in_executor.
+
+    Speed optimisations applied here:
+    - torch.inference_mode()  : disables gradient tracking (~10% faster, less memory)
+    - use_cache=True          : KV-cache reuse across decoding steps (default but explicit)
+    - model device resolved once from parameters (avoids repeated meta-device bug)
+    - empty_cache() only when needed (not on every call unconditionally)
+    """
+    tag          = f"[{label}] " if label else ""
+    model_device = next(_model.parameters()).device
+    logger.debug(f"{tag}_run_inference: device={model_device}")
+
+    # ── Speed optimisation 2: count tokens once, reuse encoding ──────────
+    # Tokenize once without truncation to measure length, then again with
+    # truncation only if needed — avoids double tokenization in the common case.
+    encoded     = _tokenizer(prompt, return_tensors="pt", truncation=False)
+    token_count = encoded["input_ids"].shape[1]
+    logger.debug(f"{tag}_run_inference: {token_count} input tokens")
+
+    if token_count > MAX_INPUT_TOKENS:
+        logger.warning(
+            f"{tag}_run_inference: {token_count} tokens > {MAX_INPUT_TOKENS} — truncating. "
+            "Lower CHUNK_SIZE in pdf_utils.py to avoid this."
+        )
+        inputs = _tokenizer(
+            prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=MAX_INPUT_TOKENS,
+        ).to(model_device)
+    else:
+        # Reuse the already-encoded tensor — move to device directly
+        inputs = {k: v.to(model_device) for k, v in encoded.items()}
+
+    if model_device.type == "cuda":
+        free_gb = (
+            torch.cuda.get_device_properties(model_device).total_memory
+            - torch.cuda.memory_allocated(model_device)
+        ) / 1024 ** 3
+        logger.debug(f"{tag}_run_inference: GPU free before generate: {free_gb:.2f} GB")
+
+    t_gen = time.perf_counter()
+    try:
+        # ── Speed optimisation 3: inference_mode + use_cache ─────────────
+        with torch.inference_mode():
+            output = _model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                repetition_penalty=1.15,
+                use_cache=True,             # explicit KV-cache reuse
+                pad_token_id=_tokenizer.eos_token_id,
+            )
+    except torch.cuda.OutOfMemoryError:
+        torch.cuda.empty_cache()
+        logger.error(f"{tag}_run_inference: CUDA OOM — lower MAX_CHUNKS or CHUNK_SIZE")
+        raise RuntimeError("GPU out of memory — lower MAX_CHUNKS or CHUNK_SIZE and retry.")
+    except Exception as e:
+        logger.exception(f"{tag}_run_inference: model.generate() failed: {e}")
+        raise
+    finally:
+        del inputs
+        # ── Speed optimisation 4: skip empty_cache unless actually low ───
+        # empty_cache() is slow (~50ms). Only call it when free VRAM < 2 GB.
+        if model_device.type == "cuda":
+            free_after = (
+                torch.cuda.get_device_properties(model_device).total_memory
+                - torch.cuda.memory_allocated(model_device)
+            ) / 1024 ** 3
+            if free_after < 2.0:
+                torch.cuda.empty_cache()
+                logger.debug(f"{tag}_run_inference: cache cleared (low VRAM: {free_after:.2f} GB)")
+
+    elapsed    = time.perf_counter() - t_gen
+    new_tokens = output.shape[1] - token_count
+    logger.info(
+        f"{tag}_run_inference: {new_tokens} tokens in {elapsed:.2f}s "
+        f"({new_tokens / elapsed:.1f} tok/s)"
+    )
+
+    return _tokenizer.decode(output[0][token_count:], skip_special_tokens=True)
+
+
+# ---------------------------------------------------------------------------
+# Map-reduce pipeline
+# ---------------------------------------------------------------------------
+
+async def generate_analysis(chunks: list[Document]) -> dict:
+    """
+    Map-reduce pipeline with all speed optimisations:
+
+    MAP  — each chunk is sent to _run_inference via run_in_executor so the
+           async event loop stays free. The GPU runs one forward pass at a
+           time (serialised by the GIL + CUDA stream), so there's no benefit
+           to firing multiple executor tasks concurrently — they'd queue anyway.
+
+    REDUCE — one final inference call synthesizes all map outputs.
+             Skipped entirely for single-chunk PDFs.
+    """
+    from s_main import extract_json  # avoid circular import
+
+    logger.info(f"[generate_analysis] Called with {len(chunks)} chunk(s)")
+
+    if not chunks:
+        logger.warning("[generate_analysis] No chunks — returning empty result")
+        return {"overview": "", "summary": "", "highlights": []}
+
+    if len(chunks) > MAX_CHUNKS:
+        logger.warning(
+            f"[generate_analysis] {len(chunks)} chunks > MAX_CHUNKS={MAX_CHUNKS} — truncating. "
+            "Raise MAX_CHUNKS or lower CHUNK_SIZE to cover more content."
+        )
+        chunks = chunks[:MAX_CHUNKS]
+
+    loop       = asyncio.get_event_loop()
+    t_pipeline = time.perf_counter()
+
+    # ── MAP phase ─────────────────────────────────────────────────────────
+    logger.info(f"[generate_analysis] ── MAP phase: {len(chunks)} chunk(s) ──")
+    map_results = []
+
+    for i, chunk in enumerate(chunks):
+        lbl      = f"map {i+1}/{len(chunks)}"
+        page_ref = chunk.metadata.get("page", "?")
+        logger.info(f"[generate_analysis] [{lbl}] page={page_ref}, chars={len(chunk.page_content)}")
+
+        t_chunk = time.perf_counter()
+        try:
+            prompt = _build_map_prompt(chunk.page_content)
+            raw    = await loop.run_in_executor(
+                None,
+                lambda p=prompt, l=lbl: _run_inference(p, MAX_NEW_TOKENS_MAP, l)
+            )
+        except Exception as e:
+            logger.error(f"[generate_analysis] [{lbl}] failed: {e} — inserting empty result")
+            map_results.append({"overview": "", "summary": "", "highlights": []})
+            continue
+
+        parsed = extract_json(raw)
+        map_results.append(parsed)
+        logger.info(
+            f"[generate_analysis] [{lbl}] done ({time.perf_counter() - t_chunk:.2f}s) — "
+            f"overview={'yes' if parsed.get('overview') else 'empty'}, "
+            f"highlights={len(parsed.get('highlights', []))}"
+        )
+
+    logger.info(f"[generate_analysis] MAP complete — {len(map_results)} result(s)")
+
+    # ── REDUCE phase ──────────────────────────────────────────────────────
+    if len(map_results) == 1:
+        logger.info("[generate_analysis] Single chunk — skipping reduce")
+        result = map_results[0]
+    else:
+        logger.info(f"[generate_analysis] ── REDUCE: synthesizing {len(map_results)} results ──")
+        t_reduce = time.perf_counter()
+        try:
+            raw_reduced = await loop.run_in_executor(
+                None,
+                lambda: _run_inference(
+                    _build_reduce_prompt(map_results),
+                    MAX_NEW_TOKENS_REDUCE,
+                    "reduce"
+                )
+            )
+            result = extract_json(raw_reduced)
+            logger.info(f"[generate_analysis] REDUCE done ({time.perf_counter() - t_reduce:.2f}s)")
+        except Exception as e:
+            logger.error(f"[generate_analysis] Reduce failed: {e} — using first map result")
+            result = map_results[0]
+
+    logger.info(
+        f"[generate_analysis] Pipeline complete — "
+        f"total: {time.perf_counter() - t_pipeline:.2f}s, "
+        f"highlights: {len(result.get('highlights', []))}"
+    )
+    return result
 
 # ---------------------------------------------------------------------------
 # Load model once at import time
@@ -40,30 +491,62 @@ logger.info(f"[ai_model] Tokenizer loaded ({time.perf_counter() - t0:.2f}s)")
 #   3. CPU fallback → float32, slow but always works.
 # ---------------------------------------------------------------------------
 
-def _vram_gb() -> float:
-    """Return total VRAM in GB for device 0, or 0.0 if no GPU."""
+def _vram_free_gb() -> float:
+    """
+    Return FREE (available) VRAM in GB for device 0.
+    Using free VRAM — not total — is critical when other processes
+    (e.g. PaddleOCR-VL) already hold GPU memory at startup.
+    """
+    if not torch.cuda.is_available():
+        return 0.0
+    props     = torch.cuda.get_device_properties(0)
+    allocated = torch.cuda.memory_allocated(0)
+    reserved  = torch.cuda.memory_reserved(0)
+    # Free = total - already reserved by PyTorch + any other process usage
+    free = props.total_memory - reserved - allocated
+    return free / 1024 ** 3
+
+
+def _vram_total_gb() -> float:
+    """Return total VRAM in GB for device 0."""
     if not torch.cuda.is_available():
         return 0.0
     return torch.cuda.get_device_properties(0).total_memory / 1024 ** 3
 
 
 def _load_model():
-    vram = _vram_gb()
-    logger.info(f"[ai_model] Detected VRAM: {vram:.1f} GB")
+    total_vram = _vram_total_gb()
+    free_vram  = _vram_free_gb()
+    logger.info(
+        f"[ai_model] VRAM — total: {total_vram:.1f} GB, "
+        f"free: {free_vram:.1f} GB "
+        f"(in use by other processes: {total_vram - free_vram:.1f} GB)"
+    )
 
-    # Mistral-7B in float16 needs ~14 GB. Use 8-bit if tighter.
-    if DEVICE == "cuda" and vram >= 14.0:
-        logger.info("[ai_model] Loading in float16 fully on cuda:0 (no offloading)")
+    # Set expandable segments to reduce fragmentation before any allocation
+    import os
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
+    # Decision is based on FREE VRAM, not total.
+    # Mistral-7B float16  ≈ 14 GB
+    # Mistral-7B 8-bit    ≈  7 GB
+    # Mistral-7B 4-bit    ≈  4 GB
+
+    if DEVICE == "cuda" and free_vram >= 14.0:
+        logger.info(
+            f"[ai_model] {free_vram:.1f} GB free ≥ 14 GB — "
+            "loading float16 fully on cuda:0"
+        )
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
             torch_dtype=torch.float16,
-            device_map={"": 0},        # force ALL layers onto cuda:0
+            device_map={"": 0},
         )
 
-    elif DEVICE == "cuda" and vram >= 6.0:
+    elif DEVICE == "cuda" and free_vram >= 7.0:
         logger.info(
-            f"[ai_model] VRAM {vram:.1f} GB < 14 GB — "
-            "loading in 8-bit via bitsandbytes to keep all layers on one device"
+            f"[ai_model] {free_vram:.1f} GB free — "
+            "loading in 8-bit via bitsandbytes (≈7 GB needed)"
         )
         try:
             from transformers import BitsAndBytesConfig
@@ -71,13 +554,12 @@ def _load_model():
             model = AutoModelForCausalLM.from_pretrained(
                 MODEL_NAME,
                 quantization_config=bnb_config,
-                device_map={"": 0},    # all layers on cuda:0
+                device_map={"": 0},
             )
         except ImportError:
             logger.warning(
                 "[ai_model] bitsandbytes not installed — "
-                "falling back to float16 with device_map={'':0}. "
-                "Install with: pip install bitsandbytes"
+                "trying float16 anyway. Install: pip install bitsandbytes"
             )
             model = AutoModelForCausalLM.from_pretrained(
                 MODEL_NAME,
@@ -85,10 +567,37 @@ def _load_model():
                 device_map={"": 0},
             )
 
+    elif DEVICE == "cuda" and free_vram >= 4.0:
+        logger.info(
+            f"[ai_model] {free_vram:.1f} GB free — "
+            "loading in 4-bit via bitsandbytes (≈4 GB needed)"
+        )
+        try:
+            from transformers import BitsAndBytesConfig
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_use_double_quant=True,
+            )
+            model = AutoModelForCausalLM.from_pretrained(
+                MODEL_NAME,
+                quantization_config=bnb_config,
+                device_map={"": 0},
+            )
+        except ImportError:
+            logger.error(
+                "[ai_model] bitsandbytes not installed — cannot load in 4-bit. "
+                "Install: pip install bitsandbytes  then restart."
+            )
+            raise RuntimeError(
+                f"Only {free_vram:.1f} GB VRAM free — install bitsandbytes "
+                "for 4-bit loading: pip install bitsandbytes"
+            )
+
     else:
         logger.warning(
-            f"[ai_model] No usable GPU (VRAM={vram:.1f} GB) — "
-            "loading on CPU in float32. Inference will be slow."
+            f"[ai_model] Only {free_vram:.1f} GB VRAM free — "
+            "falling back to CPU float32. Inference will be very slow."
         )
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
@@ -352,7 +861,7 @@ async def generate_analysis(chunks: list[Document]) -> dict:
 
     Returns a parsed dict {overview, summary, highlights}.
     """
-    from s_main import extract_json  # avoid circular import
+    from main import extract_json  # avoid circular import
 
     logger.info(f"[generate_analysis] Called with {len(chunks)} chunk(s)")
 
