@@ -6,7 +6,7 @@ import re
 import time
 import logging
 import logging.config
-from s_padf_utils import load_pdf, split_documents, get_page_count
+from s_padf_utils import load_pdf, get_page_count
 from s_ai_model import generate_analysis
 
 # ---------------------------------------------------------------------------
@@ -206,7 +206,10 @@ def extract_json(text: str) -> dict:
 # /analyze endpoint
 # ---------------------------------------------------------------------------
 
-MAX_PDF_PAGES = 500   # hard page cap — raise if your GPU can handle larger docs
+# Set to None to accept PDFs of any size.
+# Set to an integer (e.g. 200) to cap how many pages are processed —
+# pages beyond the cap are skipped but the upload is never rejected.
+MAX_PDF_PAGES = None
 
 
 @app.post("/analyze")
@@ -225,11 +228,13 @@ async def analyze_pdf(
     - summary
     - highlights
 
+    Large PDFs (> MAX_PDF_PAGES) are accepted but only the first MAX_PDF_PAGES
+    pages are analysed. The response includes a 'truncated' flag and
+    'pages_analysed' / 'total_pages' fields when truncation occurs.
+
     Uses LangChain RecursiveCharacterTextSplitter for chunking and a
     direct map-reduce inference pipeline for large-PDF coherence.
     """
-    # Unique ID per request — appears in every log line for this request
-    # so you can grep request_id to reconstruct the full trace of one upload
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
 
@@ -241,7 +246,6 @@ async def analyze_pdf(
         logger.warning(f"[{request_id}] Rejected: not a PDF file (filename='{file.filename}')")
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
 
-    # Use a random UUID filename to prevent path traversal attacks
     safe_name = f"{uuid.uuid4()}.pdf"
     file_path = os.path.join(UPLOAD_FOLDER, safe_name)
     logger.debug(f"[{request_id}] Saving upload to '{file_path}'")
@@ -253,24 +257,29 @@ async def analyze_pdf(
             f.write(content)
         logger.info(f"[{request_id}] Step 1/5 — saved upload ({len(content):,} bytes → '{safe_name}')")
 
-        # Step 2 — page count guard
-        page_count = get_page_count(file_path)
-        logger.info(f"[{request_id}] Step 2/5 — page count: {page_count} (limit={MAX_PDF_PAGES})")
-        if page_count > MAX_PDF_PAGES:
+        # Step 2 — page count (no rejection — large PDFs are always accepted)
+        total_pages   = get_page_count(file_path)
+        pages_to_read = total_pages if MAX_PDF_PAGES is None else min(total_pages, MAX_PDF_PAGES)
+        was_truncated = MAX_PDF_PAGES is not None and total_pages > MAX_PDF_PAGES
+
+        logger.info(
+            f"[{request_id}] Step 2/5 — total pages: {total_pages}, "
+            f"will analyse: {pages_to_read} "
+            f"{'(TRUNCATED — large PDF)' if was_truncated else '(all pages)'}"
+        )
+        if was_truncated:
             logger.warning(
-                f"[{request_id}] Rejected: PDF has {page_count} pages, "
-                f"exceeds limit of {MAX_PDF_PAGES}"
-            )
-            raise HTTPException(
-                status_code=413,
-                detail=f"PDF has {page_count} pages. Maximum allowed is {MAX_PDF_PAGES}."
+                f"[{request_id}] PDF has {total_pages} pages which exceeds "
+                f"MAX_PDF_PAGES={MAX_PDF_PAGES}. "
+                f"Only the first {pages_to_read} pages will be analysed. "
+                "Set MAX_PDF_PAGES = None in main.py to process all pages."
             )
 
         # Step 3 — text extraction (native + OCR fallback per page)
-        logger.info(f"[{request_id}] Step 3/5 — extracting text from {page_count} page(s)")
+        logger.info(f"[{request_id}] Step 3/5 — extracting text from {pages_to_read} page(s)")
         try:
             t_extract = time.perf_counter()
-            pages     = load_pdf(file_path)
+            pages     = load_pdf(file_path, max_pages=pages_to_read)
             logger.info(
                 f"[{request_id}] Step 3/5 — extraction complete: "
                 f"{len(pages)} page(s) with text "
@@ -280,30 +289,27 @@ async def analyze_pdf(
             logger.error(f"[{request_id}] Step 3/5 — extraction failed: {e}")
             raise HTTPException(status_code=422, detail=str(e))
 
-        # Step 4 — chunking
-        logger.info(f"[{request_id}] Step 4/5 — splitting pages into chunks")
-        t_chunk = time.perf_counter()
-        chunks  = split_documents(pages)
+        # Step 4 — merge pages into one text string
+        # Chunking is now done inside generate_analysis() using token-accurate
+        # split_by_tokens() — this eliminates truncation caused by char-based estimates
+        logger.info(f"[{request_id}] Step 4/5 — merging {len(pages)} page(s) into text")
+        t_merge     = time.perf_counter()
+        merged_text = "\n\n".join(p.page_content for p in pages)
         logger.info(
-            f"[{request_id}] Step 4/5 — chunking complete: "
-            f"{len(chunks)} chunk(s) from {len(pages)} page(s) "
-            f"({time.perf_counter() - t_chunk:.2f}s)"
+            f"[{request_id}] Step 4/5 — merged: {len(merged_text):,} chars "
+            f"({time.perf_counter() - t_merge:.3f}s)"
         )
 
-        # Step 5 — map-reduce inference
-        logger.info(
-            f"[{request_id}] Step 5/5 — running map-reduce inference "
-            f"({len(chunks)} chunk(s))"
-        )
+        # Step 5 — token-accurate map-reduce inference
+        logger.info(f"[{request_id}] Step 5/5 — running map-reduce inference")
         t_infer      = time.perf_counter()
-        final_output = await generate_analysis(chunks)
+        final_output = await generate_analysis(merged_text)
         logger.info(
             f"[{request_id}] Step 5/5 — inference complete "
             f"({time.perf_counter() - t_infer:.2f}s)"
         )
 
     except HTTPException:
-        # Re-raise FastAPI HTTP errors without wrapping them
         raise
 
     except Exception as e:
@@ -311,7 +317,6 @@ async def analyze_pdf(
         raise HTTPException(status_code=500, detail="Internal server error during PDF analysis.")
 
     finally:
-        # Always clean up the uploaded file from disk
         if os.path.exists(file_path):
             os.remove(file_path)
             logger.debug(f"[{request_id}] Temp file deleted: '{file_path}'")
@@ -321,7 +326,16 @@ async def analyze_pdf(
         f"[{request_id}] ── REQUEST COMPLETE — total time: {elapsed:.2f}s ──────"
     )
 
-    # Return selected section if requested
+    # Attach truncation metadata so the caller knows partial analysis was done
+    if was_truncated:
+        final_output["truncated"]      = True
+        final_output["pages_analysed"] = pages_to_read
+        final_output["total_pages"]    = total_pages
+        logger.info(
+            f"[{request_id}] Response includes truncation metadata "
+            f"(analysed {pages_to_read}/{total_pages} pages)"
+        )
+
     if analysis_type == 1:
         logger.debug(f"[{request_id}] Returning overview only")
         return {"overview": final_output.get("overview", "")}
