@@ -112,58 +112,6 @@ def _page_to_image(page: fitz.Page, dpi: int = 150) -> np.ndarray:
     return img
 
 
-def _paddle_page(page: fitz.Page) -> str:
-    """
-    PaddleOCR-VL (GPU, serial).
-    Retries OCR_RETRY_ATTEMPTS times with increasing DPI before raising.
-
-    Attempt 1: 150 DPI  — fast, good for clean scans
-    Attempt 2: 200 DPI  — higher quality for degraded scans
-    """
-    page_num = page.number + 1
-    last_exc = None
-
-    for attempt in range(1, OCR_RETRY_ATTEMPTS + 1):
-        dpi = 150 + (attempt - 1) * 50   # 150 on attempt 1, 200 on attempt 2
-        try:
-            t_ocr   = time.perf_counter()
-            img     = _page_to_image(page, dpi=dpi)
-            results = _ocr_vl.predict(img)
-            elapsed = time.perf_counter() - t_ocr
-
-            page_parts = []
-            for res in results:
-                if hasattr(res, "res"):
-                    page_parts.append(res.res)
-                elif isinstance(res, dict) and "res" in res:
-                    page_parts.append(res["res"])
-                else:
-                    page_parts.append(str(res))
-
-            del results
-            if paddle.device.is_compiled_with_cuda():
-                paddle.device.cuda.empty_cache()
-
-            logger.info(
-                f"[pdf_utils] Page {page_num}: PaddleOCR-VL OK "
-                f"(attempt {attempt}, dpi={dpi}, {len(page_parts)} block(s), {elapsed:.2f}s)"
-            )
-            return "\n".join(page_parts)
-
-        except Exception as e:
-            last_exc = e
-            logger.warning(
-                f"[pdf_utils] Page {page_num}: PaddleOCR-VL attempt {attempt} failed ({e})"
-                + (" -- retrying" if attempt < OCR_RETRY_ATTEMPTS else " -- exhausted")
-            )
-            if paddle.device.is_compiled_with_cuda():
-                paddle.device.cuda.empty_cache()
-
-    raise RuntimeError(
-        f"PaddleOCR-VL failed after {OCR_RETRY_ATTEMPTS} attempt(s) "
-        f"on page {page_num}: {last_exc}"
-    )
-
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -261,28 +209,104 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
 
     if paddle_needed:
         logger.info(
-            f"[pdf_utils] Pass 2 -- PaddleOCR-VL (serial GPU) "
-            f"for {len(paddle_needed)} page(s)"
+            f"[pdf_utils] Pass 2 -- PaddleOCR-VL (GPU) for {len(paddle_needed)} page(s)"
         )
 
     # ── Pass 2: PaddleOCR-VL for all image pages ──────────────────────────
+    # Optimisation: pre-render ALL page images in parallel on CPU first,
+    # then feed them one-by-one to PaddleOCR-VL on GPU.
+    #
+    # Why this helps:
+    #   - fitz page rendering (get_pixmap) is CPU-only and thread-safe
+    #   - PaddleOCR-VL GPU inference is serial (cannot parallelise on one GPU)
+    #   - Without pre-rendering: GPU waits idle while each image renders (~0.1s/page)
+    #   - With pre-rendering: all images ready before GPU starts — zero idle wait
+    #   - For 100 image pages: saves ~10s of GPU idle time
+    #
+    # Memory note: pre-rendered images are numpy arrays (~3 MB each at 150 DPI).
+    # 232 pages × 3 MB = ~700 MB RAM — safe, this is CPU RAM not GPU VRAM.
+    pre_rendered: dict[int, np.ndarray] = {}
+
+    if paddle_needed:
+        logger.info(
+            f"[pdf_utils] Pre-rendering {len(paddle_needed)} page image(s) "
+            f"in parallel ({_NATIVE_EXTRACT_WORKERS} CPU workers) ..."
+        )
+        t_render = time.perf_counter()
+
+        def _render_worker(idx: int) -> tuple[int, np.ndarray]:
+            return idx, _page_to_image(fitz_pages[idx], dpi=150)
+
+        with ThreadPoolExecutor(max_workers=_NATIVE_EXTRACT_WORKERS) as pool:
+            futures = {pool.submit(_render_worker, i): i for i in paddle_needed}
+            for future in as_completed(futures):
+                try:
+                    idx, img = future.result()
+                    pre_rendered[idx] = img
+                except Exception as e:
+                    logger.warning(f"[pdf_utils] Pre-render failed for page {futures[future]+1}: {e}")
+
+        logger.info(
+            f"[pdf_utils] Pre-render done ({time.perf_counter()-t_render:.2f}s) — "
+            f"{len(pre_rendered)}/{len(paddle_needed)} images ready"
+        )
+
     paddle_results: dict[int, str] = {}
 
     for idx in paddle_needed:
         fitz_page = fitz_pages[idx]
         page_num  = idx + 1
-        logger.info(
-            f"[pdf_utils] Page {page_num}/{pages_to_process}: "
-            "no native text -- running PaddleOCR-VL"
-        )
-        try:
-            raw  = _paddle_page(fitz_page)
-            text = clean_text(raw)
-            paddle_results[idx] = text
-        except Exception as e:
-            logger.error(
-                f"[pdf_utils] Page {page_num}: PaddleOCR-VL failed ({e}) -- placeholder"
-            )
+
+        # Use pre-rendered image if available, else render now (fallback)
+        pre_img = pre_rendered.get(idx)
+
+        last_exc = None
+        for attempt in range(1, OCR_RETRY_ATTEMPTS + 1):
+            # Attempt 1: use pre-rendered 150 DPI image
+            # Attempt 2 (retry): re-render at 200 DPI for better quality
+            if attempt == 1 and pre_img is not None:
+                img = pre_img
+                dpi = 150
+            else:
+                dpi = 150 + (attempt - 1) * 50
+                img = _page_to_image(fitz_page, dpi=dpi)
+
+            try:
+                t_ocr   = time.perf_counter()
+                results = _ocr_vl.predict(img)
+                elapsed = time.perf_counter() - t_ocr
+
+                page_parts = []
+                for res in results:
+                    if hasattr(res, "res"):
+                        page_parts.append(res.res)
+                    elif isinstance(res, dict) and "res" in res:
+                        page_parts.append(res["res"])
+                    else:
+                        page_parts.append(str(res))
+
+                del results
+                if paddle.device.is_compiled_with_cuda():
+                    paddle.device.cuda.empty_cache()
+
+                text = clean_text("\n".join(page_parts))
+                logger.info(
+                    f"[pdf_utils] Page {page_num}: PaddleOCR-VL OK "
+                    f"(attempt {attempt}, dpi={dpi}, {len(page_parts)} block(s), {elapsed:.2f}s)"
+                )
+                paddle_results[idx] = text
+                break
+
+            except Exception as e:
+                last_exc = e
+                logger.warning(
+                    f"[pdf_utils] Page {page_num}: PaddleOCR-VL attempt {attempt} failed ({e})"
+                    + (" -- retrying" if attempt < OCR_RETRY_ATTEMPTS else " -- exhausted")
+                )
+                if paddle.device.is_compiled_with_cuda():
+                    paddle.device.cuda.empty_cache()
+        else:
+            logger.error(f"[pdf_utils] Page {page_num}: all OCR attempts failed -- placeholder")
             paddle_results[idx] = f"[Page {page_num}: content could not be extracted]"
 
     # ── Assemble results in page order ────────────────────────────────────
