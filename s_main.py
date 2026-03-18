@@ -4,8 +4,8 @@ import uuid
 import json
 import re
 import logging
-from pdf_utils import load_pdf, split_documents, get_page_count
-from ai_model import generate_analysis
+from s_padf_utils import load_pdf, split_documents, get_page_count
+from s_ai_model import generate_analysis
 
 logger = logging.getLogger(__name__)
 
