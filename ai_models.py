@@ -1,7 +1,10 @@
-#=================== modified code ===================
 
 import torch
+import asyncio
+import logging
 from transformers import AutoTokenizer, AutoModelForCausalLM
+
+logger = logging.getLogger(__name__)
 
 model_name = "mistralai/Mistral-7B-Instruct-v0.2"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -14,8 +17,56 @@ model = AutoModelForCausalLM.from_pretrained(
 torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 
+# Use CUDA if available, otherwise fall back to CPU
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
-def generate_analysis(text: str) -> str:
+
+def _run_inference(prompt: str) -> str:
+    """Synchronous inference — runs in a thread pool to avoid blocking the event loop."""
+
+    # Tokenize
+    encoded = tokenizer(prompt, return_tensors="pt", truncation=False)
+    token_count = encoded["input_ids"].shape[1]
+
+    # Warn if truncation will occur
+    if token_count > 6000:
+        logger.warning(f"Input is {token_count} tokens, truncating to 6000.")
+
+    inputs = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=6000
+    ).to(device)
+
+    # Generate
+    try:
+        output = model.generate(
+            **inputs,
+            max_new_tokens=600,
+            do_sample=False,
+            repetition_penalty=1.15,
+            pad_token_id=tokenizer.eos_token_id
+        )
+    except torch.cuda.OutOfMemoryError:
+        torch.cuda.empty_cache()
+        raise RuntimeError("GPU out of memory — reduce chunk size or document length.")
+    finally:
+        # Free input tensors from GPU memory
+        del inputs
+        if device == "cuda":
+            torch.cuda.empty_cache()
+
+    # Decode only new tokens
+    result = tokenizer.decode(
+        output[0][encoded["input_ids"].shape[1]:],
+        skip_special_tokens=True
+    )
+
+    return result
+
+
+async def generate_analysis(text: str) -> str:
 
     prompt = f"""<s>[INST]
 You are an expert document analyst with deep knowledge across legal, medical,
@@ -78,39 +129,7 @@ Document:
 [/INST]
 """
 
-    # Tokenize
-    encoded = tokenizer(prompt, return_tensors="pt", truncation=False)
-    token_count = encoded["input_ids"].shape[1]
-
-    # Warn if truncation will occur
-    if token_count > 6000:
-        print(f"Warning: input is {token_count} tokens, truncating to 6000.")
-
-    inputs = tokenizer(
-        prompt,
-        return_tensors="pt",
-        truncation=True,
-        max_length=6000
-    ).to("cuda")
-
-    # Generate
-    try:
-        output = model.generate(
-            **inputs,
-            max_new_tokens=600,
-            do_sample=False,
-            repetition_penalty=1.15,
-            pad_token_id=tokenizer.eos_token_id
-        )
-    except torch.cuda.OutOfMemoryError:
-        torch.cuda.empty_cache()
-        raise RuntimeError("GPU out of memory — reduce chunk size or document length.")
-
-    # Decode only new tokens
-    result = tokenizer.decode(
-        output[0][inputs["input_ids"].shape[1]:],
-        skip_special_tokens=True
-    )
-
+    # Run blocking inference in a thread pool to avoid blocking the async event loop
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, _run_inference, prompt)
     return result
-
