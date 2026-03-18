@@ -2,12 +2,16 @@ import re
 import fitz
 import numpy as np
 import paddle
+import logging
 from paddleocr import PaddleOCRVL
 
-# Force OCR to CPU (VERY IMPORTANT)
+logger = logging.getLogger("pdf_util")
+
 paddle.set_device("cpu")
+logger.info("OCR forced to CPU")
 
 ocr_vl = PaddleOCRVL("v1.5")
+logger.info("OCR model loaded")
 
 
 def clean_text(text: str) -> str:
@@ -18,16 +22,23 @@ def clean_text(text: str) -> str:
 
 
 def extract_text_from_pdf(file_path: str) -> str:
+    logger.info(f"Opening PDF: {file_path}")
     final_text = []
 
     with fitz.open(file_path) as doc:
+        logger.info(f"PDF has {len(doc)} pages")
+
         for page in doc:
+            logger.info(f"Processing page {page.number}")
 
             text = page.get_text("text")
 
             if len(text.strip()) > 50:
+                logger.info(f"Page {page.number} extracted using native method")
                 final_text.append(text.strip())
                 continue
+
+            logger.info(f"Page {page.number} using OCR")
 
             pix = page.get_pixmap(dpi=150)
 
@@ -54,11 +65,12 @@ def extract_text_from_pdf(file_path: str) -> str:
 
             del results
 
+    logger.info("PDF extraction completed.")
     return clean_text("\n".join(final_text))
 
 
 def chunk_text(text: str, max_chars: int = 15000) -> list:
-
+    logger.info("Starting text chunking")
     paragraphs = text.split("\n")
     chunks = []
     current = ""
@@ -74,4 +86,5 @@ def chunk_text(text: str, max_chars: int = 15000) -> list:
     if current.strip():
         chunks.append(current.strip())
 
+    logger.info(f"Created {len(chunks)} chunks")
     return chunks

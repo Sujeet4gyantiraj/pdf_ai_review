@@ -1,14 +1,17 @@
 import torch
 import asyncio
 import logging
+import time
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ai_models")
 
 model_name = "mistralai/Mistral-7B-Instruct-v0.2"
 
+logger.info("Loading tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
+logger.info("Loading model...")
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     torch_dtype=torch.float16,
@@ -18,12 +21,13 @@ model = AutoModelForCausalLM.from_pretrained(
 model.eval()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+logger.info(f"Model running on device: {device}")
 
-# Prevent concurrent GPU overload
 semaphore = asyncio.Semaphore(1)
 
 
 def _run_inference(prompt: str) -> str:
+    start_time = time.time()
 
     inputs = tokenizer(
         prompt,
@@ -48,6 +52,7 @@ def _run_inference(prompt: str) -> str:
         )
 
     except torch.cuda.OutOfMemoryError:
+        logger.error("GPU out of memory during inference.")
         torch.cuda.empty_cache()
         raise RuntimeError("GPU out of memory.")
 
@@ -56,14 +61,14 @@ def _run_inference(prompt: str) -> str:
         if device == "cuda":
             torch.cuda.empty_cache()
 
+    inference_time = round(time.time() - start_time, 2)
+    logger.info(f"Inference completed in {inference_time} sec")
+
     return result
 
 
 async def generate_analysis(text: str) -> str:
-
     prompt = f"""
-You are an expert document analyst.
-
 Return ONLY this JSON format:
 {{
   "overview": "",
