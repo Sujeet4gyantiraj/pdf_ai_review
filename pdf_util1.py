@@ -1,105 +1,122 @@
-import fitz
-import logging
+import re
+import fitz  # PyMuPDF
 import numpy as np
 import paddle
-from paddleocr import PaddleOCR
+import logging
+from paddleocr import PaddleOCRVL
 
 logger = logging.getLogger(__name__)
 
-# ---------------- SET DEVICE ----------------
+# ---------------- DEVICE SETUP ----------------
 if paddle.is_compiled_with_cuda():
     paddle.set_device("gpu")
-    logger.info("PaddleOCR running on GPU")
+    logger.info("PaddleOCR-VL running on GPU")
 else:
     paddle.set_device("cpu")
-    logger.warning("PaddleOCR running on CPU")
+    logger.warning("PaddleOCR-VL running on CPU")
 
-# ---------------- INIT OCR ----------------
-ocr = PaddleOCR(
-    use_angle_cls=True,
-    show_log=False
-)
-
-BATCH_SIZE = 4  # Adjust for GPU VRAM
+# ---------------- INIT VLM MODEL ----------------
+# "v1.5" = PaddleOCR-VL-1.5-0.9B
+ocr_vl = PaddleOCRVL("v1.5")
 
 
-def extract_text_from_pdf(file_path):
-
-    doc = fitz.open(file_path)
-    full_text = ""
-
-    # -------- Native Extraction --------
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
-        text = page.get_text()
-
-        if len(text.strip()) > 50:
-            full_text += text + "\n"
-
-    if len(full_text.strip()) > 200:
-        logger.info("Native extraction sufficient.")
-        doc.close()
-        return full_text
-
-    logger.warning("Switching to PaddleOCR batch mode...")
-
-    # -------- Batch OCR --------
-    images_batch = []
-    full_text = ""
-
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
-        pix = page.get_pixmap(dpi=200)
-
-        img = np.frombuffer(pix.samples, dtype=np.uint8)
-        img = img.reshape(pix.height, pix.width, pix.n)
-
-        if pix.n == 4:
-            img = img[:, :, :3]
-
-        images_batch.append(img)
-
-        if len(images_batch) == BATCH_SIZE:
-            full_text += run_ocr_batch(images_batch)
-            images_batch.clear()
-
-    if images_batch:
-        full_text += run_ocr_batch(images_batch)
-
-    doc.close()
-    return full_text.strip()
+# ---------------- TEXT CLEANING ----------------
+def clean_text(text: str) -> str:
+    """Clean extracted text for better LLM summarization."""
+    text = re.sub(r"\r", "\n", text)
+    text = re.sub(r"\n{2,}", "\n", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"[^\x00-\x7F]+", " ", text)
+    return text.strip()
 
 
-def run_ocr_batch(images):
+# ---------------- PDF EXTRACTION ----------------
+def extract_text_from_pdf(file_path: str) -> str:
+    """
+    Hybrid extraction:
+    1️⃣ Try native extraction
+    2️⃣ If page has little/no text → use OCR-VL
+    """
 
-    text_output = ""
+    final_text = []
 
-    results = ocr.ocr(images, cls=True)
+    with fitz.open(file_path) as doc:
+        for page_number, page in enumerate(doc):
 
-    for page_result in results:
-        if not page_result:
-            continue
+            logger.info(f"Processing page {page_number}")
 
-        for line in page_result:
-            text_output += line[1][0] + " "
+            # 1️⃣ Native extraction (fastest)
+            text = page.get_text("text")
 
-        text_output += "\n"
+            if len(text.strip()) > 50:
+                final_text.append(text.strip())
+                continue
 
-    if paddle.is_compiled_with_cuda():
-        paddle.device.cuda.empty_cache()
+            # 2️⃣ OCR-VL extraction (scanned page)
+            logger.info(f"Using OCR-VL on page {page_number}")
 
-    return text_output
+            # Lower DPI prevents GPU OOM
+            pix = page.get_pixmap(dpi=150)
+
+            img = np.frombuffer(
+                pix.samples,
+                dtype=np.uint8
+            ).reshape(pix.h, pix.w, pix.n)
+
+            # Remove alpha channel
+            if pix.n == 4:
+                img = img[:, :, :3]
+
+            # Run VLM OCR
+            results = ocr_vl.predict(img)
+
+            page_parts = []
+
+            for res in results:
+                if hasattr(res, "res"):
+                    page_parts.append(res.res)
+                elif isinstance(res, dict) and "res" in res:
+                    page_parts.append(res["res"])
+                else:
+                    page_parts.append(str(res))
+
+            page_text = "\n".join(page_parts).strip()
+
+            final_text.append(page_text)
+
+            # -------- MEMORY CLEANUP --------
+            del results
+            if paddle.is_compiled_with_cuda():
+                paddle.device.cuda.empty_cache()
+
+    combined_text = "\n".join(final_text)
+
+    return clean_text(combined_text)
 
 
-# -------- Token-based chunking --------
-def chunk_by_tokens(text, tokenizer, max_tokens=1400):
 
-    tokens = tokenizer.encode(text)
+
+def chunk_text(text: str, max_chars: int = 10000) -> list:
+    """
+    Split large text into smaller chunks on paragraph boundaries
+    to avoid cutting mid-sentence.
+    """
+    if not text:
+        return []
+
+    paragraphs = text.split("\n")
     chunks = []
+    current = ""
 
-    for i in range(0, len(tokens), max_tokens):
-        chunk_tokens = tokens[i:i + max_tokens]
-        chunk_text = tokenizer.decode(chunk_tokens)
-        chunks.append(chunk_text)
+    for para in paragraphs:
+        if len(current) + len(para) > max_chars:
+            if current.strip():
+                chunks.append(current.strip())
+            current = para
+        else:
+            current += "\n" + para
+
+    if current.strip():
+        chunks.append(current.strip())
 
     return chunks
