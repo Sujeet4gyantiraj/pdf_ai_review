@@ -6,7 +6,6 @@ import re
 import logging
 from pdf_utils import load_pdf, split_documents, get_page_count
 from ai_model import generate_analysis
-from legal_analyzer import analyze_legal
 
 logger = logging.getLogger(__name__)
 
@@ -156,8 +155,8 @@ async def analyze_pdf(
     - summary
     - highlights
 
-    Uses LangChain PyMuPDFLoader for extraction, RecursiveCharacterTextSplitter
-    for chunking, and a map-reduce summarize chain for large-PDF coherence.
+    Uses LangChain RecursiveCharacterTextSplitter for chunking and a
+    direct map-reduce inference pipeline for large-PDF coherence.
     """
 
     # Validate file type
@@ -210,80 +209,3 @@ async def analyze_pdf(
         return {"highlights": final_output.get("highlights", [])}
 
     return final_output
-
-
-# ---------------------------------------------------------------------------
-# /analyze/legal  — Indian rental law compliance checker
-#
-# Separate endpoint so the existing /analyze endpoint is untouched.
-# Accepts the same PDF upload but runs the three-phase legal pipeline:
-#   1. Clause extraction
-#   2. Compliance check against Indian law + state rules
-#   3. Prioritised suggestions with draft clauses
-# ---------------------------------------------------------------------------
-
-@app.post("/analyze/legal")
-async def analyze_legal_pdf(
-    file: UploadFile = File(...),
-    state: str = Query(
-        "general",
-        description=(
-            "Indian state for state-specific rules. "
-            "Options: maharashtra, delhi, karnataka, tamil_nadu, general"
-        )
-    ),
-):
-    """
-    Analyse a rent agreement PDF for compliance with Indian rental law.
-
-    Returns:
-    - extracted_details : every clause found in the agreement
-    - compliance        : compliance score, missing/deficient/illegal clauses
-    - suggestions       : prioritised fixes with ready-to-use draft clauses
-    """
-
-    # Validate file type
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
-
-    # Validate state parameter
-    valid_states = {"maharashtra", "delhi", "karnataka", "tamil_nadu", "general"}
-    if state.lower() not in valid_states:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid state '{state}'. Choose from: {', '.join(sorted(valid_states))}"
-        )
-
-    # Use a random UUID filename to prevent path traversal attacks
-    safe_name = f"{uuid.uuid4()}.pdf"
-    file_path = os.path.join(UPLOAD_FOLDER, safe_name)
-
-    try:
-        # Save uploaded file
-        with open(file_path, "wb") as f:
-            f.write(await file.read())
-
-        # Page count guard — rent agreements should never be 200+ pages
-        page_count = get_page_count(file_path)
-        if page_count > MAX_PDF_PAGES:
-            raise HTTPException(
-                status_code=413,
-                detail=f"PDF has {page_count} pages. Maximum allowed is {MAX_PDF_PAGES}."
-            )
-
-        # Load and split using LangChain (same as /analyze)
-        try:
-            pages = load_pdf(file_path)
-        except ValueError as e:
-            raise HTTPException(status_code=422, detail=str(e))
-
-        chunks = split_documents(pages)
-
-        # Run the three-phase legal analysis pipeline
-        result = await analyze_legal(chunks, state=state.lower())
-
-    finally:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    return result
