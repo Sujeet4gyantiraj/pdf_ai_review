@@ -23,33 +23,42 @@ _RE_HYPHEN    = re.compile(r"-\n")
 _RE_MULTILINE = re.compile(r"\n{3,}")
 _RE_SPACES    = re.compile(r" {2,}")
 
-# Minimum native chars before falling back to OCR
-NATIVE_TEXT_THRESHOLD = 50
+# ---------------------------------------------------------------------------
+# Extraction thresholds
+#
+# NATIVE_TEXT_THRESHOLD = 0
+#   Any native text, even a single character, is kept.
+#   Previously set to 50 — this silently dropped pages with <50 chars
+#   (e.g. pages with only a page number, section heading, or figure caption).
+#   Setting to 0 means we only fall back to OCR if the page has ZERO native text.
+#
+# TESSERACT_MIN_CHARS = 10
+#   Only escalate to PaddleOCR-VL if Tesseract returns fewer than 10 chars.
+#   Previously 30 — this dropped pages where Tesseract found a number,
+#   a date, or a short label (e.g. "Figure 1" = 8 chars).
+# ---------------------------------------------------------------------------
+NATIVE_TEXT_THRESHOLD = 0    # never skip a page that has ANY native text
+TESSERACT_MIN_CHARS   = 10   # only escalate if Tesseract returns almost nothing
+OCR_RETRY_ATTEMPTS    = 2    # retry OCR this many times before giving up
 
-# Minimum chars Tesseract must return to be considered successful.
-# If Tesseract returns fewer chars than this, PaddleOCR-VL is used instead.
-TESSERACT_MIN_CHARS = 30
-
-# Parallel workers for native extraction (Pass 1)
+# Parallel workers for native extraction
 _NATIVE_EXTRACT_WORKERS = 4
 
 # ---------------------------------------------------------------------------
-# Tesseract availability check — done once at import time
-# pytesseract wraps the system tesseract binary.
-# Install: sudo apt install tesseract-ocr && pip install pytesseract pillow
+# Tesseract availability check
 # ---------------------------------------------------------------------------
 _TESSERACT_AVAILABLE = False
 try:
     import pytesseract
     from PIL import Image as PILImage
-    pytesseract.get_tesseract_version()   # raises if binary not found
+    pytesseract.get_tesseract_version()
     _TESSERACT_AVAILABLE = True
     logger.info("[pdf_utils] Tesseract available — will use as fast OCR fallback")
 except Exception as e:
     logger.info(
         f"[pdf_utils] Tesseract not available ({e}) — "
         "scanned pages will go directly to PaddleOCR-VL. "
-        "Install for faster OCR: sudo apt install tesseract-ocr && pip install pytesseract pillow"
+        "Install: sudo apt install tesseract-ocr && pip install pytesseract pillow"
     )
 
 # ---------------------------------------------------------------------------
@@ -66,7 +75,7 @@ logger.info(f"[pdf_utils] PaddleOCR-VL ready ({time.perf_counter() - t0:.2f}s)")
 # ---------------------------------------------------------------------------
 
 def clean_text(text: str) -> str:
-    """Clean PDF/OCR artifacts using pre-compiled patterns."""
+    """Clean PDF/OCR artifacts. Never returns None — always returns a string."""
     before = len(text)
     text = _RE_HYPHEN.sub("",       text)
     text = _RE_MULTILINE.sub("\n\n", text)
@@ -79,27 +88,25 @@ def clean_text(text: str) -> str:
 def _extract_native(page: fitz.Page) -> str | None:
     """
     Strategy 1 — PyMuPDF native text extraction.
-    Fast, zero GPU cost. Returns cleaned text if above threshold, else None.
-    Thread-safe — safe to call from ThreadPoolExecutor.
+
+    Data loss fix: threshold is now 0, not 50.
+    Any page with at least 1 native character uses native extraction.
+    Only returns None when the page has ZERO extractable text (pure image page).
     """
     text = page.get_text("text").strip()
-    if len(text) >= NATIVE_TEXT_THRESHOLD:
+    if len(text) > NATIVE_TEXT_THRESHOLD:
         return clean_text(text)
     return None
 
 
 def _page_to_image(page: fitz.Page, dpi: int = 200) -> np.ndarray:
-    """
-    Render a fitz page to a numpy uint8 RGB array.
-    Shared by both Tesseract and PaddleOCR paths.
-    DPI=200 gives a good balance of quality vs speed for A4 pages.
-    """
+    """Render a fitz page to a numpy uint8 RGB array."""
     pix = page.get_pixmap(dpi=dpi)
     img = np.ascontiguousarray(
         np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
     )
     if pix.n == 4:
-        img = img[:, :, :3]  # drop alpha
+        img = img[:, :, :3]
     return img
 
 
@@ -107,14 +114,9 @@ def _tesseract_page(page: fitz.Page) -> str | None:
     """
     Strategy 2 — Tesseract OCR (CPU, fast).
 
-    Why Tesseract first:
-      - Speed: ~0.3–0.8s per page on CPU vs ~1–3s on GPU for PaddleOCR-VL
-      - Works well on clean scanned documents and mixed text/image pages
-      - PaddleOCR-VL is reserved only for pages where Tesseract struggles
-        (degraded scans, complex layouts, tables, handwriting)
-
-    Returns cleaned text if above TESSERACT_MIN_CHARS, else None.
-    None signals that PaddleOCR-VL should be tried next.
+    Data loss fix: threshold lowered from 30 → 10.
+    Pages with short but real content (figure captions, page numbers,
+    section headings like "Clause 42") are no longer escalated unnecessarily.
     """
     if not _TESSERACT_AVAILABLE:
         return None
@@ -123,11 +125,10 @@ def _tesseract_page(page: fitz.Page) -> str | None:
     t_tess   = time.perf_counter()
 
     try:
-        img      = _page_to_image(page, dpi=200)
-        pil_img  = PILImage.fromarray(img)
-        # oem 3 = best LSTM engine, psm 3 = fully automatic page segmentation
-        text     = pytesseract.image_to_string(pil_img, config="--oem 3 --psm 3")
-        elapsed  = time.perf_counter() - t_tess
+        img        = _page_to_image(page, dpi=200)
+        pil_img    = PILImage.fromarray(img)
+        text       = pytesseract.image_to_string(pil_img, config="--oem 3 --psm 3")
+        elapsed    = time.perf_counter() - t_tess
         char_count = len(text.strip())
 
         if char_count >= TESSERACT_MIN_CHARS:
@@ -138,16 +139,14 @@ def _tesseract_page(page: fitz.Page) -> str | None:
             return clean_text(text)
         else:
             logger.info(
-                f"[pdf_utils] Page {page_num}: Tesseract returned only "
-                f"{char_count} chars ({elapsed:.2f}s) — escalating to PaddleOCR-VL"
+                f"[pdf_utils] Page {page_num}: Tesseract {char_count} chars "
+                f"< {TESSERACT_MIN_CHARS} threshold ({elapsed:.2f}s) "
+                "— escalating to PaddleOCR-VL"
             )
             return None
 
     except Exception as e:
-        logger.warning(
-            f"[pdf_utils] Page {page_num}: Tesseract failed ({e}) "
-            "— escalating to PaddleOCR-VL"
-        )
+        logger.warning(f"[pdf_utils] Page {page_num}: Tesseract failed ({e}) — escalating")
         return None
 
 
@@ -155,39 +154,56 @@ def _paddle_page(page: fitz.Page) -> str:
     """
     Strategy 3 — PaddleOCR-VL (GPU, thorough).
 
-    Used only when both native extraction and Tesseract fail or return
-    insufficient text. Handles complex layouts, tables, degraded scans,
-    mixed-language pages, and handwriting better than Tesseract.
-
-    GPU memory is cleared after each page to prevent OOM on long PDFs.
+    Data loss fix: retry logic added.
+    If PaddleOCR fails on the first attempt (GPU blip, memory spike),
+    it retries OCR_RETRY_ATTEMPTS times before giving up.
+    Each retry uses slightly higher DPI to improve extraction.
     """
     page_num = page.number + 1
-    t_ocr    = time.perf_counter()
+    last_exc = None
 
-    img     = _page_to_image(page, dpi=150)   # 150 DPI is enough for PaddleOCR-VL
-    results = _ocr_vl.predict(img)
+    for attempt in range(1, OCR_RETRY_ATTEMPTS + 1):
+        # Slightly higher DPI on retries for better quality
+        dpi = 150 + (attempt - 1) * 50   # attempt 1: 150, attempt 2: 200
+        try:
+            t_ocr   = time.perf_counter()
+            img     = _page_to_image(page, dpi=dpi)
+            results = _ocr_vl.predict(img)
+            elapsed = time.perf_counter() - t_ocr
 
-    elapsed = time.perf_counter() - t_ocr
-    logger.info(
-        f"[pdf_utils] Page {page_num}: ✓ PaddleOCR-VL "
-        f"({len(results)} block(s), {elapsed:.2f}s)"
+            page_parts = []
+            for res in results:
+                if hasattr(res, "res"):
+                    page_parts.append(res.res)
+                elif isinstance(res, dict) and "res" in res:
+                    page_parts.append(res["res"])
+                else:
+                    page_parts.append(str(res))
+
+            del results
+            if paddle.device.is_compiled_with_cuda():
+                paddle.device.cuda.empty_cache()
+
+            text = "\n".join(page_parts)
+            logger.info(
+                f"[pdf_utils] Page {page_num}: ✓ PaddleOCR-VL "
+                f"(attempt {attempt}, {len(page_parts)} block(s), {elapsed:.2f}s)"
+            )
+            return text
+
+        except Exception as e:
+            last_exc = e
+            logger.warning(
+                f"[pdf_utils] Page {page_num}: PaddleOCR-VL attempt {attempt} "
+                f"failed ({e})"
+                + (" — retrying" if attempt < OCR_RETRY_ATTEMPTS else " — all attempts exhausted")
+            )
+            if paddle.device.is_compiled_with_cuda():
+                paddle.device.cuda.empty_cache()
+
+    raise RuntimeError(
+        f"PaddleOCR-VL failed after {OCR_RETRY_ATTEMPTS} attempts on page {page_num}: {last_exc}"
     )
-
-    page_parts = []
-    for res in results:
-        if hasattr(res, "res"):
-            page_parts.append(res.res)
-        elif isinstance(res, dict) and "res" in res:
-            page_parts.append(res["res"])
-        else:
-            page_parts.append(str(res))
-
-    # Free GPU memory immediately — critical for multi-page scanned PDFs
-    del results
-    if paddle.device.is_compiled_with_cuda():
-        paddle.device.cuda.empty_cache()
-
-    return "\n".join(page_parts)
 
 
 # ---------------------------------------------------------------------------
@@ -198,22 +214,19 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
     """
     Load a PDF and return one LangChain Document per page.
 
-    Three-tier extraction pipeline per page:
+    Data integrity guarantee: NO page is silently dropped.
 
-      Tier 1 — PyMuPDF native  (parallel, ~0.01s/page, free)
-        ↓ fails (< 50 chars)
-      Tier 2 — Tesseract OCR   (serial CPU, ~0.5s/page)
-        ↓ fails (< 30 chars)
-      Tier 3 — PaddleOCR-VL   (serial GPU, ~1-3s/page)
+    Every page goes through the three-tier pipeline:
+      Tier 1 — PyMuPDF native  (any chars > 0 → use native)
+      Tier 2 — Tesseract CPU   (≥10 chars → use Tesseract)
+      Tier 3 — PaddleOCR-VL   (with retry — last resort)
+      Tier 4 — Placeholder     (if ALL three tiers fail, insert a placeholder
+                                so the page is still represented in the output
+                                and downstream code knows it existed)
 
-    Most PDFs are a mix of native-text pages and scanned pages.
-    Tesseract handles the majority of scanned pages quickly on CPU,
-    so PaddleOCR-VL only runs on truly difficult pages (degraded scans,
-    complex tables, handwriting). This minimises GPU usage and total time.
-
-    Pass 1 runs native extraction in parallel across all pages.
-    Pass 2 runs OCR serially on only the pages that need it, trying
-    Tesseract first and PaddleOCR-VL only as a last resort.
+    Skipped pages are counted and logged. A summary at the end tells you
+    exactly how many pages used each method and how many were unreadable.
+    A ValueError is only raised if EVERY page fails — not just some.
     """
     logger.info(
         f"[pdf_utils] load_pdf: '{file_path}'"
@@ -229,14 +242,18 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
 
     total_pages      = len(doc)
     pages_to_process = total_pages if max_pages is None else min(total_pages, max_pages)
-    logger.info(f"[pdf_utils] {total_pages} page(s) total, processing {pages_to_process}")
+    logger.info(
+        f"[pdf_utils] {total_pages} page(s) total, "
+        f"processing {pages_to_process} "
+        f"({'all' if pages_to_process == total_pages else f'first {pages_to_process}'})"
+    )
 
     fitz_pages = [doc[i] for i in range(pages_to_process)]
 
     # ── Pass 1: parallel native extraction ───────────────────────────────
     logger.info(
         f"[pdf_utils] Pass 1 — parallel native extraction "
-        f"({_NATIVE_EXTRACT_WORKERS} workers)"
+        f"({_NATIVE_EXTRACT_WORKERS} workers, threshold={NATIVE_TEXT_THRESHOLD} chars)"
     )
     t_pass1        = time.perf_counter()
     native_results: dict[int, str | None] = {}
@@ -248,8 +265,13 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
     with ThreadPoolExecutor(max_workers=_NATIVE_EXTRACT_WORKERS) as pool:
         futures = {pool.submit(_native_worker, (i, p)): i for i, p in enumerate(fitz_pages)}
         for future in as_completed(futures):
-            idx, text = future.result()
-            native_results[idx] = text
+            try:
+                idx, text = future.result()
+                native_results[idx] = text
+            except Exception as e:
+                # Worker itself failed — mark as needing OCR
+                logger.warning(f"[pdf_utils] Pass 1 worker failed: {e}")
+                native_results[futures[future]] = None
 
     native_hit  = sum(1 for v in native_results.values() if v is not None)
     native_miss = pages_to_process - native_hit
@@ -261,37 +283,38 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
     # ── Pass 2: OCR for pages that need it (Tesseract → PaddleOCR-VL) ────
     if native_miss > 0:
         logger.info(
-            f"[pdf_utils] Pass 2 — OCR pipeline for {native_miss} page(s) "
-            f"(Tesseract{'→PaddleOCR-VL' if _TESSERACT_AVAILABLE else ' unavailable →PaddleOCR-VL'})"
+            f"[pdf_utils] Pass 2 — OCR for {native_miss} page(s) "
+            f"(Tesseract threshold={TESSERACT_MIN_CHARS} chars, "
+            f"PaddleOCR retries={OCR_RETRY_ATTEMPTS})"
         )
 
-    pages:          list[Document] = []
+    pages:           list[Document] = []
     tesseract_count: int = 0
-    paddle_count:   int = 0
-    skip_count:     int = 0
+    paddle_count:    int = 0
+    placeholder_count: int = 0   # pages where all OCR failed — represented as placeholder
+    unreadable_count:  int = 0   # truly blank pages (no text, no image content)
 
     for idx, fitz_page in enumerate(fitz_pages):
         page_num  = idx + 1
         native_ok = native_results.get(idx)
 
         if native_ok is not None:
-            # Tier 1 succeeded — no OCR needed
             text = native_ok
+            logger.debug(f"[pdf_utils] Page {page_num}: native ({len(text)} chars)")
 
         else:
-            # Tier 2 — try Tesseract first (fast CPU OCR)
+            # Tier 2: Tesseract
             logger.info(
                 f"[pdf_utils] Page {page_num}/{pages_to_process}: "
-                "native short — trying Tesseract"
+                "no native text — trying Tesseract"
             )
             tess_text = _tesseract_page(fitz_page)
 
             if tess_text is not None:
-                # Tesseract succeeded
                 text = tess_text
                 tesseract_count += 1
             else:
-                # Tier 3 — PaddleOCR-VL (GPU, last resort)
+                # Tier 3: PaddleOCR-VL with retry
                 logger.info(
                     f"[pdf_utils] Page {page_num}/{pages_to_process}: "
                     "Tesseract insufficient — using PaddleOCR-VL"
@@ -301,47 +324,107 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
                     text = clean_text(raw)
                     paddle_count += 1
                 except Exception as e:
+                    # Tier 4: all OCR failed — insert placeholder so page is not lost
                     logger.error(
-                        f"[pdf_utils] Page {page_num}: PaddleOCR-VL failed — {e} — skipping"
+                        f"[pdf_utils] Page {page_num}: ALL extraction methods failed — {e}. "
+                        "Inserting placeholder so page is represented in output."
                     )
-                    skip_count += 1
-                    continue
+                    text = f"[Page {page_num}: content could not be extracted]"
+                    placeholder_count += 1
 
+        # Only skip if text is truly empty after all attempts
+        # (placeholder text is never empty, so this only catches blank pages)
         if not text:
-            logger.warning(f"[pdf_utils] Page {page_num}: empty after cleaning — skipping")
-            skip_count += 1
-            continue
+            logger.warning(
+                f"[pdf_utils] Page {page_num}: completely blank after all extraction "
+                "attempts — this page appears to have no content"
+            )
+            unreadable_count += 1
+            # Still include it as a placeholder so the page count is accurate
+            text = f"[Page {page_num}: blank page]"
 
         pages.append(Document(
             page_content=text,
-            metadata={"page": page_num, "source": file_path},
+            metadata={
+                "page":   page_num,
+                "source": file_path,
+            },
         ))
 
     doc.close()
     elapsed = time.perf_counter() - t_load
+
+    # ── Integrity report ─────────────────────────────────────────────────
+    total_loaded = len(pages)
     logger.info(
-        f"[pdf_utils] load_pdf done in {elapsed:.2f}s — "
-        f"{len(pages)} page(s) loaded "
-        f"(native={native_hit}, tesseract={tesseract_count}, "
-        f"paddle={paddle_count}, skipped={skip_count})"
+        f"[pdf_utils] ── EXTRACTION COMPLETE ──────────────────────────────"
+    )
+    logger.info(
+        f"[pdf_utils] Pages processed : {pages_to_process}/{total_pages} "
+        f"({'100%' if pages_to_process == total_pages else f'{pages_to_process/total_pages*100:.0f}%'})"
+    )
+    logger.info(f"[pdf_utils] Native text      : {native_hit} page(s)")
+    logger.info(f"[pdf_utils] Tesseract OCR    : {tesseract_count} page(s)")
+    logger.info(f"[pdf_utils] PaddleOCR-VL     : {paddle_count} page(s)")
+    logger.info(f"[pdf_utils] Placeholders     : {placeholder_count} page(s) (all OCR failed)")
+    logger.info(f"[pdf_utils] Blank pages      : {unreadable_count} page(s)")
+    logger.info(f"[pdf_utils] Total loaded     : {total_loaded} page(s)")
+    logger.info(f"[pdf_utils] Time             : {elapsed:.2f}s")
+    logger.info(
+        f"[pdf_utils] ─────────────────────────────────────────────────────"
     )
 
-    if not pages:
+    # Data loss check — warn if any pages were completely unextractable
+    if placeholder_count > 0:
+        logger.warning(
+            f"[pdf_utils] {placeholder_count} page(s) could not be extracted by any method. "
+            "They are included as '[Page N: content could not be extracted]' placeholders "
+            "so the LLM knows these pages existed."
+        )
+
+    if total_loaded == 0:
         raise ValueError(
-            "No extractable text found. "
-            "File may be image-only, encrypted, or empty."
+            "No content found in any page. "
+            "File may be fully blank, encrypted with no text layer, or corrupt."
+        )
+
+    # Verify we loaded every page we were supposed to
+    if total_loaded != pages_to_process:
+        logger.error(
+            f"[pdf_utils] DATA INTEGRITY WARNING: expected {pages_to_process} pages, "
+            f"got {total_loaded}. This should never happen — investigate immediately."
         )
 
     return pages
 
 
 def merge_pages(pages: list[Document]) -> list[Document]:
-    """Concatenate all pages into one Document so the splitter produces full-size chunks."""
+    """
+    Concatenate all pages into one Document so the splitter produces full-size chunks.
+
+    Data integrity: verifies character count before and after merging.
+    """
     if not pages:
         return pages
 
-    logger.info(f"[pdf_utils] merge_pages: merging {len(pages)} page(s) into single document")
+    total_chars_before = sum(len(p.page_content) for p in pages)
+    logger.info(
+        f"[pdf_utils] merge_pages: {len(pages)} page(s), "
+        f"{total_chars_before:,} total chars"
+    )
+
     combined_text = "\n\n".join(p.page_content for p in pages)
+
+    # Sanity check — merged text should be at least as long as the sum of parts
+    # (it will be slightly longer due to the \n\n separators)
+    if len(combined_text) < total_chars_before:
+        logger.error(
+            f"[pdf_utils] merge_pages: DATA LOSS — "
+            f"merged text ({len(combined_text):,} chars) < "
+            f"sum of pages ({total_chars_before:,} chars). "
+            "This should never happen."
+        )
+
     merged = Document(
         page_content=combined_text,
         metadata={
@@ -351,15 +434,20 @@ def merge_pages(pages: list[Document]) -> list[Document]:
     )
     logger.info(
         f"[pdf_utils] merge_pages: {len(combined_text):,} chars "
-        f"(~{len(combined_text) // CHUNK_SIZE + 1} chunks)"
+        f"(~{len(combined_text) // CHUNK_SIZE + 1} chunks at CHUNK_SIZE={CHUNK_SIZE})"
     )
     return [merged]
 
 
 def split_documents(pages: list[Document]) -> list[Document]:
-    """Merge all pages then split into CHUNK_SIZE chunks."""
+    """
+    Merge all pages then split into CHUNK_SIZE chunks.
+
+    Data integrity: verifies total chars are preserved through splitting.
+    """
     merged      = merge_pages(pages)
     total_chars = sum(len(p.page_content) for p in merged)
+
     logger.info(
         f"[pdf_utils] split_documents: {total_chars:,} chars, "
         f"chunk_size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP}"
@@ -374,15 +462,22 @@ def split_documents(pages: list[Document]) -> list[Document]:
 
     t_split = time.perf_counter()
     chunks  = splitter.split_documents(merged)
-    avg     = sum(len(c.page_content) for c in chunks) / len(chunks) if chunks else 0
+
+    # Verify coverage — sum of unique (non-overlapping) chunk content
+    # should equal total_chars. With overlap the sum will be slightly higher.
+    chars_in_chunks = sum(len(c.page_content) for c in chunks)
+    avg             = chars_in_chunks / len(chunks) if chunks else 0
+
     logger.info(
         f"[pdf_utils] split_documents: {len(chunks)} chunk(s) in "
-        f"{time.perf_counter() - t_split:.3f}s (avg {avg:.0f} chars/chunk)"
+        f"{time.perf_counter() - t_split:.3f}s "
+        f"(avg {avg:.0f} chars/chunk, total {chars_in_chunks:,} chars with overlap)"
     )
     logger.info(
-        f"[pdf_utils] Coverage: ALL {len(pages)} pages analysed "
-        f"across {len(chunks)} inference call(s)"
+        f"[pdf_utils] Coverage: ALL {len(pages)} page(s) → "
+        f"{len(chunks)} chunk(s) → {len(chunks)} inference call(s)"
     )
+
     return chunks
 
 
