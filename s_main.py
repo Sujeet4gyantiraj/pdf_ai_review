@@ -3,17 +3,10 @@ import os
 import uuid
 import json
 import re
-
-from pdf_util import extract_text_from_pdf, chunk_text
-from ai_models import generate_analysis
-
 import logging
-from pdf_util import extract_text_from_pdf, chunk_text
-from ai_models import generate_analysis
-<<<<<<< HEAD
-
-=======
->>>>>>> 9bb19c4786533eb83705853394467dfbfd93df12
+from pdf_utils import load_pdf, split_documents, get_page_count
+from ai_model import generate_analysis
+from legal_analyzer import analyze_legal
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +15,6 @@ app = FastAPI()
 UPLOAD_FOLDER = "temp"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-
-def clean_text(text: str) -> str:
-    """Clean extracted PDF text"""
-    text = text.replace("\n\n", "\n")
-    return text.strip()
 
 def _fix_json_string(raw: str) -> str:
     """
@@ -150,6 +138,8 @@ def extract_json(text: str) -> dict:
     return empty
 
 
+MAX_PDF_PAGES = 200   # hard page cap — raise if your GPU can handle larger docs
+
 @app.post("/analyze")
 async def analyze_pdf(
     file: UploadFile = File(...),
@@ -165,6 +155,9 @@ async def analyze_pdf(
     - overview
     - summary
     - highlights
+
+    Uses LangChain PyMuPDFLoader for extraction, RecursiveCharacterTextSplitter
+    for chunking, and a map-reduce summarize chain for large-PDF coherence.
     """
 
     # Validate file type
@@ -180,58 +173,117 @@ async def analyze_pdf(
         with open(file_path, "wb") as f:
             f.write(await file.read())
 
-        # Extract text from PDF
-        text = extract_text_from_pdf(file_path)
-        text = clean_text(text)
-
-        # Reject image-only or empty PDFs early
-        if not text:
+        # Page count guard — reject oversized PDFs before extraction
+        page_count = get_page_count(file_path)
+        if page_count > MAX_PDF_PAGES:
             raise HTTPException(
-                status_code=422,
-                detail="No extractable text found in PDF. The file may be image-only or empty."
+                status_code=413,
+                detail=f"PDF has {page_count} pages. Maximum allowed is {MAX_PDF_PAGES}."
             )
 
-        # Split into chunks (for large PDFs)
-        chunks = chunk_text(text)
+        # Load PDF into LangChain Documents (one per page, image pages filtered)
+        # Raises ValueError → 422 if no text found or file unreadable
+        try:
+            pages = load_pdf(file_path)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
 
-        results = []
+        # Split pages into overlapping chunks with RecursiveCharacterTextSplitter
+        chunks = split_documents(pages)
 
-        for chunk in chunks:
-            print(f"Generating analysis for chunk of size {len(chunk)}...")
-            ai_response = await generate_analysis(chunk)
-            parsed = extract_json(ai_response)
-            results.append(parsed)
+        # Run direct map-reduce inference over all chunks.
+        # generate_analysis handles map + reduce internally and returns
+        # a fully parsed dict — no extract_json call needed here.
+        final_output = await generate_analysis(chunks)
 
     finally:
         # Always clean up the uploaded file from disk
         if os.path.exists(file_path):
             os.remove(file_path)
 
-    # Merge results from all chunks
-    combined_overview = " ".join(
-        [r.get("overview", "") for r in results]
-    ).strip()
-
-    combined_summary = " ".join(
-        [r.get("summary", "") for r in results]
-    ).strip()
-
-    combined_highlights = list(set(
-        sum([r.get("highlights", []) for r in results], [])
-    ))
-
-    final_output = {
-        "overview": combined_overview,
-        "summary": combined_summary,
-        "highlights": combined_highlights
-    }
-
     # Return selected section if requested
     if analysis_type == 1:
-        return {"overview": final_output["overview"]}
+        return {"overview": final_output.get("overview", "")}
     elif analysis_type == 2:
-        return {"summary": final_output["summary"]}
+        return {"summary": final_output.get("summary", "")}
     elif analysis_type == 3:
-        return {"highlights": final_output["highlights"]}
+        return {"highlights": final_output.get("highlights", [])}
 
     return final_output
+
+
+# ---------------------------------------------------------------------------
+# /analyze/legal  — Indian rental law compliance checker
+#
+# Separate endpoint so the existing /analyze endpoint is untouched.
+# Accepts the same PDF upload but runs the three-phase legal pipeline:
+#   1. Clause extraction
+#   2. Compliance check against Indian law + state rules
+#   3. Prioritised suggestions with draft clauses
+# ---------------------------------------------------------------------------
+
+@app.post("/analyze/legal")
+async def analyze_legal_pdf(
+    file: UploadFile = File(...),
+    state: str = Query(
+        "general",
+        description=(
+            "Indian state for state-specific rules. "
+            "Options: maharashtra, delhi, karnataka, tamil_nadu, general"
+        )
+    ),
+):
+    """
+    Analyse a rent agreement PDF for compliance with Indian rental law.
+
+    Returns:
+    - extracted_details : every clause found in the agreement
+    - compliance        : compliance score, missing/deficient/illegal clauses
+    - suggestions       : prioritised fixes with ready-to-use draft clauses
+    """
+
+    # Validate file type
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
+
+    # Validate state parameter
+    valid_states = {"maharashtra", "delhi", "karnataka", "tamil_nadu", "general"}
+    if state.lower() not in valid_states:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid state '{state}'. Choose from: {', '.join(sorted(valid_states))}"
+        )
+
+    # Use a random UUID filename to prevent path traversal attacks
+    safe_name = f"{uuid.uuid4()}.pdf"
+    file_path = os.path.join(UPLOAD_FOLDER, safe_name)
+
+    try:
+        # Save uploaded file
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+
+        # Page count guard — rent agreements should never be 200+ pages
+        page_count = get_page_count(file_path)
+        if page_count > MAX_PDF_PAGES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"PDF has {page_count} pages. Maximum allowed is {MAX_PDF_PAGES}."
+            )
+
+        # Load and split using LangChain (same as /analyze)
+        try:
+            pages = load_pdf(file_path)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+
+        chunks = split_documents(pages)
+
+        # Run the three-phase legal analysis pipeline
+        result = await analyze_legal(chunks, state=state.lower())
+
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    return result
