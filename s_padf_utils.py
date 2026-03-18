@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 # Safe values given ~17 GB VRAM free after PaddleOCR-VL loads:
 #   CHUNK_SIZE=12000 → ~4000 tokens per chunk, well inside Mistral's 8192 limit
 # ---------------------------------------------------------------------------
-CHUNK_SIZE    = 12000      # raised from 10000
-CHUNK_OVERLAP = 300        # lowered from 500 — less redundant re-processing
+CHUNK_SIZE    = 8000   # ~2500 tokens — fits well in Mistral's context with prompt overhead
+CHUNK_OVERLAP = 200    # small overlap is enough between merged page chunks
 
 # Pre-compile regex patterns once at import time — not on every clean_text call
 _RE_HYPHEN    = re.compile(r"-\n")
@@ -229,15 +229,59 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
     return pages
 
 
+def merge_pages(pages: list[Document]) -> list[Document]:
+    """
+    Concatenate adjacent pages into larger combined Documents before splitting.
+
+    Why this matters:
+      Your Finance Bill has 232 pages averaging ~1900 chars each.
+      With CHUNK_SIZE=8000 the splitter should merge ~4 pages per chunk.
+      But RecursiveCharacterTextSplitter only splits — it never MERGES
+      documents that are already smaller than chunk_size.
+      So 232 pages → 232 tiny chunks → 232 map calls → hours of inference.
+
+    This function concatenates all page text into a single Document first,
+    then split_documents will correctly break it into CHUNK_SIZE pieces,
+    each spanning multiple pages.
+
+    Result: 232 pages × ~1900 chars = ~440K chars ÷ 8000 = ~55 chunks.
+    With MAX_CHUNKS=10, the first 10 chunks cover ~80K chars = ~40 pages.
+    """
+    if not pages:
+        return pages
+
+    logger.info(f"[pdf_utils] merge_pages: merging {len(pages)} page(s) into single document")
+
+    combined_text = "\n\n".join(p.page_content for p in pages)
+    merged = Document(
+        page_content=combined_text,
+        metadata={
+            "page":   f"1-{pages[-1].metadata.get('page', len(pages))}",
+            "source": pages[0].metadata.get("source", ""),
+        },
+    )
+
+    logger.info(
+        f"[pdf_utils] merge_pages: combined {len(combined_text):,} chars "
+        f"(will split into ~{len(combined_text) // CHUNK_SIZE + 1} chunks)"
+    )
+    return [merged]
+
+
 def split_documents(pages: list[Document]) -> list[Document]:
     """
-    Split pages into overlapping chunks using RecursiveCharacterTextSplitter.
-    Larger CHUNK_SIZE means fewer chunks → fewer inference calls → faster overall.
+    Merge all pages into one document then split into CHUNK_SIZE chunks.
+
+    This ensures small pages are combined rather than kept as tiny individual
+    chunks, which would waste inference calls on near-empty content.
     """
-    total_chars = sum(len(p.page_content) for p in pages)
+    # Merge pages first so the splitter produces full-size chunks
+    merged = merge_pages(pages)
+
+    total_chars = sum(len(p.page_content) for p in merged)
     logger.info(
-        f"[pdf_utils] split_documents: {len(pages)} page(s), "
-        f"{total_chars:,} chars, chunk_size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP}"
+        f"[pdf_utils] split_documents: {total_chars:,} chars, "
+        f"chunk_size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP}"
     )
 
     splitter = RecursiveCharacterTextSplitter(
@@ -248,7 +292,7 @@ def split_documents(pages: list[Document]) -> list[Document]:
     )
 
     t_split = time.perf_counter()
-    chunks  = splitter.split_documents(pages)
+    chunks  = splitter.split_documents(merged)
     avg     = sum(len(c.page_content) for c in chunks) / len(chunks) if chunks else 0
     logger.info(
         f"[pdf_utils] split_documents: {len(chunks)} chunk(s) in "

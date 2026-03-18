@@ -17,10 +17,22 @@ logger = logging.getLogger(__name__)
 #   Safe to run MAX_CHUNKS=30 with CHUNK_SIZE=12000
 # ---------------------------------------------------------------------------
 MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
-MAX_CHUNKS = 30                          # raised — more coverage per request
-MAX_INPUT_TOKENS = 7000                  # raised — Mistral context is 8192
-MAX_NEW_TOKENS_MAP    = 600
-MAX_NEW_TOKENS_REDUCE = 800
+
+# MAX_CHUNKS controls how many map inference calls run.
+# Each call takes ~40s. At 7.5 tok/s with 8-bit:
+#   10 chunks × 40s = ~7 min total inference
+#   Keep low for fast responses, raise for more document coverage.
+MAX_CHUNKS = 10
+
+# Token budgets
+MAX_INPUT_TOKENS      = 6500   # safe ceiling for 8-bit Mistral (context=8192)
+MAX_NEW_TOKENS_MAP    = 400    # tighter — only need overview+summary+highlights
+MAX_NEW_TOKENS_REDUCE = 600
+
+# How many map results to feed into one reduce call.
+# 30 map results × ~200 chars each ≈ 6000 chars → too many tokens.
+# Batch into groups of 5 → each intermediate reduce stays under token limit.
+REDUCE_BATCH_SIZE = 5
 
 # Speed: set before any CUDA allocation
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
@@ -225,12 +237,11 @@ FIELD RULES:
   - Prioritize: critical risks, key figures, deadlines, warnings, or outcomes.
 
 STRICT OUTPUT RULES:
-  - Output ONLY the JSON object.
-  - Do NOT add any explanation, greeting, or commentary.
-  - Do NOT use markdown, code blocks, or backticks.
-  - Do NOT repeat these instructions.
-  - All string values must be properly escaped.
-  - If a section has insufficient information, write "Not enough information available."
+  - Output ONLY the JSON object. No explanation. No markdown. No backticks.
+  - All strings must be properly escaped.
+  - Keep each field concise — overview max 2 sentences, summary max 4 sentences,
+    highlights exactly 4 items of max 20 words each.
+  - If insufficient information, write "Not enough information available."
 
 Document:
 ----------------
@@ -241,32 +252,44 @@ Document:
 
 
 def _build_reduce_prompt(partial_results: list[dict]) -> str:
-    """Reduce prompt — synthesizes all map results into one final output."""
+    """
+    Compact reduce prompt — uses only overview + highlights from each map result,
+    NOT the full summary. This keeps the prompt small enough to fit in context
+    even with many map results.
+
+    Token budget estimate:
+      Header + instructions ≈ 200 tokens
+      Per result: overview(~30) + 4 highlights(~80) ≈ 110 tokens
+      5 results × 110 = 550 tokens → well within limit
+    """
     parts = []
     for i, r in enumerate(partial_results, 1):
-        overview   = r.get("overview", "")
-        summary    = r.get("summary",  "")
-        highlights = "\n".join(f"  - {h}" for h in r.get("highlights", []))
-        parts.append(
-            f"[Part {i}]\n"
-            f"Overview: {overview}\n"
-            f"Summary: {summary}\n"
-            f"Highlights:\n{highlights}"
-        )
+        overview   = r.get("overview", "").strip()
+        highlights = r.get("highlights", [])
+        # Limit to 4 highlights per chunk to keep prompt compact
+        hl_text = "\n".join(f"  - {h}" for h in highlights[:4])
+        if overview or hl_text:
+            parts.append(
+                f"[Section {i}]\n"
+                f"Overview: {overview}\n"
+                f"Key facts:\n{hl_text}"
+            )
+
+    combined = "\n\n".join(parts)
 
     return f"""<s>[INST]
-You are an expert document analyst. Synthesize these partial analyses of different
-sections of the same document into one single coherent JSON briefing.
+You are an expert document analyst. Synthesize these section analyses into one
+single coherent JSON briefing for the entire document.
 
-Partial analyses:
+Section analyses:
 ----------------
-{chr(10).join(parts)}
+{combined}
 ----------------
 
 Produce a final unified JSON:
 {{
   "overview": "1-2 sentence description of the entire document and its purpose.",
-  "summary": "4-6 sentence coherent executive summary — one flowing paragraph, not a list.",
+  "summary": "4-6 sentence executive summary as one flowing paragraph.",
   "highlights": [
     "Most important specific fact from the entire document.",
     "Second most important specific fact.",
@@ -278,12 +301,56 @@ Produce a final unified JSON:
 
 STRICT OUTPUT RULES:
   - Output ONLY the JSON object.
-  - Do NOT mention Part 1, Part 2, or chunk numbers.
+  - Do NOT mention Section 1, Section 2, or part numbers in the output.
   - Do NOT add explanation, greeting, or commentary.
   - Do NOT use markdown, code blocks, or backticks.
   - All string values must be properly escaped.
 [/INST]
 """
+
+
+def _batched_reduce(results: list[dict], extract_json_fn) -> dict:
+    """
+    Two-level reduce for large numbers of map results.
+
+    The problem: 30 map results × ~110 tokens each = ~3300 tokens of content
+    plus the prompt template itself pushes past the model's context window.
+
+    The fix: process results in batches of REDUCE_BATCH_SIZE, producing one
+    intermediate result per batch, then do a final reduce over those.
+
+    Example with 30 results and REDUCE_BATCH_SIZE=5:
+      Level 1: 6 batches × 5 results → 6 intermediate results  (6 inference calls)
+      Level 2: 1 final reduce of 6 intermediates               (1 inference call)
+      Total: 7 reduce calls instead of 1 overflowing call
+
+    This keeps every prompt well within the token limit.
+    """
+    if len(results) <= REDUCE_BATCH_SIZE:
+        # Small enough — single reduce
+        prompt = _build_reduce_prompt(results)
+        raw    = _run_inference(prompt, MAX_NEW_TOKENS_REDUCE, label="reduce")
+        return extract_json_fn(raw)
+
+    # Level 1 — batch reduce
+    logger.info(
+        f"[_batched_reduce] {len(results)} results → "
+        f"batching into groups of {REDUCE_BATCH_SIZE}"
+    )
+    intermediates = []
+    for i in range(0, len(results), REDUCE_BATCH_SIZE):
+        batch     = results[i: i + REDUCE_BATCH_SIZE]
+        batch_lbl = f"reduce-batch {i // REDUCE_BATCH_SIZE + 1}"
+        logger.info(f"[_batched_reduce] {batch_lbl}: {len(batch)} results")
+        prompt = _build_reduce_prompt(batch)
+        raw    = _run_inference(prompt, MAX_NEW_TOKENS_REDUCE, label=batch_lbl)
+        intermediates.append(extract_json_fn(raw))
+
+    # Level 2 — final reduce over intermediates
+    logger.info(f"[_batched_reduce] Final reduce over {len(intermediates)} intermediate(s)")
+    prompt = _build_reduce_prompt(intermediates)
+    raw    = _run_inference(prompt, MAX_NEW_TOKENS_REDUCE, label="reduce-final")
+    return extract_json_fn(raw)
 
 
 # ---------------------------------------------------------------------------
@@ -445,22 +512,34 @@ async def generate_analysis(chunks: list[Document]) -> dict:
         logger.info("[generate_analysis] Single chunk — skipping reduce")
         result = map_results[0]
     else:
-        logger.info(f"[generate_analysis] ── REDUCE: synthesizing {len(map_results)} results ──")
+        logger.info(
+            f"[generate_analysis] ── REDUCE phase: "
+            f"{len(map_results)} results, batch_size={REDUCE_BATCH_SIZE} ──"
+        )
         t_reduce = time.perf_counter()
         try:
-            raw_reduced = await loop.run_in_executor(
+            # Run batched reduce in thread pool (blocking GPU calls)
+            result = await loop.run_in_executor(
                 None,
-                lambda: _run_inference(
-                    _build_reduce_prompt(map_results),
-                    MAX_NEW_TOKENS_REDUCE,
-                    "reduce"
-                )
+                lambda: _batched_reduce(map_results, extract_json)
             )
-            result = extract_json(raw_reduced)
-            logger.info(f"[generate_analysis] REDUCE done ({time.perf_counter() - t_reduce:.2f}s)")
+            logger.info(
+                f"[generate_analysis] REDUCE done "
+                f"({time.perf_counter() - t_reduce:.2f}s)"
+            )
         except Exception as e:
-            logger.error(f"[generate_analysis] Reduce failed: {e} — using first map result")
-            result = map_results[0]
+            logger.error(
+                f"[generate_analysis] Reduce failed: {e} — "
+                "merging map results directly"
+            )
+            # Fallback: collect all highlights and use first non-empty overview/summary
+            result = {
+                "overview":   next((r["overview"]  for r in map_results if r.get("overview")),  ""),
+                "summary":    next((r["summary"]   for r in map_results if r.get("summary")),   ""),
+                "highlights": list({
+                    h for r in map_results for h in r.get("highlights", []) if h
+                })[:6],
+            }
 
     logger.info(
         f"[generate_analysis] Pipeline complete — "
