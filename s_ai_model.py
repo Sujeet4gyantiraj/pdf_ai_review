@@ -39,7 +39,7 @@ logger.info("Model ready.")
 def _build_map_prompt(text: str) -> str:
     """Map prompt — applied to every individual chunk."""
     return f"""<s>[INST]
-You are an expert document analyst with deep knowledge across legal, medical,
+You are an expert document analyst with deep knowledge across medical,
 financial, technical, academic, and business domains.
 
 Your task is to read any type of document and produce a structured JSON briefing
@@ -62,13 +62,12 @@ FIELD RULES:
 
 "overview" — 1-2 sentences only.
   - Identify what TYPE of document this is.
-    Examples of types: employment contract, research paper, medical report,
+    Examples of types: research paper, medical report,
     user manual, financial statement, privacy policy, invoice, academic thesis,
     insurance policy, government notice, product specification, meeting minutes.
   - State the subject, purpose, and intended audience or parties.
 
 "summary" — 4-6 sentences in professional, neutral tone.
-  - For CONTRACTS/LEGAL: cover parties, obligations, terms, penalties, duration.
   - For MEDICAL/HEALTH: cover diagnosis, findings, recommendations, medications, follow-up.
   - For FINANCIAL: cover revenue, expenses, profit/loss, forecasts, risks.
   - For TECHNICAL/MANUAL: cover product purpose, key features, requirements, warnings.
@@ -79,10 +78,10 @@ FIELD RULES:
 "highlights" — 4 to 6 items.
   - Each must be ONE complete, specific, factual sentence.
   - Always include real values from the document: numbers, dates, names,
-    percentages, durations, prices, dosages, deadlines, versions, scores, or clauses.
+    percentages, durations, prices, dosages, deadlines, versions, or scores.
   - Do NOT write vague statements like "The document contains important information."
   - Do NOT write opinions or analysis — only facts extracted directly from the document.
-  - Prioritize: critical obligations, risks, key figures, deadlines, warnings, or outcomes.
+  - Prioritize: critical risks, key figures, deadlines, warnings, or outcomes.
 
 STRICT OUTPUT RULES:
   - Output ONLY the JSON object.
