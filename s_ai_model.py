@@ -1,4 +1,5 @@
 import asyncio
+import time
 import torch
 import logging
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -20,20 +21,114 @@ torch.backends.cuda.matmul.allow_tf32 = True
 # ---------------------------------------------------------------------------
 # Load model once at import time
 # ---------------------------------------------------------------------------
-logger.info(f"Loading {MODEL_NAME} onto {DEVICE} ...")
-
+logger.info(f"[ai_model] Loading tokenizer: {MODEL_NAME}")
+t0         = time.perf_counter()
 _tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-_model     = AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME,
-    dtype=torch.float16,
-    device_map="auto",
-)
-
-logger.info("Model ready.")
+logger.info(f"[ai_model] Tokenizer loaded ({time.perf_counter() - t0:.2f}s)")
 
 # ---------------------------------------------------------------------------
-# Prompt builders
-# These return plain strings — no LangChain PromptTemplate overhead.
+# Safe model loading
+#
+# Root cause of "Tensor on device cuda:0 is not on the expected device meta":
+#   device_map="auto" splits layers across GPU + meta/CPU when VRAM is tight.
+#   Inputs land on cuda:0 but some weights stay on meta → RuntimeError.
+#
+# Fix strategy (in priority order):
+#   1. If enough VRAM → load fully onto cuda:0, no offloading at all.
+#   2. If VRAM is tight → load in 8-bit (bitsandbytes) so the whole model
+#      stays on one real device. Requires: pip install bitsandbytes
+#   3. CPU fallback → float32, slow but always works.
+# ---------------------------------------------------------------------------
+
+def _vram_gb() -> float:
+    """Return total VRAM in GB for device 0, or 0.0 if no GPU."""
+    if not torch.cuda.is_available():
+        return 0.0
+    return torch.cuda.get_device_properties(0).total_memory / 1024 ** 3
+
+
+def _load_model():
+    vram = _vram_gb()
+    logger.info(f"[ai_model] Detected VRAM: {vram:.1f} GB")
+
+    # Mistral-7B in float16 needs ~14 GB. Use 8-bit if tighter.
+    if DEVICE == "cuda" and vram >= 14.0:
+        logger.info("[ai_model] Loading in float16 fully on cuda:0 (no offloading)")
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME,
+            torch_dtype=torch.float16,
+            device_map={"": 0},        # force ALL layers onto cuda:0
+        )
+
+    elif DEVICE == "cuda" and vram >= 6.0:
+        logger.info(
+            f"[ai_model] VRAM {vram:.1f} GB < 14 GB — "
+            "loading in 8-bit via bitsandbytes to keep all layers on one device"
+        )
+        try:
+            from transformers import BitsAndBytesConfig
+            bnb_config = BitsAndBytesConfig(load_in_8bit=True)
+            model = AutoModelForCausalLM.from_pretrained(
+                MODEL_NAME,
+                quantization_config=bnb_config,
+                device_map={"": 0},    # all layers on cuda:0
+            )
+        except ImportError:
+            logger.warning(
+                "[ai_model] bitsandbytes not installed — "
+                "falling back to float16 with device_map={'':0}. "
+                "Install with: pip install bitsandbytes"
+            )
+            model = AutoModelForCausalLM.from_pretrained(
+                MODEL_NAME,
+                torch_dtype=torch.float16,
+                device_map={"": 0},
+            )
+
+    else:
+        logger.warning(
+            f"[ai_model] No usable GPU (VRAM={vram:.1f} GB) — "
+            "loading on CPU in float32. Inference will be slow."
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME,
+            torch_dtype=torch.float32,
+            device_map="cpu",
+        )
+
+    # Confirm no layers ended up on meta device
+    meta_params = [
+        name for name, p in model.named_parameters()
+        if p.device.type == "meta"
+    ]
+    if meta_params:
+        logger.error(
+            f"[ai_model] {len(meta_params)} parameter(s) still on meta device "
+            f"after loading — first few: {meta_params[:3]}"
+        )
+    else:
+        logger.info("[ai_model] All parameters on real devices (no meta offloading)")
+
+    model.eval()
+    return model
+
+
+logger.info(f"[ai_model] Loading model (device='{DEVICE}') ...")
+t0     = time.perf_counter()
+_model = _load_model()
+logger.info(f"[ai_model] Model ready ({time.perf_counter() - t0:.2f}s)")
+
+if DEVICE == "cuda":
+    allocated = torch.cuda.memory_allocated() / 1024 ** 3
+    reserved  = torch.cuda.memory_reserved()  / 1024 ** 3
+    logger.info(
+        f"[ai_model] GPU memory after model load — "
+        f"allocated: {allocated:.2f} GB, reserved: {reserved:.2f} GB"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Prompt builders — plain f-strings, no LangChain overhead
 # ---------------------------------------------------------------------------
 
 def _build_map_prompt(text: str) -> str:
@@ -155,40 +250,80 @@ STRICT OUTPUT RULES:
 # Core inference — direct model.generate(), no wrappers
 # ---------------------------------------------------------------------------
 
-def _run_inference(prompt: str, max_new_tokens: int = 600) -> str:
+def _run_inference(prompt: str, max_new_tokens: int = 600, label: str = "") -> str:
     """
     Synchronous direct inference using model.generate().
     Always called via run_in_executor — never on the async event loop directly.
+
+    label — optional tag shown in logs to identify map vs reduce calls.
+
+    Device is derived from the first model parameter so it always matches
+    where the model was actually loaded — avoids the meta-device mismatch
+    that occurs when device_map="auto" splits layers across devices.
     """
+    tag = f"[{label}] " if label else ""
+
+    # Resolve the real device from the model itself (not the global DEVICE string)
+    model_device = next(_model.parameters()).device
+    logger.debug(f"{tag}_run_inference: model device = {model_device}")
+
     # Measure token count before truncation
     encoded     = _tokenizer(prompt, return_tensors="pt", truncation=False)
     token_count = encoded["input_ids"].shape[1]
+    logger.debug(f"{tag}_run_inference: prompt is {token_count} tokens")
 
     if token_count > 6000:
-        logger.warning(f"Input is {token_count} tokens, truncating to 6000.")
+        logger.warning(
+            f"{tag}_run_inference: {token_count} tokens exceeds 6000 — truncating. "
+            "Consider lowering CHUNK_SIZE in pdf_utils.py."
+        )
 
     inputs = _tokenizer(
         prompt,
         return_tensors="pt",
         truncation=True,
         max_length=6000,
-    ).to(DEVICE)
+    ).to(model_device)
 
+    if model_device.type == "cuda":
+        free_gb = (
+            torch.cuda.get_device_properties(model_device).total_memory
+            - torch.cuda.memory_allocated(model_device)
+        ) / 1024 ** 3
+        logger.debug(f"{tag}_run_inference: GPU free before generate: {free_gb:.2f} GB")
+
+    t_gen = time.perf_counter()
     try:
-        output = _model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            do_sample=False,
-            repetition_penalty=1.15,
-            pad_token_id=_tokenizer.eos_token_id,
-        )
+        with torch.inference_mode():
+            output = _model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                repetition_penalty=1.15,
+                pad_token_id=_tokenizer.eos_token_id,
+            )
     except torch.cuda.OutOfMemoryError:
         torch.cuda.empty_cache()
+        logger.error(
+            f"{tag}_run_inference: CUDA OutOfMemoryError — "
+            "lower MAX_CHUNKS or CHUNK_SIZE and retry"
+        )
         raise RuntimeError("GPU out of memory — lower MAX_CHUNKS or CHUNK_SIZE and retry.")
+    except Exception as e:
+        logger.exception(f"{tag}_run_inference: unexpected error during model.generate(): {e}")
+        raise
     finally:
         del inputs
-        if DEVICE == "cuda":
+        if model_device.type == "cuda":
             torch.cuda.empty_cache()
+
+    elapsed     = time.perf_counter() - t_gen
+    new_tokens  = output.shape[1] - encoded["input_ids"].shape[1]
+    tok_per_sec = new_tokens / elapsed if elapsed > 0 else 0
+    logger.info(
+        f"{tag}_run_inference: generated {new_tokens} tokens "
+        f"in {elapsed:.2f}s ({tok_per_sec:.1f} tok/s)"
+    )
 
     # Decode only the newly generated tokens
     return _tokenizer.decode(
@@ -217,50 +352,103 @@ async def generate_analysis(chunks: list[Document]) -> dict:
 
     Returns a parsed dict {overview, summary, highlights}.
     """
-    # Import here to avoid circular import (main imports us, we import from main)
-    from s_main import extract_json
+    from s_main import extract_json  # avoid circular import
+
+    logger.info(f"[generate_analysis] Called with {len(chunks)} chunk(s)")
 
     if not chunks:
+        logger.warning("[generate_analysis] No chunks received — returning empty result")
         return {"overview": "", "summary": "", "highlights": []}
 
     # Enforce chunk limit to protect GPU memory
     if len(chunks) > MAX_CHUNKS:
         logger.warning(
-            f"Got {len(chunks)} chunks, truncating to {MAX_CHUNKS}. "
-            "Raise MAX_CHUNKS or lower CHUNK_SIZE in pdf_utils.py to cover more content."
+            f"[generate_analysis] {len(chunks)} chunks exceeds MAX_CHUNKS={MAX_CHUNKS} — "
+            f"truncating. Raise MAX_CHUNKS or lower CHUNK_SIZE to cover more content."
         )
         chunks = chunks[:MAX_CHUNKS]
 
-    loop = asyncio.get_event_loop()
+    loop        = asyncio.get_event_loop()
+    t_pipeline  = time.perf_counter()
 
     # ------------------------------------------------------------------
-    # MAP phase — one inference call per chunk, run sequentially in the
-    # thread pool (GPU can only run one forward pass at a time anyway)
+    # MAP phase
     # ------------------------------------------------------------------
-    logger.info(f"Map phase: {len(chunks)} chunk(s)")
+    logger.info(f"[generate_analysis] ── MAP phase: {len(chunks)} chunk(s) ──")
     map_results = []
 
     for i, chunk in enumerate(chunks):
-        logger.info(f"  Chunk {i + 1}/{len(chunks)} "
-                    f"({len(chunk.page_content)} chars, "
-                    f"page {chunk.metadata.get('page', '?')})")
+        chunk_label = f"map {i + 1}/{len(chunks)}"
+        page_ref    = chunk.metadata.get("page", "?")
+        logger.info(
+            f"[generate_analysis] [{chunk_label}] "
+            f"page={page_ref}, chars={len(chunk.page_content)}"
+        )
 
-        prompt = _build_map_prompt(chunk.page_content)
-        raw    = await loop.run_in_executor(None, _run_inference, prompt)
+        t_chunk = time.perf_counter()
+        try:
+            prompt = _build_map_prompt(chunk.page_content)
+            raw    = await loop.run_in_executor(
+                None,
+                lambda p=prompt, lbl=chunk_label: _run_inference(p, label=lbl)
+            )
+        except Exception as e:
+            logger.error(
+                f"[generate_analysis] [{chunk_label}] inference failed: {e} — "
+                "inserting empty result and continuing"
+            )
+            map_results.append({"overview": "", "summary": "", "highlights": []})
+            continue
+
         parsed = extract_json(raw)
         map_results.append(parsed)
+        logger.info(
+            f"[generate_analysis] [{chunk_label}] done "
+            f"({time.perf_counter() - t_chunk:.2f}s) — "
+            f"overview={'yes' if parsed.get('overview') else 'empty'}, "
+            f"highlights={len(parsed.get('highlights', []))}"
+        )
+
+    logger.info(
+        f"[generate_analysis] MAP phase complete — "
+        f"{len(map_results)} result(s) collected"
+    )
 
     # ------------------------------------------------------------------
-    # REDUCE phase — only when there is more than one chunk
+    # REDUCE phase
     # ------------------------------------------------------------------
     if len(map_results) == 1:
-        logger.info("Single chunk — skipping reduce phase.")
-        return map_results[0]
+        logger.info("[generate_analysis] Single chunk — skipping reduce phase")
+        result = map_results[0]
+    else:
+        logger.info(
+            f"[generate_analysis] ── REDUCE phase: synthesizing {len(map_results)} results ──"
+        )
+        t_reduce      = time.perf_counter()
+        reduce_prompt = _build_reduce_prompt(map_results)
 
-    logger.info(f"Reduce phase: synthesizing {len(map_results)} map results.")
-    reduce_prompt = _build_reduce_prompt(map_results)
-    raw_reduced   = await loop.run_in_executor(
-        None,
-        lambda: _run_inference(reduce_prompt, max_new_tokens=800),
+        try:
+            raw_reduced = await loop.run_in_executor(
+                None,
+                lambda: _run_inference(reduce_prompt, max_new_tokens=800, label="reduce")
+            )
+        except Exception as e:
+            logger.error(
+                f"[generate_analysis] Reduce inference failed: {e} — "
+                "falling back to first map result"
+            )
+            result = map_results[0]
+        else:
+            result = extract_json(raw_reduced)
+            logger.info(
+                f"[generate_analysis] REDUCE phase complete "
+                f"({time.perf_counter() - t_reduce:.2f}s)"
+            )
+
+    total = time.perf_counter() - t_pipeline
+    logger.info(
+        f"[generate_analysis] Pipeline complete — "
+        f"total: {total:.2f}s, "
+        f"highlights: {len(result.get('highlights', []))}"
     )
-    return extract_json(raw_reduced)
+    return result

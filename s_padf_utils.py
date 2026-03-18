@@ -1,4 +1,5 @@
 import re
+import time
 import logging
 import numpy as np
 import fitz  # PyMuPDF
@@ -24,9 +25,10 @@ NATIVE_TEXT_THRESHOLD = 50
 # ---------------------------------------------------------------------------
 # PaddleOCR-VL model — loaded once at import time, same as the LLM
 # ---------------------------------------------------------------------------
-logger.info("Loading PaddleOCR-VL 1.5 ...")
+logger.info("[pdf_utils] Loading PaddleOCR-VL 1.5 ...")
+t0      = time.perf_counter()
 _ocr_vl = PaddleOCRVL("v1.5")
-logger.info("PaddleOCR-VL ready.")
+logger.info(f"[pdf_utils] PaddleOCR-VL ready ({time.perf_counter() - t0:.2f}s)")
 
 
 # ---------------------------------------------------------------------------
@@ -39,14 +41,32 @@ def _ocr_page(page: fitz.Page) -> str:
     Renders at 150 DPI to balance quality vs. memory usage.
     Cleans up GPU memory after each page to prevent OOM on long PDFs.
     """
-    pix = page.get_pixmap(dpi=150)
+    page_num = page.number + 1
+
+    logger.debug(f"[pdf_utils] Page {page_num}: rendering pixmap at 150 DPI")
+    t_pix = time.perf_counter()
+    pix   = page.get_pixmap(dpi=150)
+    logger.debug(
+        f"[pdf_utils] Page {page_num}: pixmap ready "
+        f"{pix.w}x{pix.h}px, {pix.n} channel(s) "
+        f"({time.perf_counter() - t_pix:.2f}s)"
+    )
+
     img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
 
     # Drop alpha channel if present (RGBA → RGB)
     if pix.n == 4:
+        logger.debug(f"[pdf_utils] Page {page_num}: dropping alpha channel (RGBA → RGB)")
         img = img[:, :, :3]
 
+    logger.debug(f"[pdf_utils] Page {page_num}: running OCR-VL predict")
+    t_ocr   = time.perf_counter()
     results = _ocr_vl.predict(img)
+    logger.info(
+        f"[pdf_utils] Page {page_num}: OCR-VL predict done "
+        f"({time.perf_counter() - t_ocr:.2f}s), "
+        f"{len(results)} result block(s)"
+    )
 
     # Extract text — PaddleOCR-VL result objects expose text via .res
     page_parts = []
@@ -56,12 +76,20 @@ def _ocr_page(page: fitz.Page) -> str:
         elif isinstance(res, dict) and "res" in res:
             page_parts.append(res["res"])
         else:
+            logger.debug(f"[pdf_utils] Page {page_num}: unexpected result type {type(res)}, using str()")
             page_parts.append(str(res))
+
+    extracted_chars = sum(len(p) for p in page_parts)
+    logger.debug(
+        f"[pdf_utils] Page {page_num}: extracted {extracted_chars} chars "
+        f"from {len(page_parts)} block(s)"
+    )
 
     # GPU memory cleanup — critical for multi-page scanned PDFs
     del results
     if paddle.device.is_compiled_with_cuda():
         paddle.device.cuda.empty_cache()
+        logger.debug(f"[pdf_utils] Page {page_num}: paddle GPU cache cleared")
 
     return "\n".join(page_parts)
 
@@ -73,10 +101,13 @@ def clean_text(text: str) -> str:
     - Collapse excessive blank lines
     - Collapse repeated spaces
     """
-    text = re.sub(r"-\n",    "",     text)  # rejoin hyphenated words
-    text = re.sub(r"\n{3,}", "\n\n", text)  # collapse 3+ newlines
-    text = re.sub(r" {2,}",  " ",    text)  # collapse repeated spaces
-    return text.strip()
+    before = len(text)
+    text = re.sub(r"-\n",    "",     text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r" {2,}",  " ",    text)
+    text = text.strip()
+    logger.debug(f"[pdf_utils] clean_text: {before} → {len(text)} chars")
+    return text
 
 
 # ---------------------------------------------------------------------------
@@ -96,38 +127,67 @@ def load_pdf(file_path: str) -> list[Document]:
 
     Raises ValueError if the file cannot be opened or yields no text at all.
     """
+    logger.info(f"[pdf_utils] load_pdf: opening '{file_path}'")
+    t_load = time.perf_counter()
+
     try:
         doc = fitz.open(file_path)
     except Exception as e:
+        logger.error(f"[pdf_utils] load_pdf: failed to open file — {e}")
         raise ValueError(f"Could not open PDF: {e}")
 
-    pages: list[Document] = []
+    total_pages = len(doc)
+    logger.info(f"[pdf_utils] load_pdf: {total_pages} page(s) found")
+
+    pages:        list[Document] = []
+    native_count: int = 0
+    ocr_count:    int = 0
+    skip_count:   int = 0
 
     with doc:
         for page in doc:
-            page_num = page.number + 1  # 1-based for readability in logs
+            page_num = page.number + 1
 
             # --- Strategy 1: native text extraction ---
             native_text = page.get_text("text").strip()
+            logger.debug(
+                f"[pdf_utils] Page {page_num}/{total_pages}: "
+                f"native text = {len(native_text)} chars"
+            )
 
             if len(native_text) >= NATIVE_TEXT_THRESHOLD:
-                logger.info(f"Page {page_num}: native extraction "
-                            f"({len(native_text)} chars)")
+                logger.info(
+                    f"[pdf_utils] Page {page_num}/{total_pages}: "
+                    f"✓ native ({len(native_text)} chars)"
+                )
                 text = native_text
+                native_count += 1
 
             else:
                 # --- Strategy 2: PaddleOCR-VL for scanned/image pages ---
-                logger.info(f"Page {page_num}: native text too short "
-                            f"({len(native_text)} chars) — running OCR-VL")
+                logger.info(
+                    f"[pdf_utils] Page {page_num}/{total_pages}: "
+                    f"native text too short ({len(native_text)} chars) "
+                    f"— falling back to OCR-VL"
+                )
                 try:
                     text = _ocr_page(page)
+                    ocr_count += 1
                 except Exception as e:
-                    logger.warning(f"Page {page_num}: OCR-VL failed ({e}), skipping.")
+                    logger.error(
+                        f"[pdf_utils] Page {page_num}/{total_pages}: "
+                        f"OCR-VL failed — {e} — skipping page"
+                    )
+                    skip_count += 1
                     continue
 
             text = clean_text(text)
             if not text:
-                logger.info(f"Page {page_num}: no text after cleaning, skipping.")
+                logger.warning(
+                    f"[pdf_utils] Page {page_num}/{total_pages}: "
+                    "no text after cleaning — skipping page"
+                )
+                skip_count += 1
                 continue
 
             pages.append(Document(
@@ -138,14 +198,23 @@ def load_pdf(file_path: str) -> list[Document]:
                 },
             ))
 
+    elapsed = time.perf_counter() - t_load
+    logger.info(
+        f"[pdf_utils] load_pdf complete in {elapsed:.2f}s — "
+        f"{len(pages)} page(s) loaded "
+        f"(native={native_count}, ocr={ocr_count}, skipped={skip_count})"
+    )
+
     if not pages:
+        logger.error(
+            f"[pdf_utils] load_pdf: no text extracted from any page in '{file_path}'"
+        )
         raise ValueError(
             "No extractable text found. "
             "The file may be fully image-based with unrecognisable content, "
             "encrypted, or empty."
         )
 
-    logger.info(f"Loaded {len(pages)} page(s) from {file_path}")
     return pages
 
 
@@ -157,6 +226,13 @@ def split_documents(pages: list[Document]) -> list[Document]:
 
     Page metadata (page number, source path) is preserved on every chunk.
     """
+    total_chars = sum(len(p.page_content) for p in pages)
+    logger.info(
+        f"[pdf_utils] split_documents: splitting {len(pages)} page(s), "
+        f"{total_chars:,} total chars "
+        f"(chunk_size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP})"
+    )
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
@@ -164,11 +240,16 @@ def split_documents(pages: list[Document]) -> list[Document]:
         length_function=len,
     )
 
-    chunks = splitter.split_documents(pages)
+    t_split = time.perf_counter()
+    chunks  = splitter.split_documents(pages)
+    elapsed = time.perf_counter() - t_split
+
+    avg_chunk = sum(len(c.page_content) for c in chunks) / len(chunks) if chunks else 0
     logger.info(
-        f"Split {len(pages)} page(s) into {len(chunks)} chunk(s) "
-        f"(chunk_size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP})"
+        f"[pdf_utils] split_documents: {len(chunks)} chunk(s) produced "
+        f"in {elapsed:.3f}s (avg {avg_chunk:.0f} chars/chunk)"
     )
+
     return chunks
 
 
@@ -176,6 +257,9 @@ def get_page_count(file_path: str) -> int:
     """Return the number of pages in a PDF without fully loading it."""
     try:
         with fitz.open(file_path) as doc:
-            return len(doc)
-    except Exception:
+            count = len(doc)
+            logger.debug(f"[pdf_utils] get_page_count: '{file_path}' has {count} page(s)")
+            return count
+    except Exception as e:
+        logger.error(f"[pdf_utils] get_page_count: failed to open '{file_path}' — {e}")
         return 0
