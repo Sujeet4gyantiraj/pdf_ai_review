@@ -218,7 +218,7 @@ async def generate_analysis(chunks: list[Document]) -> dict:
     Returns a parsed dict {overview, summary, highlights}.
     """
     # Import here to avoid circular import (main imports us, we import from main)
-    from main import extract_json
+    from s_main import extract_json
 
     if not chunks:
         return {"overview": "", "summary": "", "highlights": []}
