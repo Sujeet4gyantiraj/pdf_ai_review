@@ -10,10 +10,7 @@ from ai_models import generate_analysis
 import logging
 from pdf_util import extract_text_from_pdf, chunk_text
 from ai_models import generate_analysis
-<<<<<<< HEAD
 
-=======
->>>>>>> 9bb19c4786533eb83705853394467dfbfd93df12
 
 logger = logging.getLogger(__name__)
 
