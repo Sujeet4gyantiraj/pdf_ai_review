@@ -31,6 +31,7 @@ def extract_text_from_pdf(file_path: str) -> str:
     with fitz.open(file_path) as doc:
         for page in doc:
             # 1. Native Extraction (Fastest)
+            print(f"Extracting page {page.number} with native method...")
             text = page.get_text("text")
             if len(text.strip()) > 50:
                 final_text.append(text.strip())
