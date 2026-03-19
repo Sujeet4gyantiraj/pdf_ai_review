@@ -9,20 +9,6 @@ logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Config — calibrated from Finance Bill 2026 actual logs
-#
-# Finance Bill tokenizes at ~0.47 chars/token (dense legal text).
-# General prose ~3.5 chars/token. Legal text is 7x denser.
-#
-# TOKEN_CHUNK_SIZE=5500 content tokens:
-#   + ~150 prompt tokens = ~5650 total input (never truncated)
-#   Finance Bill: 440K chars → ~207K tokens → ~38 chunks
-#   38 chunks × ~11s = ~7 min MAP
-#   reduce: 4 batches of 10 + 1 final = ~1 min
-#   Total: ~8 min
-#
-# What failed before:
-#   CHUNK_SIZE=25000 chars → 11000+ tokens → truncated → broken JSON
-#   TOKEN_CHUNK_SIZE=5500  → exactly 5500 tokens every time → always complete JSON
 # ---------------------------------------------------------------------------
 MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
 
@@ -72,16 +58,6 @@ def _vram_total_gb() -> float:
 def split_by_tokens(text: str) -> list[str]:
     """
     Split text into chunks of exactly TOKEN_CHUNK_SIZE tokens.
-
-    Why token-based instead of char-based:
-      Legal text (Finance Bill) → 0.47 chars/token
-      Normal prose              → 3.5 chars/token
-      A 25000-char chunk = 11750 tokens in legal text → truncated → broken JSON
-      A 5500-token chunk = 5500 tokens every time     → never truncated → clean JSON
-
-    Algorithm: tokenize full document once (fast, CPU-only, O(n)),
-    slice token windows, decode each window back to text.
-    No GPU needed. Runs in <1s for 440K chars.
     """
     if not text:
         return []
@@ -182,8 +158,7 @@ _EOS_TOKEN_IDS = [_tokenizer.eos_token_id]
 
 
 # ---------------------------------------------------------------------------
-# Prompts — compact (~150 tokens vs old ~400 tokens)
-# Saving 250 tokens per chunk = more content per call
+# Prompts
 # ---------------------------------------------------------------------------
 _MAP_PREFIX = (
     "<s>[INST]\nAnalyse this document excerpt. Output ONLY valid JSON:\n"
@@ -226,7 +201,6 @@ def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label:
     """
     Run model.generate() on prompt.
     On CUDA OOM: clear cache, halve input, retry up to 3 times.
-    Token count always measured from actual encoding — no char estimation.
     """
     tag          = f"[{label}] " if label else ""
     model_device = next(_model.parameters()).device
@@ -291,12 +265,11 @@ def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label:
 
 
 # ---------------------------------------------------------------------------
-# Batched reduce — filters empty results before batching
+# Batched reduce
 # ---------------------------------------------------------------------------
 def _batched_reduce(results: list[dict], extract_json_fn) -> dict:
     """
-    Filter out empty map results (they add noise and waste tokens),
-    then reduce in batches of REDUCE_BATCH_SIZE.
+    Filter out empty map results, then reduce in batches of REDUCE_BATCH_SIZE.
     """
     valid   = [r for r in results if r.get("overview") or r.get("highlights")]
     skipped = len(results) - len(valid)
@@ -323,26 +296,19 @@ def _batched_reduce(results: list[dict], extract_json_fn) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Public API — called from main.py
+# Public API
 # ---------------------------------------------------------------------------
 async def generate_analysis(merged_text: str) -> dict:
     """
     Full map-reduce pipeline.
-
-    Accepts the merged document text string (all pages concatenated).
-    Splits it into token-accurate chunks internally using split_by_tokens()
-    so chunks are always exactly TOKEN_CHUNK_SIZE tokens — no truncation ever.
-
-    main.py calls this as:
-        merged_text = "\\n\\n".join(p.page_content for p in pages)
-        result = await generate_analysis(merged_text)
     """
     from s_main import extract_json
 
-    if not merged_text or not merged_text.strip():
-        return {"overview": "", "summary": "", "highlights": []}
+    _EMPTY_CHUNK = {"overview": "", "summary": "", "highlights": []}
 
-    # Token-accurate split — eliminates all truncation
+    if not merged_text or not merged_text.strip():
+        return dict(_EMPTY_CHUNK)
+
     t0     = time.perf_counter()
     chunks = split_by_tokens(merged_text)
     logger.info(f"[generate_analysis] {len(chunks)} token-accurate chunk(s) in {time.perf_counter()-t0:.3f}s")
@@ -361,11 +327,24 @@ async def generate_analysis(merged_text: str) -> dict:
             prompt = _build_map_prompt(chunk_text)
             raw    = await loop.run_in_executor(None, lambda p=prompt, l=lbl: _run_inference(p, MAX_NEW_TOKENS_MAP, l))
         except Exception as e:
-            logger.error(f"[generate_analysis] [{lbl}] failed: {e} — inserting empty")
-            map_results.append({"overview": "", "summary": "", "highlights": []})
+            logger.error(f"[generate_analysis] [{lbl}] inference failed: {e} — inserting empty")
+            map_results.append(dict(_EMPTY_CHUNK))
             continue
 
+        # ── Guard: extract_json must return a dict ────────────────────────
+        # Mistral sometimes outputs a JSON array instead of an object.
+        # extract_json() now normalises this via _normalize_parsed(), but we
+        # add a second safety net here so a bad return can never propagate
+        # as a list and crash _build_reduce_prompt / _batched_reduce with
+        # "AttributeError: 'list' object has no attribute 'get'".
         parsed = extract_json(raw)
+        if not isinstance(parsed, dict):
+            logger.error(
+                f"[generate_analysis] [{lbl}] extract_json returned {type(parsed).__name__} "
+                f"instead of dict — inserting empty. raw[:200]={raw[:200]!r}"
+            )
+            parsed = dict(_EMPTY_CHUNK)
+
         map_results.append(parsed)
         logger.info(
             f"[generate_analysis] [{lbl}] done ({time.perf_counter()-t_chunk:.2f}s) "
@@ -392,6 +371,11 @@ async def generate_analysis(merged_text: str) -> dict:
                 "summary":    next((r["summary"]  for r in map_results if r.get("summary")),  ""),
                 "highlights": list({h for r in map_results for h in r.get("highlights", []) if h})[:6],
             }
+
+    # Final guard — ensure result is always a dict before returning
+    if not isinstance(result, dict):
+        logger.error(f"[generate_analysis] Final result is {type(result).__name__} — returning empty")
+        result = dict(_EMPTY_CHUNK)
 
     logger.info(f"[generate_analysis] total={time.perf_counter()-t_pipeline:.2f}s highlights={len(result.get('highlights', []))}")
     return result
