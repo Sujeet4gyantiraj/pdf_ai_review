@@ -182,3 +182,34 @@ Document:
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(None, _run_inference, prompt)
     return result
+
+async def run_llm(
+    text: str,
+    system_prompt: str,
+    max_input_tokens: int = MAX_INPUT_TOKENS
+) -> str:
+    """
+    Generic reusable LLM runner.
+    Accepts:
+    - text (document content)
+    - system_prompt (custom instruction per use-case)
+
+    Returns:
+    - model output (string)
+    """
+
+    prompt = f"""<s>[INST]
+{system_prompt}
+
+Document:
+----------------
+{text[:4000]}
+----------------
+[/INST]
+"""
+
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(None, _run_inference, prompt)
+
+    return result
+

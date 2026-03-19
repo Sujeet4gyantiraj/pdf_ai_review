@@ -7,6 +7,7 @@ import re
 import logging
 
 # Import ALL text utilities from the single source of truth  (Fix #1, #2, #14)
+from t_key_clause_extraction import extract_text_via_api, classify_document, DOCUMENT_HANDLERS
 from t_pdf_utils import extract_text_from_pdf, chunk_text, clean_text
 from t_ai_model import generate_analysis, load_model
 
@@ -241,3 +242,75 @@ async def analyze_pdf(
         return {"highlights": final_output["highlights"]}
 
     return final_output
+
+
+@app.post("/key-clause-extraction")
+async def key_clause_extraction(file: UploadFile = File(...)):
+
+    # ==============================
+    # Step 0: Validate file
+    # ==============================
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files allowed")
+
+    raw_bytes = await file.read()
+
+    if len(raw_bytes) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="File too large")
+
+    # ==============================
+    # Step 1: Save file safely
+    # ==============================
+    safe_name = f"{uuid.uuid4()}.pdf"
+    file_path = os.path.join(UPLOAD_FOLDER, safe_name)
+
+    try:
+        with open(file_path, "wb") as f:
+            f.write(raw_bytes)
+
+        del raw_bytes  # free memory
+
+        # ==============================
+        # Step 2: Extract text (FIXED)
+        # ==============================
+        text = extract_text_from_pdf(file_path)
+
+        if not text:
+            raise HTTPException(
+                status_code=422,
+                detail="No extractable text found"
+            )
+
+        # Optional extra cleaning
+        text = clean_text(text)
+
+        # ==============================
+        # Step 3: Classification
+        # ==============================
+        doc_type = await classify_document(text)
+        doc_type = doc_type.lower().strip()
+
+        # ==============================
+        # Step 4: Route
+        # ==============================
+        handler = DOCUMENT_HANDLERS.get(doc_type)
+
+        if handler:
+            return await handler(text)
+
+        # ==============================
+        # Step 5: Fallback
+        # ==============================
+        return {
+            "status": "unsupported",
+            "document_type": doc_type,
+            "message": "Unsupported document type."
+        }
+
+    finally:
+        # ==============================
+        # Step 6: Cleanup
+        # ==============================
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
