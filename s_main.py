@@ -130,51 +130,6 @@ def _postprocess_highlights(data: dict) -> dict:
     return data
 
 
-def _normalize_parsed(data, label: str = "") -> dict:
-    """
-    Ensure json.loads() output is always a dict with the expected keys.
-
-    Mistral occasionally outputs a JSON array instead of an object, e.g.:
-      [{"overview": "...", ...}]       — unwrap and merge all dicts
-      ["fact 1", "fact 2", ...]        — treat as highlights list
-      [{"highlights": [...]}, ...]     — merge highlights across items
-
-    Any non-dict, non-list type returns the empty sentinel so the map loop
-    never receives something that causes an AttributeError on .get().
-    """
-    empty = {"overview": "", "summary": "", "highlights": []}
-
-    if isinstance(data, dict):
-        return data  # correct — fast path
-
-    if isinstance(data, list):
-        if not data:
-            logger.warning(f"extract_json {label}: got empty list — using empty sentinel")
-            return empty
-
-        # List of dicts — merge all items into one
-        if isinstance(data[0], dict):
-            merged: dict = {"overview": "", "summary": "", "highlights": []}
-            for item in data:
-                if not isinstance(item, dict):
-                    continue
-                if not merged["overview"] and item.get("overview"):
-                    merged["overview"] = item["overview"]
-                if not merged["summary"] and item.get("summary"):
-                    merged["summary"] = item["summary"]
-                merged["highlights"].extend(item.get("highlights") or [])
-            logger.warning(f"extract_json {label}: got list of dicts — merged {len(data)} item(s)")
-            return merged
-
-        # Flat list of strings — treat as highlights
-        if isinstance(data[0], str):
-            logger.warning(f"extract_json {label}: got flat string list — treating as highlights")
-            return {"overview": "", "summary": "", "highlights": [s for s in data if s]}
-
-    logger.error(f"extract_json {label}: unexpected type {type(data).__name__} — using empty sentinel")
-    return empty
-
-
 def extract_json(text: str) -> dict:
     """
     Robustly extract and structure JSON from Mistral output using three
@@ -200,7 +155,7 @@ def extract_json(text: str) -> dict:
     try:
         data = json.loads(cleaned)
         logger.debug("extract_json: strategy 1 succeeded")
-        return _postprocess_highlights(_normalize_parsed(data, "strategy-1"))
+        return _postprocess_highlights(data)
     except json.JSONDecodeError as e:
         logger.debug(f"extract_json: strategy 1 failed — {e}")
 
@@ -212,7 +167,7 @@ def extract_json(text: str) -> dict:
         try:
             data = json.loads(candidate)
             logger.debug("extract_json: strategy 2 succeeded")
-            return _postprocess_highlights(_normalize_parsed(data, "strategy-2"))
+            return _postprocess_highlights(data)
         except json.JSONDecodeError as e:
             logger.warning(f"extract_json: strategy 2 failed ({e}), trying quote-escape repair")
 
@@ -224,7 +179,7 @@ def extract_json(text: str) -> dict:
             try:
                 data = json.loads(repaired)
                 logger.debug("extract_json: strategy 2 repair succeeded")
-                return _postprocess_highlights(_normalize_parsed(data, "strategy-2-repair"))
+                return _postprocess_highlights(data)
             except json.JSONDecodeError as e2:
                 logger.warning(f"extract_json: strategy 2 repair also failed — {e2}")
     else:
