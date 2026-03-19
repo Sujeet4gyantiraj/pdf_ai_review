@@ -143,6 +143,84 @@ def all_pages_blank(pages: list[Document]) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# OCR result text extractor
+# ---------------------------------------------------------------------------
+
+# These keys appear in PaddleOCR-VL's internal result objects.
+# Only "rec_text" and "text" carry actual recognised text — all others
+# are metadata, numpy arrays, or model settings that must be ignored.
+_OCR_TEXT_KEYS = ("rec_text", "text")
+
+# Heuristic: if the extracted string contains these substrings it is almost
+# certainly PaddleOCR's internal debug repr rather than document text.
+_OCR_JUNK_MARKERS = (
+    "numpy.ndarray",
+    "layout_det",
+    "rec_score",
+    "table_res",
+    "input_path",
+    "model_settings",
+    "parsing_res",
+    "spotting_res",
+    "page_id",
+)
+
+
+def _extract_ocr_text(res) -> str:
+    """
+    Safely extract the human-readable OCR text from a single PaddleOCR-VL
+    result item, ignoring internal metadata/debug fields.
+
+    PaddleOCR-VL result objects can be:
+      - A plain string                         → return as-is if non-empty
+      - A dict with "rec_text" or "text" key   → return that value
+      - An object with .rec_text / .text attr  → return that value
+      - An object with .res attr               → recurse into .res
+      - A dict  with "res"  key               → recurse into res value
+      - Anything else                          → return "" (never call str())
+
+    The critical rule: **never fall back to str(res)**.
+    str() on a PaddleOCR result object serialises the entire internal state
+    (numpy arrays, model config, layout boxes …) and that junk text gets
+    passed to the LLM which then happily "summarises" it.
+    """
+    if res is None:
+        return ""
+
+    # Plain string — sanity-check it isn't a debug repr
+    if isinstance(res, str):
+        s = res.strip()
+        if any(marker in s for marker in _OCR_JUNK_MARKERS):
+            logger.debug(f"_extract_ocr_text: discarding junk string ({s[:60]!r}…)")
+            return ""
+        return s
+
+    # Dict — look for known text keys first, then recurse into "res"
+    if isinstance(res, dict):
+        for key in _OCR_TEXT_KEYS:
+            if key in res:
+                val = res[key]
+                return val.strip() if isinstance(val, str) else ""
+        if "res" in res:
+            return _extract_ocr_text(res["res"])
+        return ""
+
+    # Object — check .rec_text / .text attributes first
+    for key in _OCR_TEXT_KEYS:
+        if hasattr(res, key):
+            val = getattr(res, key)
+            return val.strip() if isinstance(val, str) else ""
+
+    # Object with .res — recurse
+    if hasattr(res, "res"):
+        return _extract_ocr_text(res.res)
+
+    # Unknown type — log and discard rather than calling str()
+    logger.debug(f"_extract_ocr_text: unrecognised result type {type(res).__name__!r} — skipping")
+    return ""
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -291,23 +369,30 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
 
                 page_parts = []
                 for res in results:
-                    if hasattr(res, "res"):
-                        page_parts.append(res.res)
-                    elif isinstance(res, dict) and "res" in res:
-                        page_parts.append(res["res"])
-                    else:
-                        page_parts.append(str(res))
+                    extracted = _extract_ocr_text(res)
+                    if extracted:
+                        page_parts.append(extracted)
 
                 del results
                 if paddle.device.is_compiled_with_cuda():
                     paddle.device.cuda.empty_cache()
 
                 text = clean_text("\n".join(page_parts))
-                logger.info(
-                    f"[pdf_utils] Page {page_num}: PaddleOCR-VL OK "
-                    f"(attempt {attempt}, dpi={dpi}, {len(page_parts)} block(s), {elapsed:.2f}s)"
-                )
-                paddle_results[idx] = text
+
+                # If OCR returned nothing meaningful, treat as blank page rather
+                # than storing an empty string that could confuse downstream logic.
+                if not text:
+                    logger.info(
+                        f"[pdf_utils] Page {page_num}: PaddleOCR-VL returned no text "
+                        f"(attempt {attempt}, dpi={dpi}, {elapsed:.2f}s) — blank page"
+                    )
+                    paddle_results[idx] = f"[Page {page_num}: blank page]"
+                else:
+                    logger.info(
+                        f"[pdf_utils] Page {page_num}: PaddleOCR-VL OK "
+                        f"(attempt {attempt}, dpi={dpi}, {len(page_parts)} block(s), {elapsed:.2f}s)"
+                    )
+                    paddle_results[idx] = text
                 break
 
             except Exception as e:
