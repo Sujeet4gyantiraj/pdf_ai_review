@@ -1,37 +1,4 @@
-import httpx
-from fastapi import UploadFile, HTTPException
 from t_ai_model import run_llm
-
-# ==============================
-# CONFIG
-# ==============================
-THIRD_PARTY_API_URL = "https://api.thirdparty.com/extract-text"
-API_KEY = "YOUR_API_KEY"
-
-
-# ==============================
-# TEXT EXTRACTION
-# ==============================
-async def extract_text_via_api(file: UploadFile):
-    try:
-        file_bytes = await file.read()
-
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                THIRD_PARTY_API_URL,
-                files={"file": (file.filename, file_bytes, file.content_type)},
-                headers={"Authorization": f"Bearer {API_KEY}"}
-            )
-
-        if response.status_code != 200:
-            raise HTTPException(status_code=500, detail="Text extraction API failed")
-
-        data = response.json()
-        return parse_extraction_response(data)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 
 # ==============================
 # PARSE RESPONSE
@@ -47,9 +14,6 @@ def parse_extraction_response(api_response):
     )
 
     return full_text.strip()
-
-
-
 
 # ==============================
 # CLASSIFICATION
@@ -72,7 +36,6 @@ Return ONLY one word.
 
     result = await run_llm(text[:1500], prompt)
     return result.lower().strip()
-
 
 # ==============================
 # CONTRACT HANDLER
@@ -103,7 +66,6 @@ Rules:
         "data": result
     }
 
-
 # ==============================
 # RESUME HANDLER
 # ==============================
@@ -129,7 +91,6 @@ Rules:
         "document_type": "resume",
         "data": result
     }
-
 
 # ==============================
 # INVOICE HANDLER
@@ -157,7 +118,6 @@ Rules:
         "document_type": "invoice",
         "data": result
     }
-
 
 # ==============================
 # ROUTER MAP

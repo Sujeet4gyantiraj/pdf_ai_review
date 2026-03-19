@@ -7,7 +7,7 @@ import re
 import logging
 
 # Import ALL text utilities from the single source of truth  (Fix #1, #2, #14)
-from t_key_clause_extraction import extract_text_via_api, classify_document, DOCUMENT_HANDLERS
+from t_key_clause_extraction import  classify_document, DOCUMENT_HANDLERS
 from t_pdf_utils import extract_text_from_pdf, chunk_text, clean_text
 from t_ai_model import generate_analysis, load_model
 
