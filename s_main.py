@@ -8,6 +8,8 @@ import logging
 import logging.config
 from s_padf_utils import load_pdf, get_page_count, all_pages_blank
 from s_ai_model import generate_analysis
+from t_key_clause_extraction import  classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
+
 
 # ---------------------------------------------------------------------------
 # Logging configuration
@@ -387,3 +389,62 @@ async def analyze_pdf(
         return {"highlights": final_output.get("highlights", [])}
 
     return final_output
+
+@app.post("/key-clause-extraction")
+async def key_clause_extraction(file: UploadFile = File(...)):
+
+    # ==============================
+    # Step 1: text extraction
+    # ==============================
+
+    text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
+        file,
+        endpoint="/key-clause-extraction"
+    )
+
+    try:
+        # ==============================
+        # Step 2: Classification
+        # ==============================
+       
+        doc_type = await classify_document(text)
+        doc_type = doc_type.lower().strip()
+        logger.info(f"[{request_id}] Step 3 — classified as: '{doc_type}'")
+
+        # ==============================
+        # Step 3: Route
+        # ==============================
+        handler = DOCUMENT_HANDLERS.get(doc_type)
+
+        if handler:
+            result = await handler(text)
+            logger.info(
+                f"[{request_id}] ── REQUEST COMPLETE — "
+                f"total time: {time.perf_counter() - t_start:.2f}s ──────"
+            )
+            return result
+
+        # ==============================
+        # Step 4: Fallback
+        # ==============================
+        logger.warning(f"[{request_id}] No handler found for doc_type='{doc_type}'")
+        return {
+            "status": "unsupported",
+            "document_type": doc_type,
+            "message": "Unsupported document type."
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        logger.exception(f"[{request_id}] Unhandled error during processing: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during key clause extraction.")
+
+    finally:
+        # ==============================
+        # Step 5: Cleanup
+        # ==============================
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logger.debug(f"[{request_id}] Temp file deleted: '{file_path}'")

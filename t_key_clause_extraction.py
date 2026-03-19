@@ -1,4 +1,17 @@
+from fastapi import HTTPException, UploadFile
+import time
+import uuid
+import os
+import logging
+
 from t_ai_model import run_llm
+from s_padf_utils import load_pdf, get_page_count, all_pages_blank
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+UPLOAD_FOLDER = "temp"                      # ← was missing, caused NameError
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ==============================
 # CLASSIFICATION
@@ -212,3 +225,37 @@ DOCUMENT_HANDLERS = {
     "invoice": handle_invoice
 }
 
+async def extract_text_from_upload(
+    file: UploadFile,
+    *,
+    endpoint: str = "",
+    max_pages: int | None = None,
+) -> tuple[str, int, int, str, float, str]:
+    print(f"Received file: {file.filename} for endpoint: {endpoint}")
+    request_id = str(uuid.uuid4())[:8]
+    t_start = time.perf_counter()
+
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
+
+    safe_name = f"{uuid.uuid4()}.pdf"
+    file_path = os.path.join(UPLOAD_FOLDER, safe_name)
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    total_pages = get_page_count(file_path)
+    pages_to_read = total_pages if max_pages is None else min(total_pages, max_pages)
+
+    try:
+        pages = load_pdf(file_path, max_pages=pages_to_read)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    if all_pages_blank(pages):
+        raise HTTPException(status_code=422, detail="No extractable text found in PDF.")
+
+    text = "\n\n".join(p.page_content for p in pages)
+
+    return text, pages_to_read, total_pages, request_id, t_start, file_path
