@@ -67,9 +67,6 @@ def _detect_pdf_type(doc: fitz.Document, pages_to_process: int) -> str:
       'native'     - all sampled pages have text  -> text-based PDF
       'image_only' - NO sampled pages have text   -> fully scanned/image PDF
       'mixed'      - some have text, some do not  -> hybrid PDF
-
-    For image_only PDFs: skips the native extraction pass entirely,
-    routing all pages directly to PaddleOCR-VL.
     """
     sample       = min(_PDF_TYPE_SAMPLE_PAGES, pages_to_process)
     native_count = 0
@@ -111,6 +108,38 @@ def _page_to_image(page: fitz.Page, dpi: int = 150) -> np.ndarray:
         img = img[:, :, :3]
     return img
 
+
+# ---------------------------------------------------------------------------
+# Blank-PDF detection
+# ---------------------------------------------------------------------------
+
+# Matches the placeholder strings inserted by load_pdf for unreadable/blank pages
+_PLACEHOLDER_RE = re.compile(
+    r"^\[Page \d+: (blank page|content could not be extracted)\]$"
+)
+
+
+def all_pages_blank(pages: list[Document]) -> bool:
+    """
+    Return True if every page in the list is a blank/placeholder page —
+    i.e. no real content was extracted from the PDF at all.
+
+    Blank pages are those whose content either:
+      - is empty after stripping, or
+      - matches the placeholder patterns inserted by load_pdf:
+          "[Page N: blank page]"
+          "[Page N: content could not be extracted]"
+
+    Called by s_main.py after load_pdf() to short-circuit inference
+    and return empty fields immediately without hitting the model.
+    """
+    if not pages:
+        return True
+    for page in pages:
+        text = page.page_content.strip()
+        if text and not _PLACEHOLDER_RE.match(text):
+            return False  # at least one page with real content
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +233,7 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
             f"native={native_hit}, need_ocr={pages_to_process - native_hit}"
         )
 
-    native_hit   = sum(1 for v in native_results.values() if v is not None)
+    native_hit    = sum(1 for v in native_results.values() if v is not None)
     paddle_needed = [i for i, v in native_results.items() if v is None]
 
     if paddle_needed:
@@ -213,18 +242,6 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
         )
 
     # ── Pass 2: PaddleOCR-VL for all image pages ──────────────────────────
-    # Optimisation: pre-render ALL page images in parallel on CPU first,
-    # then feed them one-by-one to PaddleOCR-VL on GPU.
-    #
-    # Why this helps:
-    #   - fitz page rendering (get_pixmap) is CPU-only and thread-safe
-    #   - PaddleOCR-VL GPU inference is serial (cannot parallelise on one GPU)
-    #   - Without pre-rendering: GPU waits idle while each image renders (~0.1s/page)
-    #   - With pre-rendering: all images ready before GPU starts — zero idle wait
-    #   - For 100 image pages: saves ~10s of GPU idle time
-    #
-    # Memory note: pre-rendered images are numpy arrays (~3 MB each at 150 DPI).
-    # 232 pages × 3 MB = ~700 MB RAM — safe, this is CPU RAM not GPU VRAM.
     pre_rendered: dict[int, np.ndarray] = {}
 
     if paddle_needed:
@@ -256,14 +273,10 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
     for idx in paddle_needed:
         fitz_page = fitz_pages[idx]
         page_num  = idx + 1
+        pre_img   = pre_rendered.get(idx)
+        last_exc  = None
 
-        # Use pre-rendered image if available, else render now (fallback)
-        pre_img = pre_rendered.get(idx)
-
-        last_exc = None
         for attempt in range(1, OCR_RETRY_ATTEMPTS + 1):
-            # Attempt 1: use pre-rendered 150 DPI image
-            # Attempt 2 (retry): re-render at 200 DPI for better quality
             if attempt == 1 and pre_img is not None:
                 img = pre_img
                 dpi = 150
@@ -330,12 +343,10 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
                 paddle_count += 1
 
         else:
-            # Defensive fallback — should never reach here
             logger.error(f"[pdf_utils] Page {page_num}: no result -- placeholder")
             text = f"[Page {page_num}: content could not be extracted]"
             placeholder_count += 1
 
-        # Blank page guard
         if not text:
             logger.warning(f"[pdf_utils] Page {page_num}: blank after extraction")
             text = f"[Page {page_num}: blank page]"
