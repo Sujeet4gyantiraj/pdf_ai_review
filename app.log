@@ -21816,3 +21816,1555 @@ SyntaxError: invalid decimal literal
 2026-03-19 05:30:36 | INFO     | s_main | [a889c70e] Step 5/5 — inference complete (6.51s)
 2026-03-19 05:30:36 | DEBUG    | s_main | [a889c70e] Temp file deleted: 'temp/3494837a-9a98-4d84-a517-d3490931e48f.pdf'
 2026-03-19 05:30:36 | INFO     | s_main | [a889c70e] ── REQUEST COMPLETE — total time: 6.52s ──────
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:153]
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[155:167]
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[169:184]
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[188:7300]
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:16519]
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 05:48:04 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 05:48:04 | INFO     | s_main | [fee98000] ── NEW REQUEST ──────────────────────────────
+2026-03-19 05:48:04 | INFO     | s_main | [fee98000] filename='audit_report_rajy0707@gmail.com_(7).pdf_final_signed (25).pdf' analysis_type=0
+2026-03-19 05:48:04 | DEBUG    | s_main | [fee98000] Saving upload to 'temp/9b223703-fc5a-4080-88bf-c796c9955a9e.pdf'
+2026-03-19 05:48:04 | INFO     | s_main | [fee98000] Step 1/5 — saved upload (23,631 bytes → '9b223703-fc5a-4080-88bf-c796c9955a9e.pdf')
+2026-03-19 05:48:04 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 05:48:04 | INFO     | s_main | [fee98000] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 05:48:04 | INFO     | s_main | [fee98000] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/9b223703-fc5a-4080-88bf-c796c9955a9e.pdf' max_pages=1
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 1 had native text -> 'native'
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 05:48:04 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 482 -> 482 chars
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.00s) -- native=1, need_ocr=0
+2026-03-19 05:48:04 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (482 chars)
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] Native text       : 1 page(s)
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.01s
+2026-03-19 05:48:04 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 05:48:04 | INFO     | s_main | [fee98000] Step 3/5 — extraction complete: 1 page(s) with text (0.01s)
+2026-03-19 05:48:04 | INFO     | s_main | [fee98000] Step 4/5 — merging 1 page(s) into text
+2026-03-19 05:48:04 | INFO     | s_main | [fee98000] Step 4/5 — merged: 482 chars (0.000s)
+2026-03-19 05:48:04 | INFO     | s_main | [fee98000] Step 5/5 — running map-reduce inference
+2026-03-19 05:48:04 | INFO     | s_ai_model | [split_by_tokens] 482 chars → 302 tokens (1.60 chars/token) in 0.002s
+2026-03-19 05:48:04 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 05:48:04 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.002s
+2026-03-19 05:48:04 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 05:48:04 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=482
+2026-03-19 05:48:04 | INFO     | s_ai_model | [map 1/1] tokens_in=400 max_new=600
+2026-03-19 05:48:11 | INFO     | s_ai_model | [map 1/1] 215 tokens_out in 6.85s (31.4 tok/s)
+2026-03-19 05:48:11 | DEBUG    | s_main | extract_json: input length 447 chars
+2026-03-19 05:48:11 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 05:48:11 | DEBUG    | s_main | _fix_json_string: repair complete (447 chars)
+2026-03-19 05:48:11 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 05:48:11 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 05:48:11 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 05:48:11 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (6.86s) overview=yes highlights=3
+2026-03-19 05:48:11 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 05:48:11 | INFO     | s_ai_model | [generate_analysis] total=6.86s highlights=3
+2026-03-19 05:48:11 | INFO     | s_main | [fee98000] Step 5/5 — inference complete (6.86s)
+2026-03-19 05:48:11 | DEBUG    | s_main | [fee98000] Temp file deleted: 'temp/9b223703-fc5a-4080-88bf-c796c9955a9e.pdf'
+2026-03-19 05:48:11 | INFO     | s_main | [fee98000] ── REQUEST COMPLETE — total time: 6.87s ──────
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:153]
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[155:167]
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[169:184]
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[188:4380]
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:19439]
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 05:48:30 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 05:48:30 | INFO     | s_main | [4d34694b] ── NEW REQUEST ──────────────────────────────
+2026-03-19 05:48:30 | INFO     | s_main | [4d34694b] filename='audit_report_rajy0707@gmail.com_(7).pdf_final_signed (25).pdf' analysis_type=0
+2026-03-19 05:48:30 | DEBUG    | s_main | [4d34694b] Saving upload to 'temp/ad8afcde-2050-4c94-a965-469cc6556b32.pdf'
+2026-03-19 05:48:30 | INFO     | s_main | [4d34694b] Step 1/5 — saved upload (23,631 bytes → 'ad8afcde-2050-4c94-a965-469cc6556b32.pdf')
+2026-03-19 05:48:30 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 05:48:30 | INFO     | s_main | [4d34694b] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 05:48:30 | INFO     | s_main | [4d34694b] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/ad8afcde-2050-4c94-a965-469cc6556b32.pdf' max_pages=1
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 1 had native text -> 'native'
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 05:48:30 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 482 -> 482 chars
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.00s) -- native=1, need_ocr=0
+2026-03-19 05:48:30 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (482 chars)
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] Native text       : 1 page(s)
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.01s
+2026-03-19 05:48:30 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 05:48:30 | INFO     | s_main | [4d34694b] Step 3/5 — extraction complete: 1 page(s) with text (0.01s)
+2026-03-19 05:48:30 | INFO     | s_main | [4d34694b] Step 4/5 — merging 1 page(s) into text
+2026-03-19 05:48:30 | INFO     | s_main | [4d34694b] Step 4/5 — merged: 482 chars (0.000s)
+2026-03-19 05:48:30 | INFO     | s_main | [4d34694b] Step 5/5 — running map-reduce inference
+2026-03-19 05:48:30 | INFO     | s_ai_model | [split_by_tokens] 482 chars → 302 tokens (1.60 chars/token) in 0.001s
+2026-03-19 05:48:30 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 05:48:30 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.002s
+2026-03-19 05:48:30 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 05:48:30 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=482
+2026-03-19 05:48:30 | INFO     | s_ai_model | [map 1/1] tokens_in=400 max_new=600
+2026-03-19 05:48:37 | INFO     | s_ai_model | [map 1/1] 215 tokens_out in 6.78s (31.7 tok/s)
+2026-03-19 05:48:37 | DEBUG    | s_main | extract_json: input length 447 chars
+2026-03-19 05:48:37 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 05:48:37 | DEBUG    | s_main | _fix_json_string: repair complete (447 chars)
+2026-03-19 05:48:37 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 05:48:37 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 05:48:37 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 05:48:37 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (6.78s) overview=yes highlights=3
+2026-03-19 05:48:37 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 05:48:37 | INFO     | s_ai_model | [generate_analysis] total=6.78s highlights=3
+2026-03-19 05:48:37 | INFO     | s_main | [4d34694b] Step 5/5 — inference complete (6.78s)
+2026-03-19 05:48:37 | DEBUG    | s_main | [4d34694b] Temp file deleted: 'temp/ad8afcde-2050-4c94-a965-469cc6556b32.pdf'
+2026-03-19 05:48:37 | INFO     | s_main | [4d34694b] ── REQUEST COMPLETE — total time: 6.80s ──────
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:153]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[155:167]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[169:184]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[188:13032]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:36200]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2443]
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:19:16 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:19:16 | INFO     | s_main | [ae8f6ae4] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:19:16 | INFO     | s_main | [ae8f6ae4] filename='audit_report_rajy0707@gmail.com_(7).pdf_final_signed (24).pdf' analysis_type=0
+2026-03-19 06:19:16 | DEBUG    | s_main | [ae8f6ae4] Saving upload to 'temp/e11730af-dcf6-4f71-983a-5c4de5cc1e5a.pdf'
+2026-03-19 06:19:16 | INFO     | s_main | [ae8f6ae4] Step 1/5 — saved upload (102,167 bytes → 'e11730af-dcf6-4f71-983a-5c4de5cc1e5a.pdf')
+2026-03-19 06:19:16 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 06:19:16 | INFO     | s_main | [ae8f6ae4] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 06:19:16 | INFO     | s_main | [ae8f6ae4] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/e11730af-dcf6-4f71-983a-5c4de5cc1e5a.pdf' max_pages=1
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 1 had native text -> 'native'
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 06:19:16 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 510 -> 510 chars
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.00s) -- native=1, need_ocr=0
+2026-03-19 06:19:16 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (510 chars)
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] Native text       : 1 page(s)
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.01s
+2026-03-19 06:19:16 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 06:19:16 | INFO     | s_main | [ae8f6ae4] Step 3/5 — extraction complete: 1 page(s) with text (0.01s)
+2026-03-19 06:19:16 | INFO     | s_main | [ae8f6ae4] Step 4/5 — merging 1 page(s) into text
+2026-03-19 06:19:16 | INFO     | s_main | [ae8f6ae4] Step 4/5 — merged: 510 chars (0.000s)
+2026-03-19 06:19:16 | INFO     | s_main | [ae8f6ae4] Step 5/5 — running map-reduce inference
+2026-03-19 06:19:16 | INFO     | s_ai_model | [split_by_tokens] 510 chars → 323 tokens (1.58 chars/token) in 0.001s
+2026-03-19 06:19:16 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 06:19:16 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.002s
+2026-03-19 06:19:16 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 06:19:16 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=510
+2026-03-19 06:19:16 | INFO     | s_ai_model | [map 1/1] tokens_in=421 max_new=600
+2026-03-19 06:19:23 | INFO     | s_ai_model | [map 1/1] 220 tokens_out in 6.96s (31.6 tok/s)
+2026-03-19 06:19:23 | DEBUG    | s_main | extract_json: input length 588 chars
+2026-03-19 06:19:23 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 06:19:23 | DEBUG    | s_main | _fix_json_string: repair complete (588 chars)
+2026-03-19 06:19:23 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 06:19:23 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 06:19:23 | DEBUG    | s_main | _postprocess_highlights: 2 highlight(s) after cleanup
+2026-03-19 06:19:23 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (6.96s) overview=yes highlights=2
+2026-03-19 06:19:23 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 06:19:23 | INFO     | s_ai_model | [generate_analysis] total=6.96s highlights=2
+2026-03-19 06:19:23 | INFO     | s_main | [ae8f6ae4] Step 5/5 — inference complete (6.96s)
+2026-03-19 06:19:23 | DEBUG    | s_main | [ae8f6ae4] Temp file deleted: 'temp/e11730af-dcf6-4f71-983a-5c4de5cc1e5a.pdf'
+2026-03-19 06:19:23 | INFO     | s_main | [ae8f6ae4] ── REQUEST COMPLETE — total time: 6.98s ──────
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:153]
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[155:167]
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[169:184]
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[188:13032]
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10787]
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:34:13 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:34:13 | INFO     | s_main | [6f6e8a5b] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:34:13 | INFO     | s_main | [6f6e8a5b] filename='audit_report_rajy0707@gmail.com_(7).pdf_final_signed (25).pdf' analysis_type=0
+2026-03-19 06:34:13 | DEBUG    | s_main | [6f6e8a5b] Saving upload to 'temp/e3bd1624-047b-44f4-87d5-d962229591f2.pdf'
+2026-03-19 06:34:13 | INFO     | s_main | [6f6e8a5b] Step 1/5 — saved upload (23,631 bytes → 'e3bd1624-047b-44f4-87d5-d962229591f2.pdf')
+2026-03-19 06:34:13 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 06:34:13 | INFO     | s_main | [6f6e8a5b] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 06:34:13 | INFO     | s_main | [6f6e8a5b] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/e3bd1624-047b-44f4-87d5-d962229591f2.pdf' max_pages=1
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 1 had native text -> 'native'
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 06:34:13 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 482 -> 482 chars
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.00s) -- native=1, need_ocr=0
+2026-03-19 06:34:13 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (482 chars)
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] Native text       : 1 page(s)
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.01s
+2026-03-19 06:34:13 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 06:34:13 | INFO     | s_main | [6f6e8a5b] Step 3/5 — extraction complete: 1 page(s) with text (0.01s)
+2026-03-19 06:34:13 | INFO     | s_main | [6f6e8a5b] Step 4/5 — merging 1 page(s) into text
+2026-03-19 06:34:13 | INFO     | s_main | [6f6e8a5b] Step 4/5 — merged: 482 chars (0.000s)
+2026-03-19 06:34:13 | INFO     | s_main | [6f6e8a5b] Step 5/5 — running map-reduce inference
+2026-03-19 06:34:13 | INFO     | s_ai_model | [split_by_tokens] 482 chars → 302 tokens (1.60 chars/token) in 0.002s
+2026-03-19 06:34:13 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 06:34:13 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.003s
+2026-03-19 06:34:13 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 06:34:13 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=482
+2026-03-19 06:34:13 | INFO     | s_ai_model | [map 1/1] tokens_in=400 max_new=600
+2026-03-19 06:34:20 | INFO     | s_ai_model | [map 1/1] 215 tokens_out in 6.84s (31.5 tok/s)
+2026-03-19 06:34:20 | DEBUG    | s_main | extract_json: input length 447 chars
+2026-03-19 06:34:20 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 06:34:20 | DEBUG    | s_main | _fix_json_string: repair complete (447 chars)
+2026-03-19 06:34:20 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 06:34:20 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 06:34:20 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 06:34:20 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (6.84s) overview=yes highlights=3
+2026-03-19 06:34:20 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 06:34:20 | INFO     | s_ai_model | [generate_analysis] total=6.84s highlights=3
+2026-03-19 06:34:20 | INFO     | s_main | [6f6e8a5b] Step 5/5 — inference complete (6.84s)
+2026-03-19 06:34:20 | DEBUG    | s_main | [6f6e8a5b] Temp file deleted: 'temp/e3bd1624-047b-44f4-87d5-d962229591f2.pdf'
+2026-03-19 06:34:20 | INFO     | s_main | [6f6e8a5b] ── REQUEST COMPLETE — total time: 6.86s ──────
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:153]
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[155:167]
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[169:184]
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[188:23819]
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:35:27 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:35:27 | INFO     | s_main | [4947d421] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:35:27 | INFO     | s_main | [4947d421] filename='audit_report_rajy0707@gmail.com_(7).pdf_final_signed (25).pdf' analysis_type=0
+2026-03-19 06:35:27 | DEBUG    | s_main | [4947d421] Saving upload to 'temp/3dc3e206-e548-4e98-82cd-f0d9f36ccb8c.pdf'
+2026-03-19 06:35:27 | INFO     | s_main | [4947d421] Step 1/5 — saved upload (23,631 bytes → '3dc3e206-e548-4e98-82cd-f0d9f36ccb8c.pdf')
+2026-03-19 06:35:27 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 06:35:27 | INFO     | s_main | [4947d421] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 06:35:27 | INFO     | s_main | [4947d421] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/3dc3e206-e548-4e98-82cd-f0d9f36ccb8c.pdf' max_pages=1
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 1 had native text -> 'native'
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 06:35:27 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 482 -> 482 chars
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.00s) -- native=1, need_ocr=0
+2026-03-19 06:35:27 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (482 chars)
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] Native text       : 1 page(s)
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.01s
+2026-03-19 06:35:27 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 06:35:27 | INFO     | s_main | [4947d421] Step 3/5 — extraction complete: 1 page(s) with text (0.01s)
+2026-03-19 06:35:27 | INFO     | s_main | [4947d421] Step 4/5 — merging 1 page(s) into text
+2026-03-19 06:35:27 | INFO     | s_main | [4947d421] Step 4/5 — merged: 482 chars (0.000s)
+2026-03-19 06:35:27 | INFO     | s_main | [4947d421] Step 5/5 — running map-reduce inference
+2026-03-19 06:35:27 | INFO     | s_ai_model | [split_by_tokens] 482 chars → 302 tokens (1.60 chars/token) in 0.001s
+2026-03-19 06:35:27 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 06:35:27 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.002s
+2026-03-19 06:35:27 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 06:35:27 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=482
+2026-03-19 06:35:27 | INFO     | s_ai_model | [map 1/1] tokens_in=400 max_new=600
+2026-03-19 06:35:34 | INFO     | s_ai_model | [map 1/1] 215 tokens_out in 6.81s (31.6 tok/s)
+2026-03-19 06:35:34 | DEBUG    | s_main | extract_json: input length 447 chars
+2026-03-19 06:35:34 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 06:35:34 | DEBUG    | s_main | _fix_json_string: repair complete (447 chars)
+2026-03-19 06:35:34 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 06:35:34 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 06:35:34 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 06:35:34 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (6.82s) overview=yes highlights=3
+2026-03-19 06:35:34 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 06:35:34 | INFO     | s_ai_model | [generate_analysis] total=6.82s highlights=3
+2026-03-19 06:35:34 | INFO     | s_main | [4947d421] Step 5/5 — inference complete (6.82s)
+2026-03-19 06:35:34 | DEBUG    | s_main | [4947d421] Temp file deleted: 'temp/3dc3e206-e548-4e98-82cd-f0d9f36ccb8c.pdf'
+2026-03-19 06:35:34 | INFO     | s_main | [4947d421] ── REQUEST COMPLETE — total time: 6.83s ──────
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:104]
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[106:118]
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[120:135]
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[139:23771]
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:35:47 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:35:47 | INFO     | s_main | [d6fd5a72] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:35:47 | INFO     | s_main | [d6fd5a72] filename='document.pdf' analysis_type=0
+2026-03-19 06:35:47 | DEBUG    | s_main | [d6fd5a72] Saving upload to 'temp/58d5cc3b-1944-4d2e-9b31-1f776cfd78d3.pdf'
+2026-03-19 06:35:47 | INFO     | s_main | [d6fd5a72] Step 1/5 — saved upload (23,632 bytes → '58d5cc3b-1944-4d2e-9b31-1f776cfd78d3.pdf')
+2026-03-19 06:35:47 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 06:35:47 | INFO     | s_main | [d6fd5a72] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 06:35:47 | INFO     | s_main | [d6fd5a72] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/58d5cc3b-1944-4d2e-9b31-1f776cfd78d3.pdf' max_pages=1
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 1 had native text -> 'native'
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 06:35:47 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 482 -> 482 chars
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.00s) -- native=1, need_ocr=0
+2026-03-19 06:35:47 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (482 chars)
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] Native text       : 1 page(s)
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.01s
+2026-03-19 06:35:47 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 06:35:47 | INFO     | s_main | [d6fd5a72] Step 3/5 — extraction complete: 1 page(s) with text (0.01s)
+2026-03-19 06:35:47 | INFO     | s_main | [d6fd5a72] Step 4/5 — merging 1 page(s) into text
+2026-03-19 06:35:47 | INFO     | s_main | [d6fd5a72] Step 4/5 — merged: 482 chars (0.000s)
+2026-03-19 06:35:47 | INFO     | s_main | [d6fd5a72] Step 5/5 — running map-reduce inference
+2026-03-19 06:35:47 | INFO     | s_ai_model | [split_by_tokens] 482 chars → 302 tokens (1.60 chars/token) in 0.001s
+2026-03-19 06:35:47 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 06:35:47 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.002s
+2026-03-19 06:35:47 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 06:35:47 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=482
+2026-03-19 06:35:47 | INFO     | s_ai_model | [map 1/1] tokens_in=400 max_new=600
+2026-03-19 06:35:54 | INFO     | s_ai_model | [map 1/1] 215 tokens_out in 6.77s (31.8 tok/s)
+2026-03-19 06:35:54 | DEBUG    | s_main | extract_json: input length 447 chars
+2026-03-19 06:35:54 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 06:35:54 | DEBUG    | s_main | _fix_json_string: repair complete (447 chars)
+2026-03-19 06:35:54 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 06:35:54 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 06:35:54 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 06:35:54 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (6.77s) overview=yes highlights=3
+2026-03-19 06:35:54 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 06:35:54 | INFO     | s_ai_model | [generate_analysis] total=6.77s highlights=3
+2026-03-19 06:35:54 | INFO     | s_main | [d6fd5a72] Step 5/5 — inference complete (6.78s)
+2026-03-19 06:35:54 | DEBUG    | s_main | [d6fd5a72] Temp file deleted: 'temp/58d5cc3b-1944-4d2e-9b31-1f776cfd78d3.pdf'
+2026-03-19 06:35:54 | INFO     | s_main | [d6fd5a72] ── REQUEST COMPLETE — total time: 6.79s ──────
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:104]
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[106:118]
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[120:135]
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[139:23771]
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:36:13 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:36:13 | INFO     | s_main | [6cac9850] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:36:13 | INFO     | s_main | [6cac9850] filename='document.pdf' analysis_type=0
+2026-03-19 06:36:13 | DEBUG    | s_main | [6cac9850] Saving upload to 'temp/be8af5ce-18bb-4a11-9900-8f6121b71097.pdf'
+2026-03-19 06:36:13 | INFO     | s_main | [6cac9850] Step 1/5 — saved upload (23,632 bytes → 'be8af5ce-18bb-4a11-9900-8f6121b71097.pdf')
+2026-03-19 06:36:13 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 06:36:13 | INFO     | s_main | [6cac9850] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 06:36:13 | INFO     | s_main | [6cac9850] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/be8af5ce-18bb-4a11-9900-8f6121b71097.pdf' max_pages=1
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 1 had native text -> 'native'
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 06:36:13 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 482 -> 482 chars
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.00s) -- native=1, need_ocr=0
+2026-03-19 06:36:13 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (482 chars)
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] Native text       : 1 page(s)
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.01s
+2026-03-19 06:36:13 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 06:36:13 | INFO     | s_main | [6cac9850] Step 3/5 — extraction complete: 1 page(s) with text (0.01s)
+2026-03-19 06:36:13 | INFO     | s_main | [6cac9850] Step 4/5 — merging 1 page(s) into text
+2026-03-19 06:36:13 | INFO     | s_main | [6cac9850] Step 4/5 — merged: 482 chars (0.000s)
+2026-03-19 06:36:13 | INFO     | s_main | [6cac9850] Step 5/5 — running map-reduce inference
+2026-03-19 06:36:13 | INFO     | s_ai_model | [split_by_tokens] 482 chars → 302 tokens (1.60 chars/token) in 0.001s
+2026-03-19 06:36:13 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 06:36:13 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.002s
+2026-03-19 06:36:13 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 06:36:13 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=482
+2026-03-19 06:36:13 | INFO     | s_ai_model | [map 1/1] tokens_in=400 max_new=600
+2026-03-19 06:36:20 | INFO     | s_ai_model | [map 1/1] 215 tokens_out in 7.09s (30.3 tok/s)
+2026-03-19 06:36:20 | DEBUG    | s_main | extract_json: input length 447 chars
+2026-03-19 06:36:20 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 06:36:20 | DEBUG    | s_main | _fix_json_string: repair complete (447 chars)
+2026-03-19 06:36:20 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 06:36:20 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 06:36:20 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 06:36:20 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (7.10s) overview=yes highlights=3
+2026-03-19 06:36:20 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 06:36:20 | INFO     | s_ai_model | [generate_analysis] total=7.10s highlights=3
+2026-03-19 06:36:20 | INFO     | s_main | [6cac9850] Step 5/5 — inference complete (7.10s)
+2026-03-19 06:36:20 | DEBUG    | s_main | [6cac9850] Temp file deleted: 'temp/be8af5ce-18bb-4a11-9900-8f6121b71097.pdf'
+2026-03-19 06:36:20 | INFO     | s_main | [6cac9850] ── REQUEST COMPLETE — total time: 7.12s ──────
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:153]
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[155:167]
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[169:184]
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[188:23819]
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:41:36 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:41:36 | INFO     | s_main | [20c6ccc0] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:41:36 | INFO     | s_main | [20c6ccc0] filename='audit_report_rajy0707@gmail.com_(7).pdf_final_signed (25).pdf' analysis_type=0
+2026-03-19 06:41:36 | DEBUG    | s_main | [20c6ccc0] Saving upload to 'temp/6951398e-1bc0-4717-8e09-eee0b5a2c367.pdf'
+2026-03-19 06:41:36 | INFO     | s_main | [20c6ccc0] Step 1/5 — saved upload (23,631 bytes → '6951398e-1bc0-4717-8e09-eee0b5a2c367.pdf')
+2026-03-19 06:41:36 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 06:41:36 | INFO     | s_main | [20c6ccc0] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 06:41:36 | INFO     | s_main | [20c6ccc0] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/6951398e-1bc0-4717-8e09-eee0b5a2c367.pdf' max_pages=1
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 1 had native text -> 'native'
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 06:41:36 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 482 -> 482 chars
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.00s) -- native=1, need_ocr=0
+2026-03-19 06:41:36 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (482 chars)
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] Native text       : 1 page(s)
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.01s
+2026-03-19 06:41:36 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 06:41:36 | INFO     | s_main | [20c6ccc0] Step 3/5 — extraction complete: 1 page(s) with text (0.01s)
+2026-03-19 06:41:36 | INFO     | s_main | [20c6ccc0] Step 4/5 — merging 1 page(s) into text
+2026-03-19 06:41:36 | INFO     | s_main | [20c6ccc0] Step 4/5 — merged: 482 chars (0.000s)
+2026-03-19 06:41:36 | INFO     | s_main | [20c6ccc0] Step 5/5 — running map-reduce inference
+2026-03-19 06:41:36 | INFO     | s_ai_model | [split_by_tokens] 482 chars → 302 tokens (1.60 chars/token) in 0.002s
+2026-03-19 06:41:36 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 06:41:36 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.002s
+2026-03-19 06:41:36 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 06:41:36 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=482
+2026-03-19 06:41:36 | INFO     | s_ai_model | [map 1/1] tokens_in=400 max_new=600
+2026-03-19 06:41:43 | INFO     | s_ai_model | [map 1/1] 215 tokens_out in 6.94s (31.0 tok/s)
+2026-03-19 06:41:43 | DEBUG    | s_main | extract_json: input length 447 chars
+2026-03-19 06:41:43 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 06:41:43 | DEBUG    | s_main | _fix_json_string: repair complete (447 chars)
+2026-03-19 06:41:43 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 06:41:43 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 06:41:43 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 06:41:43 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (6.94s) overview=yes highlights=3
+2026-03-19 06:41:43 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 06:41:43 | INFO     | s_ai_model | [generate_analysis] total=6.94s highlights=3
+2026-03-19 06:41:43 | INFO     | s_main | [20c6ccc0] Step 5/5 — inference complete (6.94s)
+2026-03-19 06:41:43 | DEBUG    | s_main | [20c6ccc0] Temp file deleted: 'temp/6951398e-1bc0-4717-8e09-eee0b5a2c367.pdf'
+2026-03-19 06:41:43 | INFO     | s_main | [20c6ccc0] ── REQUEST COMPLETE — total time: 6.96s ──────
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:147]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[149:161]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[163:178]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[182:13032]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:46336]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:23168]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:15928]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:36200]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:31856]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:27512]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:22449]
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:43:20 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:43:20 | INFO     | s_main | [988f35b9] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:43:20 | INFO     | s_main | [988f35b9] filename='cir-cgst-246-03-2025_Late fee for delay FOrm GSTR9C.pdf' analysis_type=0
+2026-03-19 06:43:20 | DEBUG    | s_main | [988f35b9] Saving upload to 'temp/03487ab8-4fd0-42b2-acd9-5b2169213562.pdf'
+2026-03-19 06:43:20 | INFO     | s_main | [988f35b9] Step 1/5 — saved upload (478,387 bytes → '03487ab8-4fd0-42b2-acd9-5b2169213562.pdf')
+2026-03-19 06:43:20 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 4 page(s)
+2026-03-19 06:43:20 | INFO     | s_main | [988f35b9] Step 2/5 — total pages: 4, will analyse: 4 (all pages)
+2026-03-19 06:43:20 | INFO     | s_main | [988f35b9] Step 3/5 — extracting text from 4 page(s)
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/03487ab8-4fd0-42b2-acd9-5b2169213562.pdf' max_pages=4
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] 4 total page(s), processing 4 (all)
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 4 page(s), 4 had native text -> 'native'
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 06:43:20 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1735 -> 1730 chars
+2026-03-19 06:43:20 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2819 -> 2815 chars
+2026-03-19 06:43:20 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2252 -> 2248 chars
+2026-03-19 06:43:20 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1084 -> 1079 chars
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.02s) -- native=4, need_ocr=0
+2026-03-19 06:43:20 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (1730 chars)
+2026-03-19 06:43:20 | DEBUG    | s_padf_utils | [pdf_utils] Page 2: native (2815 chars)
+2026-03-19 06:43:20 | DEBUG    | s_padf_utils | [pdf_utils] Page 3: native (2248 chars)
+2026-03-19 06:43:20 | DEBUG    | s_padf_utils | [pdf_utils] Page 4: native (1079 chars)
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 4/4
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] Native text       : 4 page(s)
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 4 page(s)
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.06s
+2026-03-19 06:43:20 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 06:43:20 | INFO     | s_main | [988f35b9] Step 3/5 — extraction complete: 4 page(s) with text (0.06s)
+2026-03-19 06:43:20 | INFO     | s_main | [988f35b9] Step 4/5 — merging 4 page(s) into text
+2026-03-19 06:43:20 | INFO     | s_main | [988f35b9] Step 4/5 — merged: 7,878 chars (0.000s)
+2026-03-19 06:43:20 | INFO     | s_main | [988f35b9] Step 5/5 — running map-reduce inference
+2026-03-19 06:43:20 | INFO     | s_ai_model | [split_by_tokens] 7,878 chars → 2,380 tokens (3.31 chars/token) in 0.008s
+2026-03-19 06:43:20 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 06:43:20 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.011s
+2026-03-19 06:43:20 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 06:43:20 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=7,878
+2026-03-19 06:43:20 | INFO     | s_ai_model | [map 1/1] tokens_in=2478 max_new=600
+2026-03-19 06:43:31 | INFO     | s_ai_model | [map 1/1] 346 tokens_out in 10.57s (32.7 tok/s)
+2026-03-19 06:43:31 | DEBUG    | s_main | extract_json: input length 1265 chars
+2026-03-19 06:43:31 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 06:43:31 | DEBUG    | s_main | _fix_json_string: repair complete (1265 chars)
+2026-03-19 06:43:31 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 06:43:31 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 06:43:31 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-19 06:43:31 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (10.58s) overview=yes highlights=4
+2026-03-19 06:43:31 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 06:43:31 | INFO     | s_ai_model | [generate_analysis] total=10.58s highlights=4
+2026-03-19 06:43:31 | INFO     | s_main | [988f35b9] Step 5/5 — inference complete (10.59s)
+2026-03-19 06:43:31 | DEBUG    | s_main | [988f35b9] Temp file deleted: 'temp/03487ab8-4fd0-42b2-acd9-5b2169213562.pdf'
+2026-03-19 06:43:31 | INFO     | s_main | [988f35b9] ── REQUEST COMPLETE — total time: 10.66s ──────
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:147]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[149:161]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[163:178]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[182:13032]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:24616]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:27512]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:24616]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 06:45:55 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:34752]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:28960]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:27512]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:27512]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:26064]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:23168]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:22449]
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:45:56 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:45:56 | INFO     | s_main | [f8a5f9dd] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:45:56 | INFO     | s_main | [f8a5f9dd] filename='cir-cgst-246-03-2025_Late fee for delay FOrm GSTR9C.pdf' analysis_type=0
+2026-03-19 06:45:56 | DEBUG    | s_main | [f8a5f9dd] Saving upload to 'temp/25914c1e-fc13-432e-9ff0-655f7318bb20.pdf'
+2026-03-19 06:45:56 | INFO     | s_main | [f8a5f9dd] Step 1/5 — saved upload (478,387 bytes → '25914c1e-fc13-432e-9ff0-655f7318bb20.pdf')
+2026-03-19 06:45:56 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 4 page(s)
+2026-03-19 06:45:56 | INFO     | s_main | [f8a5f9dd] Step 2/5 — total pages: 4, will analyse: 4 (all pages)
+2026-03-19 06:45:56 | INFO     | s_main | [f8a5f9dd] Step 3/5 — extracting text from 4 page(s)
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/25914c1e-fc13-432e-9ff0-655f7318bb20.pdf' max_pages=4
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] 4 total page(s), processing 4 (all)
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 4 page(s), 4 had native text -> 'native'
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 06:45:56 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1735 -> 1730 chars
+2026-03-19 06:45:56 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2819 -> 2815 chars
+2026-03-19 06:45:56 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2252 -> 2248 chars
+2026-03-19 06:45:56 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1084 -> 1079 chars
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.02s) -- native=4, need_ocr=0
+2026-03-19 06:45:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (1730 chars)
+2026-03-19 06:45:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 2: native (2815 chars)
+2026-03-19 06:45:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 3: native (2248 chars)
+2026-03-19 06:45:56 | DEBUG    | s_padf_utils | [pdf_utils] Page 4: native (1079 chars)
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 4/4
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] Native text       : 4 page(s)
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 4 page(s)
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.06s
+2026-03-19 06:45:56 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 06:45:56 | INFO     | s_main | [f8a5f9dd] Step 3/5 — extraction complete: 4 page(s) with text (0.06s)
+2026-03-19 06:45:56 | INFO     | s_main | [f8a5f9dd] Step 4/5 — merging 4 page(s) into text
+2026-03-19 06:45:56 | INFO     | s_main | [f8a5f9dd] Step 4/5 — merged: 7,878 chars (0.000s)
+2026-03-19 06:45:56 | INFO     | s_main | [f8a5f9dd] Step 5/5 — running map-reduce inference
+2026-03-19 06:45:56 | INFO     | s_ai_model | [split_by_tokens] 7,878 chars → 2,380 tokens (3.31 chars/token) in 0.007s
+2026-03-19 06:45:56 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 06:45:56 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.010s
+2026-03-19 06:45:56 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 06:45:56 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=7,878
+2026-03-19 06:45:56 | INFO     | s_ai_model | [map 1/1] tokens_in=2478 max_new=600
+2026-03-19 06:46:06 | INFO     | s_ai_model | [map 1/1] 346 tokens_out in 10.58s (32.7 tok/s)
+2026-03-19 06:46:06 | DEBUG    | s_main | extract_json: input length 1265 chars
+2026-03-19 06:46:06 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 06:46:06 | DEBUG    | s_main | _fix_json_string: repair complete (1265 chars)
+2026-03-19 06:46:06 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 06:46:06 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 06:46:06 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-19 06:46:06 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (10.59s) overview=yes highlights=4
+2026-03-19 06:46:06 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 06:46:06 | INFO     | s_ai_model | [generate_analysis] total=10.59s highlights=4
+2026-03-19 06:46:06 | INFO     | s_main | [f8a5f9dd] Step 5/5 — inference complete (10.60s)
+2026-03-19 06:46:06 | DEBUG    | s_main | [f8a5f9dd] Temp file deleted: 'temp/25914c1e-fc13-432e-9ff0-655f7318bb20.pdf'
+2026-03-19 06:46:06 | INFO     | s_main | [f8a5f9dd] ── REQUEST COMPLETE — total time: 10.67s ──────
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:126]
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[128:140]
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[142:157]
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[161:13032]
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:30408]
+2026-03-19 06:46:08 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:41992]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:28960]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:23168]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:23168]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:34752]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:36200]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:27512]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:33304]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:27512]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:28960]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:26064]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:27512]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:31856]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:75296]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:69504]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:59368]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:56472]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:86880]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:118624]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:99912]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:101360]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:150592]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:157832]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:162176]
+2026-03-19 06:46:09 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:73848]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:147360]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:23168]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:55816]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2168]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:23168]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:9792]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:76744]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:102808]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:136112]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:136112]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:163624]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:162176]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:89776]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2896]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:30408]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:24616]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:91224]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:94120]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:102808]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:207064]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:251952]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:256435]
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:46:10 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:46:10 | INFO     | s_main | [a5e36df3] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:46:10 | INFO     | s_main | [a5e36df3] filename='Image to PDF 20260318 06.46.01.pdf' analysis_type=0
+2026-03-19 06:46:10 | DEBUG    | s_main | [a5e36df3] Saving upload to 'temp/11c808b3-afc0-4194-97f5-d9011adae3d7.pdf'
+2026-03-19 06:46:10 | INFO     | s_main | [a5e36df3] Step 1/5 — saved upload (9,309,506 bytes → '11c808b3-afc0-4194-97f5-d9011adae3d7.pdf')
+2026-03-19 06:46:10 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 7 page(s)
+2026-03-19 06:46:10 | INFO     | s_main | [a5e36df3] Step 2/5 — total pages: 7, will analyse: 7 (all pages)
+2026-03-19 06:46:10 | INFO     | s_main | [a5e36df3] Step 3/5 — extracting text from 7 page(s)
+2026-03-19 06:46:10 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/11c808b3-afc0-4194-97f5-d9011adae3d7.pdf' max_pages=7
+2026-03-19 06:46:10 | INFO     | s_padf_utils | [pdf_utils] 7 total page(s), processing 7 (all)
+2026-03-19 06:46:10 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 5 page(s), 0 had native text -> 'image_only'
+2026-03-19 06:46:10 | INFO     | s_padf_utils | [pdf_utils] Image-only PDF -- skipping native pass, all pages going to PaddleOCR-VL
+2026-03-19 06:46:10 | INFO     | s_padf_utils | [pdf_utils] Pass 2 -- PaddleOCR-VL (GPU) for 7 page(s)
+2026-03-19 06:46:10 | INFO     | s_padf_utils | [pdf_utils] Pre-rendering 7 page image(s) in parallel (4 CPU workers) ...
+2026-03-19 06:46:11 | INFO     | s_padf_utils | [pdf_utils] Pre-render done (0.90s) — 7/7 images ready
+2026-03-19 06:51:34 | INFO     | s_main | Upload folder ready: /home/ubuntu/pdf_ai_review/temp
+2026-03-19 06:51:34 | DEBUG    | asyncio | Using selector: EpollSelector
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:130]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[132:144]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[146:161]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[165:86176]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:3600]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 06:51:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:24616]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:15928]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:23168]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:31856]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:28960]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:27512]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:33303]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:24616]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:34752]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:33304]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:27512]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:26064]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:28960]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:43440]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:85264]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:83984]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:102808]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:124528]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:137560]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:169416]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:156384]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-19 06:51:35 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:31856]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:221544]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18432]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:139008]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:47616]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:208064]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:98464]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:99912]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:124528]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:140456]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:65160]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:26064]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:66608]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:56472]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:82536]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:76744]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:104256]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:44888]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:15928]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:66608]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:60816]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:22199]
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 06:51:36 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 06:51:36 | INFO     | s_main | [7ee31116] ── NEW REQUEST ──────────────────────────────
+2026-03-19 06:51:36 | INFO     | s_main | [7ee31116] filename='Image to PDF 20260318 06.46.01 (2).pdf' analysis_type=0
+2026-03-19 06:51:36 | DEBUG    | s_main | [7ee31116] Saving upload to 'temp/dd090a5b-ced8-46e3-b023-373ccfd792b7.pdf'
+2026-03-19 06:51:36 | INFO     | s_main | [7ee31116] Step 1/5 — saved upload (9,309,506 bytes → 'dd090a5b-ced8-46e3-b023-373ccfd792b7.pdf')
+2026-03-19 06:51:36 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 7 page(s)
+2026-03-19 06:51:36 | INFO     | s_main | [7ee31116] Step 2/5 — total pages: 7, will analyse: 7 (all pages)
+2026-03-19 06:51:36 | INFO     | s_main | [7ee31116] Step 3/5 — extracting text from 7 page(s)
+2026-03-19 06:51:36 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/dd090a5b-ced8-46e3-b023-373ccfd792b7.pdf' max_pages=7
+2026-03-19 06:51:36 | INFO     | s_padf_utils | [pdf_utils] 7 total page(s), processing 7 (all)
+2026-03-19 06:51:36 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 5 page(s), 0 had native text -> 'image_only'
+2026-03-19 06:51:36 | INFO     | s_padf_utils | [pdf_utils] Image-only PDF -- skipping native pass, all pages going to PaddleOCR-VL
+2026-03-19 06:51:36 | INFO     | s_padf_utils | [pdf_utils] Pass 2 -- PaddleOCR-VL (GPU) for 7 page(s)
+2026-03-19 06:51:36 | INFO     | s_padf_utils | [pdf_utils] Pre-rendering 7 page image(s) in parallel (4 CPU workers) ...
+2026-03-19 06:51:37 | INFO     | s_padf_utils | [pdf_utils] Pre-render done (0.83s) — 7/7 images ready
+2026-03-19 06:57:21 | INFO     | s_main | Upload folder ready: /home/ubuntu/pdf_ai_review/temp
+2026-03-19 06:57:21 | DEBUG    | asyncio | Using selector: EpollSelector
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:153]
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[155:167]
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[169:184]
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[188:23819]
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 07:01:48 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 07:01:48 | INFO     | s_main | [13fceb04] ── NEW REQUEST ──────────────────────────────
+2026-03-19 07:01:48 | INFO     | s_main | [13fceb04] filename='audit_report_rajy0707@gmail.com_(7).pdf_final_signed (25).pdf' analysis_type=0
+2026-03-19 07:01:48 | DEBUG    | s_main | [13fceb04] Saving upload to 'temp/9f7f482d-b0ba-41d6-9c71-87b2740f6ee2.pdf'
+2026-03-19 07:01:48 | INFO     | s_main | [13fceb04] Step 1/5 — saved upload (23,631 bytes → '9f7f482d-b0ba-41d6-9c71-87b2740f6ee2.pdf')
+2026-03-19 07:01:48 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 07:01:48 | INFO     | s_main | [13fceb04] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 07:01:48 | INFO     | s_main | [13fceb04] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/9f7f482d-b0ba-41d6-9c71-87b2740f6ee2.pdf' max_pages=1
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 1 had native text -> 'native'
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 07:01:48 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 482 -> 482 chars
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.00s) -- native=1, need_ocr=0
+2026-03-19 07:01:48 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (482 chars)
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] Native text       : 1 page(s)
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.02s
+2026-03-19 07:01:48 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 07:01:48 | INFO     | s_main | [13fceb04] Step 3/5 — extraction complete: 1 page(s) with text (0.02s)
+2026-03-19 07:01:48 | INFO     | s_main | [13fceb04] Step 4/5 — merging 1 page(s) into text
+2026-03-19 07:01:48 | INFO     | s_main | [13fceb04] Step 4/5 — merged: 482 chars (0.000s)
+2026-03-19 07:01:48 | INFO     | s_main | [13fceb04] Step 5/5 — running map-reduce inference
+2026-03-19 07:01:48 | INFO     | s_ai_model | [split_by_tokens] 482 chars → 302 tokens (1.60 chars/token) in 0.011s
+2026-03-19 07:01:48 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 07:01:48 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.011s
+2026-03-19 07:01:48 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 07:01:48 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=482
+2026-03-19 07:01:48 | INFO     | s_ai_model | [map 1/1] tokens_in=400 max_new=600
+2026-03-19 07:01:57 | INFO     | s_ai_model | [map 1/1] 215 tokens_out in 9.20s (23.4 tok/s)
+2026-03-19 07:01:57 | DEBUG    | s_main | extract_json: input length 447 chars
+2026-03-19 07:01:57 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:01:57 | DEBUG    | s_main | _fix_json_string: repair complete (447 chars)
+2026-03-19 07:01:57 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:01:57 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 07:01:57 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 07:01:57 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (9.20s) overview=yes highlights=3
+2026-03-19 07:01:57 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 07:01:57 | INFO     | s_ai_model | [generate_analysis] total=9.20s highlights=3
+2026-03-19 07:01:57 | INFO     | s_main | [13fceb04] Step 5/5 — inference complete (9.22s)
+2026-03-19 07:01:57 | DEBUG    | s_main | [13fceb04] Temp file deleted: 'temp/9f7f482d-b0ba-41d6-9c71-87b2740f6ee2.pdf'
+2026-03-19 07:01:57 | INFO     | s_main | [13fceb04] ── REQUEST COMPLETE — total time: 9.24s ──────
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:113]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[115:127]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[129:144]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[148:20440]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:77380]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:36500]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:37960]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:45260]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:43800]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:37960]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:39420]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:40880]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:36500]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:43800]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:40880]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:36500]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:39420]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:40880]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:40880]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:36500]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:43800]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:42340]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:40880]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:37960]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:42340]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:39420]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:52560]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:40880]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:35040]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:161291]
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 07:10:18 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 07:10:18 | INFO     | s_main | [4eceaabd] ── NEW REQUEST ──────────────────────────────
+2026-03-19 07:10:18 | INFO     | s_main | [4eceaabd] filename='Business Proposal.pdf' analysis_type=0
+2026-03-19 07:10:18 | DEBUG    | s_main | [4eceaabd] Saving upload to 'temp/ae1021f8-ef5f-47e9-aa4c-42eb63181949.pdf'
+2026-03-19 07:10:18 | INFO     | s_main | [4eceaabd] Step 1/5 — saved upload (2,017,755 bytes → 'ae1021f8-ef5f-47e9-aa4c-42eb63181949.pdf')
+2026-03-19 07:10:18 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 2 page(s)
+2026-03-19 07:10:18 | INFO     | s_main | [4eceaabd] Step 2/5 — total pages: 2, will analyse: 2 (all pages)
+2026-03-19 07:10:18 | INFO     | s_main | [4eceaabd] Step 3/5 — extracting text from 2 page(s)
+2026-03-19 07:10:18 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/ae1021f8-ef5f-47e9-aa4c-42eb63181949.pdf' max_pages=2
+2026-03-19 07:10:18 | INFO     | s_padf_utils | [pdf_utils] 2 total page(s), processing 2 (all)
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 2 page(s), 2 had native text -> 'native'
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 07:10:19 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 149 -> 149 chars
+2026-03-19 07:10:19 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1322 -> 1322 chars
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.01s) -- native=2, need_ocr=0
+2026-03-19 07:10:19 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (149 chars)
+2026-03-19 07:10:19 | DEBUG    | s_padf_utils | [pdf_utils] Page 2: native (1322 chars)
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 2/2
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] Native text       : 2 page(s)
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 2 page(s)
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.03s
+2026-03-19 07:10:19 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 07:10:19 | INFO     | s_main | [4eceaabd] Step 3/5 — extraction complete: 2 page(s) with text (0.03s)
+2026-03-19 07:10:19 | INFO     | s_main | [4eceaabd] Step 4/5 — merging 2 page(s) into text
+2026-03-19 07:10:19 | INFO     | s_main | [4eceaabd] Step 4/5 — merged: 1,473 chars (0.000s)
+2026-03-19 07:10:19 | INFO     | s_main | [4eceaabd] Step 5/5 — running map-reduce inference
+2026-03-19 07:10:19 | INFO     | s_ai_model | [split_by_tokens] 1,473 chars → 598 tokens (2.46 chars/token) in 0.002s
+2026-03-19 07:10:19 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 07:10:19 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.003s
+2026-03-19 07:10:19 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 07:10:19 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=1,473
+2026-03-19 07:10:19 | INFO     | s_ai_model | [map 1/1] tokens_in=695 max_new=600
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:113]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[115:127]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[129:144]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[148:13032]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:31856]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:34752]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:37648]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:31856]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:1448]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:7240]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:37648]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:28960]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:18824]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:20272]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:24616]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:31856]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:23168]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:21720]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:34752]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:23168]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:37648]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:24616]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:49232]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:34752]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:41992]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:37648]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:44888]
+2026-03-19 07:10:20 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:41992]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:55024]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:59368]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:101360]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:262144]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:125864]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:97016]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:74687]
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 07:10:21 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 07:10:21 | INFO     | s_main | [a424e109] ── NEW REQUEST ──────────────────────────────
+2026-03-19 07:10:21 | INFO     | s_main | [a424e109] filename='Business Proposal.pdf' analysis_type=0
+2026-03-19 07:10:21 | DEBUG    | s_main | [a424e109] Saving upload to 'temp/a7088894-8ce0-422f-b291-35317f149075.pdf'
+2026-03-19 07:10:21 | INFO     | s_main | [a424e109] Step 1/5 — saved upload (2,017,755 bytes → 'a7088894-8ce0-422f-b291-35317f149075.pdf')
+2026-03-19 07:10:21 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 2 page(s)
+2026-03-19 07:10:21 | INFO     | s_main | [a424e109] Step 2/5 — total pages: 2, will analyse: 2 (all pages)
+2026-03-19 07:10:21 | INFO     | s_main | [a424e109] Step 3/5 — extracting text from 2 page(s)
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/a7088894-8ce0-422f-b291-35317f149075.pdf' max_pages=2
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] 2 total page(s), processing 2 (all)
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 2 page(s), 2 had native text -> 'native'
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 07:10:21 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 149 -> 149 chars
+2026-03-19 07:10:21 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1322 -> 1322 chars
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.01s) -- native=2, need_ocr=0
+2026-03-19 07:10:21 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (149 chars)
+2026-03-19 07:10:21 | DEBUG    | s_padf_utils | [pdf_utils] Page 2: native (1322 chars)
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 2/2
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] Native text       : 2 page(s)
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 2 page(s)
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.03s
+2026-03-19 07:10:21 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 07:10:21 | INFO     | s_main | [a424e109] Step 3/5 — extraction complete: 2 page(s) with text (0.03s)
+2026-03-19 07:10:21 | INFO     | s_main | [a424e109] Step 4/5 — merging 2 page(s) into text
+2026-03-19 07:10:21 | INFO     | s_main | [a424e109] Step 4/5 — merged: 1,473 chars (0.000s)
+2026-03-19 07:10:21 | INFO     | s_main | [a424e109] Step 5/5 — running map-reduce inference
+2026-03-19 07:10:21 | INFO     | s_ai_model | [split_by_tokens] 1,473 chars → 598 tokens (2.46 chars/token) in 0.002s
+2026-03-19 07:10:21 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 07:10:21 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.003s
+2026-03-19 07:10:21 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 07:10:21 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=1,473
+2026-03-19 07:10:21 | INFO     | s_ai_model | [map 1/1] tokens_in=695 max_new=600
+2026-03-19 07:10:29 | INFO     | s_ai_model | [map 1/1] 166 tokens_out in 10.82s (15.3 tok/s)
+2026-03-19 07:10:29 | DEBUG    | s_main | extract_json: input length 616 chars
+2026-03-19 07:10:29 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:10:29 | DEBUG    | s_main | _fix_json_string: repair complete (616 chars)
+2026-03-19 07:10:29 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:10:29 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 07:10:29 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-19 07:10:29 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (10.82s) overview=yes highlights=4
+2026-03-19 07:10:29 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 07:10:29 | INFO     | s_ai_model | [generate_analysis] total=10.82s highlights=4
+2026-03-19 07:10:29 | INFO     | s_main | [4eceaabd] Step 5/5 — inference complete (10.83s)
+2026-03-19 07:10:29 | DEBUG    | s_main | [4eceaabd] Temp file deleted: 'temp/ae1021f8-ef5f-47e9-aa4c-42eb63181949.pdf'
+2026-03-19 07:10:29 | INFO     | s_main | [4eceaabd] ── REQUEST COMPLETE — total time: 10.91s ──────
+2026-03-19 07:10:31 | INFO     | s_ai_model | [map 1/1] 166 tokens_out in 9.85s (16.9 tok/s)
+2026-03-19 07:10:31 | DEBUG    | s_main | extract_json: input length 616 chars
+2026-03-19 07:10:31 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:10:31 | DEBUG    | s_main | _fix_json_string: repair complete (616 chars)
+2026-03-19 07:10:31 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:10:31 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 07:10:31 | DEBUG    | s_main | _postprocess_highlights: 4 highlight(s) after cleanup
+2026-03-19 07:10:31 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (9.86s) overview=yes highlights=4
+2026-03-19 07:10:31 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 07:10:31 | INFO     | s_ai_model | [generate_analysis] total=9.86s highlights=4
+2026-03-19 07:10:31 | INFO     | s_main | [a424e109] Step 5/5 — inference complete (9.86s)
+2026-03-19 07:10:31 | DEBUG    | s_main | [a424e109] Temp file deleted: 'temp/a7088894-8ce0-422f-b291-35317f149075.pdf'
+2026-03-19 07:10:31 | INFO     | s_main | [a424e109] ── REQUEST COMPLETE — total time: 9.90s ──────
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:101]
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[103:115]
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[117:132]
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[136:5047]
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 07:16:51 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 07:16:51 | INFO     | s_main | [806cbfcb] ── NEW REQUEST ──────────────────────────────
+2026-03-19 07:16:51 | INFO     | s_main | [806cbfcb] filename='blank.pdf' analysis_type=0
+2026-03-19 07:16:51 | DEBUG    | s_main | [806cbfcb] Saving upload to 'temp/837fbc4c-4bba-423d-84c2-e5c75e630ec4.pdf'
+2026-03-19 07:16:51 | INFO     | s_main | [806cbfcb] Step 1/5 — saved upload (4,911 bytes → '837fbc4c-4bba-423d-84c2-e5c75e630ec4.pdf')
+2026-03-19 07:16:51 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 07:16:51 | INFO     | s_main | [806cbfcb] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 07:16:51 | INFO     | s_main | [806cbfcb] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 07:16:51 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/837fbc4c-4bba-423d-84c2-e5c75e630ec4.pdf' max_pages=1
+2026-03-19 07:16:51 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 07:16:51 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 0 had native text -> 'image_only'
+2026-03-19 07:16:51 | INFO     | s_padf_utils | [pdf_utils] Image-only PDF -- skipping native pass, all pages going to PaddleOCR-VL
+2026-03-19 07:16:51 | INFO     | s_padf_utils | [pdf_utils] Pass 2 -- PaddleOCR-VL (GPU) for 1 page(s)
+2026-03-19 07:16:51 | INFO     | s_padf_utils | [pdf_utils] Pre-rendering 1 page image(s) in parallel (4 CPU workers) ...
+2026-03-19 07:16:51 | INFO     | s_padf_utils | [pdf_utils] Pre-render done (0.02s) — 1/1 images ready
+2026-03-19 07:16:59 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1030 -> 950 chars
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] Page 1: PaddleOCR-VL OK (attempt 1, dpi=150, 1 block(s), 8.91s)
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] PDF type         : image_only
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] Native text       : 0 page(s)
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 1 page(s)
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] Time              : 8.93s
+2026-03-19 07:16:59 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 07:16:59 | INFO     | s_main | [806cbfcb] Step 3/5 — extraction complete: 1 page(s) with text (8.93s)
+2026-03-19 07:16:59 | INFO     | s_main | [806cbfcb] Step 4/5 — merging 1 page(s) into text
+2026-03-19 07:16:59 | INFO     | s_main | [806cbfcb] Step 4/5 — merged: 950 chars (0.000s)
+2026-03-19 07:16:59 | INFO     | s_main | [806cbfcb] Step 5/5 — running map-reduce inference
+2026-03-19 07:16:59 | INFO     | s_ai_model | [split_by_tokens] 950 chars → 388 tokens (2.45 chars/token) in 0.004s
+2026-03-19 07:16:59 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 07:16:59 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.005s
+2026-03-19 07:16:59 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 07:16:59 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=950
+2026-03-19 07:16:59 | INFO     | s_ai_model | [map 1/1] tokens_in=486 max_new=600
+2026-03-19 07:17:05 | INFO     | s_ai_model | [map 1/1] 158 tokens_out in 5.21s (30.3 tok/s)
+2026-03-19 07:17:05 | DEBUG    | s_main | extract_json: input length 691 chars
+2026-03-19 07:17:05 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:17:05 | DEBUG    | s_main | _fix_json_string: repair complete (691 chars)
+2026-03-19 07:17:05 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:17:05 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 07:17:05 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 07:17:05 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (5.22s) overview=yes highlights=3
+2026-03-19 07:17:05 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 07:17:05 | INFO     | s_ai_model | [generate_analysis] total=5.22s highlights=3
+2026-03-19 07:17:05 | INFO     | s_main | [806cbfcb] Step 5/5 — inference complete (5.22s)
+2026-03-19 07:17:05 | DEBUG    | s_main | [806cbfcb] Temp file deleted: 'temp/837fbc4c-4bba-423d-84c2-e5c75e630ec4.pdf'
+2026-03-19 07:17:05 | INFO     | s_main | [806cbfcb] ── REQUEST COMPLETE — total time: 14.16s ──────
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:144]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[146:158]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[160:175]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[179:13032]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:5792]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:11584]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:24616]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:17376]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:4344]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:10136]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:34752]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:8688]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:15928]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:14480]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:13032]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:790]
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 07:31:34 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 07:31:34 | INFO     | s_main | [016d1ac1] ── NEW REQUEST ──────────────────────────────
+2026-03-19 07:31:34 | INFO     | s_main | [016d1ac1] filename='6beffa2d71634b118a44f80be31deacb_merged_document.pdf' analysis_type=0
+2026-03-19 07:31:34 | DEBUG    | s_main | [016d1ac1] Saving upload to 'temp/3e9a7a0d-6f58-4d7a-b5aa-0d72fd785517.pdf'
+2026-03-19 07:31:34 | INFO     | s_main | [016d1ac1] Step 1/5 — saved upload (197,539 bytes → '3e9a7a0d-6f58-4d7a-b5aa-0d72fd785517.pdf')
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 8 page(s)
+2026-03-19 07:31:34 | INFO     | s_main | [016d1ac1] Step 2/5 — total pages: 8, will analyse: 8 (all pages)
+2026-03-19 07:31:34 | INFO     | s_main | [016d1ac1] Step 3/5 — extracting text from 8 page(s)
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/3e9a7a0d-6f58-4d7a-b5aa-0d72fd785517.pdf' max_pages=8
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] 8 total page(s), processing 8 (all)
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 5 page(s), 5 had native text -> 'native'
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] Pass 1 -- parallel native extraction (4 workers)
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1717 -> 1717 chars
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1643 -> 1642 chars
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2081 -> 2081 chars
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 3401 -> 3399 chars
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1268 -> 1262 chars
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1441 -> 1435 chars
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 4358 -> 4356 chars
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 2322 -> 2317 chars
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] Pass 1 done (0.06s) -- native=8, need_ocr=0
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] Page 1: native (1717 chars)
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] Page 2: native (1642 chars)
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] Page 3: native (2081 chars)
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] Page 4: native (3399 chars)
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] Page 5: native (1262 chars)
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] Page 6: native (1435 chars)
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] Page 7: native (4356 chars)
+2026-03-19 07:31:34 | DEBUG    | s_padf_utils | [pdf_utils] Page 8: native (2317 chars)
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] PDF type         : native
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 8/8
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] Native text       : 8 page(s)
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 0 page(s)
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 8 page(s)
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] Time              : 0.11s
+2026-03-19 07:31:34 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 07:31:34 | INFO     | s_main | [016d1ac1] Step 3/5 — extraction complete: 8 page(s) with text (0.11s)
+2026-03-19 07:31:34 | INFO     | s_main | [016d1ac1] Step 4/5 — merging 8 page(s) into text
+2026-03-19 07:31:34 | INFO     | s_main | [016d1ac1] Step 4/5 — merged: 18,223 chars (0.000s)
+2026-03-19 07:31:34 | INFO     | s_main | [016d1ac1] Step 5/5 — running map-reduce inference
+2026-03-19 07:31:34 | INFO     | s_ai_model | [split_by_tokens] 18,223 chars → 6,995 tokens (2.61 chars/token) in 0.020s
+2026-03-19 07:31:34 | INFO     | s_ai_model | [split_by_tokens] → 2 chunk(s) of ≤5500 tokens
+2026-03-19 07:31:34 | INFO     | s_ai_model | [generate_analysis] 2 token-accurate chunk(s) in 0.028s
+2026-03-19 07:31:34 | INFO     | s_ai_model | [generate_analysis] MAP: 2 chunk(s)
+2026-03-19 07:31:34 | INFO     | s_ai_model | [generate_analysis] [map 1/2] chars=13,719
+2026-03-19 07:31:35 | INFO     | s_ai_model | [map 1/2] tokens_in=5597 max_new=600
+2026-03-19 07:31:54 | INFO     | s_ai_model | [map 1/2] 600 tokens_out in 19.71s (30.4 tok/s)
+2026-03-19 07:31:54 | DEBUG    | s_main | extract_json: input length 1981 chars
+2026-03-19 07:31:54 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:31:54 | DEBUG    | s_main | _fix_json_string: repair complete (1981 chars)
+2026-03-19 07:31:54 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:31:54 | DEBUG    | s_main | extract_json: strategy 1 failed — Unterminated string starting at: line 33 column 1 (char 1961)
+2026-03-19 07:31:54 | DEBUG    | s_main | extract_json: trying strategy 2 — isolate brace block
+2026-03-19 07:31:54 | WARNING  | s_main | extract_json: no brace block found in output
+2026-03-19 07:31:54 | ERROR    | s_main | extract_json: all JSON parse strategies failed — falling back to per-field regex extraction
+2026-03-19 07:31:54 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'overview'
+2026-03-19 07:31:54 | DEBUG    | s_main | _extract_field_by_regex: found 'overview' via regex
+2026-03-19 07:31:54 | DEBUG    | s_main | _extract_field_by_regex: extracting field 'summary'
+2026-03-19 07:31:54 | DEBUG    | s_main | _extract_field_by_regex: found 'summary' via regex
+2026-03-19 07:31:54 | DEBUG    | s_main | _extract_highlights_by_regex: attempting regex extraction
+2026-03-19 07:31:54 | WARNING  | s_main | _extract_highlights_by_regex: highlights array not found
+2026-03-19 07:31:54 | INFO     | s_main | extract_json: strategy 3 recovered partial data via regex
+2026-03-19 07:31:54 | INFO     | s_ai_model | [generate_analysis] [map 1/2] done (19.74s) overview=yes highlights=0
+2026-03-19 07:31:54 | INFO     | s_ai_model | [generate_analysis] [map 2/2] chars=4,705
+2026-03-19 07:31:54 | INFO     | s_ai_model | [map 2/2] tokens_in=1643 max_new=600
+2026-03-19 07:32:03 | INFO     | s_ai_model | [map 2/2] 291 tokens_out in 8.99s (32.4 tok/s)
+2026-03-19 07:32:03 | DEBUG    | s_main | extract_json: input length 1300 chars
+2026-03-19 07:32:03 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:32:03 | DEBUG    | s_main | _fix_json_string: repair complete (1300 chars)
+2026-03-19 07:32:03 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:32:03 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 07:32:03 | DEBUG    | s_main | _postprocess_highlights: 6 highlight(s) after cleanup
+2026-03-19 07:32:03 | INFO     | s_ai_model | [generate_analysis] [map 2/2] done (9.00s) overview=yes highlights=6
+2026-03-19 07:32:03 | INFO     | s_ai_model | [generate_analysis] MAP complete — 2 total, 2 with content
+2026-03-19 07:32:03 | INFO     | s_ai_model | [generate_analysis] REDUCE: 2 results, batch_size=10
+2026-03-19 07:32:03 | INFO     | s_ai_model | [reduce] tokens_in=280 max_new=600
+2026-03-19 07:32:11 | INFO     | s_ai_model | [reduce] 239 tokens_out in 7.59s (31.5 tok/s)
+2026-03-19 07:32:11 | DEBUG    | s_main | extract_json: input length 1011 chars
+2026-03-19 07:32:11 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:32:11 | DEBUG    | s_main | _fix_json_string: repair complete (1011 chars)
+2026-03-19 07:32:11 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:32:11 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 07:32:11 | DEBUG    | s_main | _postprocess_highlights: 5 highlight(s) after cleanup
+2026-03-19 07:32:11 | INFO     | s_ai_model | [generate_analysis] REDUCE done (7.60s)
+2026-03-19 07:32:11 | INFO     | s_ai_model | [generate_analysis] total=36.35s highlights=5
+2026-03-19 07:32:11 | INFO     | s_main | [016d1ac1] Step 5/5 — inference complete (36.37s)
+2026-03-19 07:32:11 | DEBUG    | s_main | [016d1ac1] Temp file deleted: 'temp/3e9a7a0d-6f58-4d7a-b5aa-0d72fd785517.pdf'
+2026-03-19 07:32:11 | INFO     | s_main | [016d1ac1] ── REQUEST COMPLETE — total time: 36.49s ──────
+2026-03-19 07:43:39 | INFO     | s_main | Upload folder ready: /home/ubuntu/pdf_ai_review/temp
+2026-03-19 07:43:39 | DEBUG    | asyncio | Using selector: EpollSelector
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:101]
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[103:115]
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[117:132]
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[136:5047]
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 07:43:41 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 07:43:41 | INFO     | s_main | [e5cdd630] ── NEW REQUEST ──────────────────────────────
+2026-03-19 07:43:41 | INFO     | s_main | [e5cdd630] filename='blank.pdf' analysis_type=0
+2026-03-19 07:43:41 | DEBUG    | s_main | [e5cdd630] Saving upload to 'temp/8b0fe3c9-22ba-464b-80b4-5420607cd273.pdf'
+2026-03-19 07:43:41 | INFO     | s_main | [e5cdd630] Step 1/5 — saved upload (4,911 bytes → '8b0fe3c9-22ba-464b-80b4-5420607cd273.pdf')
+2026-03-19 07:43:41 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 07:43:41 | INFO     | s_main | [e5cdd630] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 07:43:41 | INFO     | s_main | [e5cdd630] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 07:43:41 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/8b0fe3c9-22ba-464b-80b4-5420607cd273.pdf' max_pages=1
+2026-03-19 07:43:41 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 07:43:41 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 0 had native text -> 'image_only'
+2026-03-19 07:43:41 | INFO     | s_padf_utils | [pdf_utils] Image-only PDF -- skipping native pass, all pages going to PaddleOCR-VL
+2026-03-19 07:43:41 | INFO     | s_padf_utils | [pdf_utils] Pass 2 -- PaddleOCR-VL (GPU) for 1 page(s)
+2026-03-19 07:43:41 | INFO     | s_padf_utils | [pdf_utils] Pre-rendering 1 page image(s) in parallel (4 CPU workers) ...
+2026-03-19 07:43:41 | INFO     | s_padf_utils | [pdf_utils] Pre-render done (0.00s) — 1/1 images ready
+2026-03-19 07:43:49 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1030 -> 950 chars
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] Page 1: PaddleOCR-VL OK (attempt 1, dpi=150, 1 block(s), 8.72s)
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] PDF type         : image_only
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] Native text       : 0 page(s)
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 1 page(s)
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] Time              : 8.73s
+2026-03-19 07:43:49 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 07:43:49 | INFO     | s_main | [e5cdd630] Step 3/5 — extraction complete: 1 page(s) with text (8.73s)
+2026-03-19 07:43:49 | INFO     | s_main | [e5cdd630] Step 4/5 — merging 1 page(s) into text
+2026-03-19 07:43:49 | INFO     | s_main | [e5cdd630] Step 4/5 — merged: 950 chars (0.000s)
+2026-03-19 07:43:49 | INFO     | s_main | [e5cdd630] Step 5/5 — running map-reduce inference
+2026-03-19 07:43:49 | INFO     | s_ai_model | [split_by_tokens] 950 chars → 388 tokens (2.45 chars/token) in 0.013s
+2026-03-19 07:43:49 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 07:43:49 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.014s
+2026-03-19 07:43:49 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 07:43:49 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=950
+2026-03-19 07:43:49 | INFO     | s_ai_model | [map 1/1] tokens_in=486 max_new=600
+2026-03-19 07:43:56 | INFO     | s_ai_model | [map 1/1] 158 tokens_out in 6.06s (26.1 tok/s)
+2026-03-19 07:43:56 | DEBUG    | s_main | extract_json: input length 691 chars
+2026-03-19 07:43:56 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:43:56 | DEBUG    | s_main | _fix_json_string: repair complete (691 chars)
+2026-03-19 07:43:56 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:43:56 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 07:43:56 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 07:43:56 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (6.06s) overview=yes highlights=3
+2026-03-19 07:43:56 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 07:43:56 | INFO     | s_ai_model | [generate_analysis] total=6.07s highlights=3
+2026-03-19 07:43:56 | INFO     | s_main | [e5cdd630] Step 5/5 — inference complete (6.08s)
+2026-03-19 07:43:56 | DEBUG    | s_main | [e5cdd630] Temp file deleted: 'temp/8b0fe3c9-22ba-464b-80b4-5420607cd273.pdf'
+2026-03-19 07:43:56 | INFO     | s_main | [e5cdd630] ── REQUEST COMPLETE — total time: 14.81s ──────
+2026-03-19 07:44:48 | INFO     | s_main | Upload folder ready: /home/ubuntu/pdf_ai_review/temp
+2026-03-19 07:44:48 | DEBUG    | asyncio | Using selector: EpollSelector
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[36:55]
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[57:101]
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[103:115]
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[117:132]
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[136:5047]
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 07:44:49 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 07:44:49 | INFO     | s_main | [58fe2fdc] ── NEW REQUEST ──────────────────────────────
+2026-03-19 07:44:49 | INFO     | s_main | [58fe2fdc] filename='blank.pdf' analysis_type=0
+2026-03-19 07:44:49 | DEBUG    | s_main | [58fe2fdc] Saving upload to 'temp/5aa69e88-16a8-482e-8253-bdc21c0d9481.pdf'
+2026-03-19 07:44:49 | INFO     | s_main | [58fe2fdc] Step 1/5 — saved upload (4,911 bytes → '5aa69e88-16a8-482e-8253-bdc21c0d9481.pdf')
+2026-03-19 07:44:49 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 07:44:49 | INFO     | s_main | [58fe2fdc] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 07:44:49 | INFO     | s_main | [58fe2fdc] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 07:44:49 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/5aa69e88-16a8-482e-8253-bdc21c0d9481.pdf' max_pages=1
+2026-03-19 07:44:49 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 07:44:49 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 0 had native text -> 'image_only'
+2026-03-19 07:44:49 | INFO     | s_padf_utils | [pdf_utils] Image-only PDF -- skipping native pass, all pages going to PaddleOCR-VL
+2026-03-19 07:44:49 | INFO     | s_padf_utils | [pdf_utils] Pass 2 -- PaddleOCR-VL (GPU) for 1 page(s)
+2026-03-19 07:44:49 | INFO     | s_padf_utils | [pdf_utils] Pre-rendering 1 page image(s) in parallel (4 CPU workers) ...
+2026-03-19 07:44:49 | INFO     | s_padf_utils | [pdf_utils] Pre-render done (0.01s) — 1/1 images ready
+2026-03-19 07:44:58 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1030 -> 950 chars
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] Page 1: PaddleOCR-VL OK (attempt 1, dpi=150, 1 block(s), 8.90s)
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] PDF type         : image_only
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] Native text       : 0 page(s)
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 1 page(s)
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] Time              : 8.91s
+2026-03-19 07:44:58 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 07:44:58 | INFO     | s_main | [58fe2fdc] Step 3/5 — extraction complete: 1 page(s) with text (8.91s)
+2026-03-19 07:44:58 | INFO     | s_main | [58fe2fdc] Step 4/5 — merging 1 page(s) into text
+2026-03-19 07:44:58 | INFO     | s_main | [58fe2fdc] Step 4/5 — merged: 950 chars (0.000s)
+2026-03-19 07:44:58 | INFO     | s_main | [58fe2fdc] Step 5/5 — running map-reduce inference
+2026-03-19 07:44:58 | INFO     | s_ai_model | [split_by_tokens] 950 chars → 388 tokens (2.45 chars/token) in 0.013s
+2026-03-19 07:44:58 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 07:44:58 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.014s
+2026-03-19 07:44:58 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 07:44:58 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=950
+2026-03-19 07:44:58 | INFO     | s_ai_model | [map 1/1] tokens_in=486 max_new=600
+2026-03-19 07:45:05 | INFO     | s_ai_model | [map 1/1] 158 tokens_out in 7.04s (22.4 tok/s)
+2026-03-19 07:45:05 | DEBUG    | s_main | extract_json: input length 691 chars
+2026-03-19 07:45:05 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:45:05 | DEBUG    | s_main | _fix_json_string: repair complete (691 chars)
+2026-03-19 07:45:05 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:45:05 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 07:45:05 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 07:45:05 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (7.04s) overview=yes highlights=3
+2026-03-19 07:45:05 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 07:45:05 | INFO     | s_ai_model | [generate_analysis] total=7.05s highlights=3
+2026-03-19 07:45:05 | INFO     | s_main | [58fe2fdc] Step 5/5 — inference complete (7.06s)
+2026-03-19 07:45:05 | DEBUG    | s_main | [58fe2fdc] Temp file deleted: 'temp/5aa69e88-16a8-482e-8253-bdc21c0d9481.pdf'
+2026-03-19 07:45:05 | INFO     | s_main | [58fe2fdc] ── REQUEST COMPLETE — total time: 15.97s ──────
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_begin with no data
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[42:61]
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[63:107]
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_header_field with data[109:121]
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_header_value with data[123:138]
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_header_end with no data
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_headers_finished with no data
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[142:2896]
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_data with data[0:2157]
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_part_end with no data
+2026-03-19 07:45:56 | DEBUG    | python_multipart.multipart | Calling on_end with no data
+2026-03-19 07:45:56 | INFO     | s_main | [7bf2c80e] ── NEW REQUEST ──────────────────────────────
+2026-03-19 07:45:56 | INFO     | s_main | [7bf2c80e] filename='blank.pdf' analysis_type=0
+2026-03-19 07:45:56 | DEBUG    | s_main | [7bf2c80e] Saving upload to 'temp/29ee2a63-99cb-41d2-9425-32b76a050d58.pdf'
+2026-03-19 07:45:56 | INFO     | s_main | [7bf2c80e] Step 1/5 — saved upload (4,911 bytes → '29ee2a63-99cb-41d2-9425-32b76a050d58.pdf')
+2026-03-19 07:45:56 | DEBUG    | s_padf_utils | [pdf_utils] get_page_count: 1 page(s)
+2026-03-19 07:45:56 | INFO     | s_main | [7bf2c80e] Step 2/5 — total pages: 1, will analyse: 1 (all pages)
+2026-03-19 07:45:56 | INFO     | s_main | [7bf2c80e] Step 3/5 — extracting text from 1 page(s)
+2026-03-19 07:45:56 | INFO     | s_padf_utils | [pdf_utils] load_pdf: 'temp/29ee2a63-99cb-41d2-9425-32b76a050d58.pdf' max_pages=1
+2026-03-19 07:45:56 | INFO     | s_padf_utils | [pdf_utils] 1 total page(s), processing 1 (all)
+2026-03-19 07:45:56 | INFO     | s_padf_utils | [pdf_utils] PDF type: sampled 1 page(s), 0 had native text -> 'image_only'
+2026-03-19 07:45:56 | INFO     | s_padf_utils | [pdf_utils] Image-only PDF -- skipping native pass, all pages going to PaddleOCR-VL
+2026-03-19 07:45:56 | INFO     | s_padf_utils | [pdf_utils] Pass 2 -- PaddleOCR-VL (GPU) for 1 page(s)
+2026-03-19 07:45:56 | INFO     | s_padf_utils | [pdf_utils] Pre-rendering 1 page image(s) in parallel (4 CPU workers) ...
+2026-03-19 07:45:56 | INFO     | s_padf_utils | [pdf_utils] Pre-render done (0.01s) — 1/1 images ready
+2026-03-19 07:46:03 | DEBUG    | s_padf_utils | [pdf_utils] clean_text: 1030 -> 950 chars
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] Page 1: PaddleOCR-VL OK (attempt 1, dpi=150, 1 block(s), 6.46s)
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] -- EXTRACTION COMPLETE --------------------------
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] PDF type         : image_only
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] Pages processed  : 1/1
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] Native text       : 0 page(s)
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] PaddleOCR-VL      : 1 page(s)
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] Placeholders      : 0 page(s)
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] Blank pages        : 0 page(s)
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] Total loaded      : 1 page(s)
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] Time              : 6.48s
+2026-03-19 07:46:03 | INFO     | s_padf_utils | [pdf_utils] ------------------------------------------------------
+2026-03-19 07:46:03 | INFO     | s_main | [7bf2c80e] Step 3/5 — extraction complete: 1 page(s) with text (6.48s)
+2026-03-19 07:46:03 | INFO     | s_main | [7bf2c80e] Step 4/5 — merging 1 page(s) into text
+2026-03-19 07:46:03 | INFO     | s_main | [7bf2c80e] Step 4/5 — merged: 950 chars (0.000s)
+2026-03-19 07:46:03 | INFO     | s_main | [7bf2c80e] Step 5/5 — running map-reduce inference
+2026-03-19 07:46:03 | INFO     | s_ai_model | [split_by_tokens] 950 chars → 388 tokens (2.45 chars/token) in 0.003s
+2026-03-19 07:46:03 | INFO     | s_ai_model | [split_by_tokens] → 1 chunk(s) of ≤5500 tokens
+2026-03-19 07:46:03 | INFO     | s_ai_model | [generate_analysis] 1 token-accurate chunk(s) in 0.004s
+2026-03-19 07:46:03 | INFO     | s_ai_model | [generate_analysis] MAP: 1 chunk(s)
+2026-03-19 07:46:03 | INFO     | s_ai_model | [generate_analysis] [map 1/1] chars=950
+2026-03-19 07:46:03 | INFO     | s_ai_model | [map 1/1] tokens_in=486 max_new=600
+2026-03-19 07:46:08 | INFO     | s_ai_model | [map 1/1] 158 tokens_out in 5.36s (29.5 tok/s)
+2026-03-19 07:46:08 | DEBUG    | s_main | extract_json: input length 691 chars
+2026-03-19 07:46:08 | DEBUG    | s_main | _fix_json_string: starting string repair
+2026-03-19 07:46:08 | DEBUG    | s_main | _fix_json_string: repair complete (691 chars)
+2026-03-19 07:46:08 | DEBUG    | s_main | extract_json: trying strategy 1 — direct json.loads
+2026-03-19 07:46:08 | DEBUG    | s_main | extract_json: strategy 1 succeeded
+2026-03-19 07:46:08 | DEBUG    | s_main | _postprocess_highlights: 3 highlight(s) after cleanup
+2026-03-19 07:46:08 | INFO     | s_ai_model | [generate_analysis] [map 1/1] done (5.37s) overview=yes highlights=3
+2026-03-19 07:46:08 | INFO     | s_ai_model | [generate_analysis] MAP complete — 1 total, 1 with content
+2026-03-19 07:46:08 | INFO     | s_ai_model | [generate_analysis] total=5.37s highlights=3
+2026-03-19 07:46:08 | INFO     | s_main | [7bf2c80e] Step 5/5 — inference complete (5.38s)
+2026-03-19 07:46:08 | DEBUG    | s_main | [7bf2c80e] Temp file deleted: 'temp/29ee2a63-99cb-41d2-9425-32b76a050d58.pdf'
+2026-03-19 07:46:08 | INFO     | s_main | [7bf2c80e] ── REQUEST COMPLETE — total time: 11.86s ──────
