@@ -1,18 +1,21 @@
 from fastapi import FastAPI, UploadFile, File, Query, HTTPException
+from contextlib import asynccontextmanager
 import os
 import uuid
 import json
 import re
 import time
+import asyncio
 import logging
 import logging.config
+from enum import Enum
+from dataclasses import dataclass, field
+from typing import Any
 from s_padf_utils import load_pdf, get_page_count, all_pages_blank
 from s_ai_model import generate_analysis
 
 # ---------------------------------------------------------------------------
-# Logging configuration
-# One-time setup: writes INFO+ to console and DEBUG+ to app.log
-# Both handlers use the same structured format so grep works on either.
+# Logging
 # ---------------------------------------------------------------------------
 logging.config.dictConfig({
     "version": 1,
@@ -35,355 +38,373 @@ logging.config.dictConfig({
             "formatter": "standard",
             "level":     "DEBUG",
             "filename":  "app.log",
-            "maxBytes":  10 * 1024 * 1024,   # 10 MB per file
-            "backupCount": 5,                  # keep 5 rotated files
+            "maxBytes":  10 * 1024 * 1024,
+            "backupCount": 5,
             "encoding":  "utf-8",
         },
     },
-    "root": {
-        "level":    "DEBUG",
-        "handlers": ["console", "file"],
-    },
+    "root": {"level": "DEBUG", "handlers": ["console", "file"]},
 })
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
-
 UPLOAD_FOLDER = "temp"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-logger.info(f"Upload folder ready: {os.path.abspath(UPLOAD_FOLDER)}")
+
+# ---------------------------------------------------------------------------
+# Job model
+# ---------------------------------------------------------------------------
+
+class JobStatus(str, Enum):
+    QUEUED     = "queued"
+    PROCESSING = "processing"
+    DONE       = "done"
+    FAILED     = "failed"
+
+
+@dataclass
+class Job:
+    job_id:        str
+    file_path:     str
+    analysis_type: int
+    status:        JobStatus = JobStatus.QUEUED
+    enqueued_at:   float     = field(default_factory=time.time)
+    started_at:    float     = 0.0
+    finished_at:   float     = 0.0
+    result:        Any       = None
+    error:         str       = ""
+
+
+_job_store: dict[str, Job] = {}
+_gpu_queue: asyncio.Queue  = asyncio.Queue()
+
+MAX_PDF_PAGES   = None
+JOB_TTL_SECONDS = 600
+_BLANK_RESULT   = {"overview": "", "summary": "", "highlights": []}
 
 
 # ---------------------------------------------------------------------------
-# JSON extraction helpers
+# JSON helpers (unchanged)
 # ---------------------------------------------------------------------------
 
 def _fix_json_string(raw: str) -> str:
-    """
-    Apply a sequence of targeted repairs to common Mistral JSON output problems,
-    without altering the structure or values of well-formed output.
-    """
-    logger.debug("_fix_json_string: starting string repair")
-
-    # Remove markdown code fences
     raw = raw.replace("```json", "").replace("```", "").strip()
-
-    # Normalise Windows line endings
     raw = raw.replace("\r\n", "\n").replace("\r", "\n")
-
-    # Fix illegal (non-JSON) backslash escapes, e.g. \' \, \: \. etc.
-    # Keep valid escapes: \" \\ \/ \b \f \n \r \t \uXXXX
     raw = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', raw)
-
-    # Remove ASCII control characters (0x00-0x1F) except \n \r \t
     raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', raw)
-
-    logger.debug(f"_fix_json_string: repair complete ({len(raw)} chars)")
     return raw
 
 
 def _extract_field_by_regex(text: str, field: str) -> str:
-    """
-    Fallback: extract a single string field value directly with regex
-    when the whole JSON block can't be parsed.
-    """
-    logger.debug(f"_extract_field_by_regex: extracting field '{field}'")
-    pattern = rf'"{field}"\s*:\s*"(.*?)"(?=\s*[,}}])'
-    match = re.search(pattern, text, re.DOTALL)
-    if match:
-        logger.debug(f"_extract_field_by_regex: found '{field}' via regex")
-        return match.group(1).strip()
-    logger.warning(f"_extract_field_by_regex: field '{field}' not found")
-    return ""
+    match = re.search(rf'"{field}"\s*:\s*"(.*?)"(?=\s*[,}}])', text, re.DOTALL)
+    return match.group(1).strip() if match else ""
 
 
 def _extract_highlights_by_regex(text: str) -> list:
-    """
-    Fallback: extract highlights array items directly with regex.
-    """
-    logger.debug("_extract_highlights_by_regex: attempting regex extraction")
     match = re.search(r'"highlights"\s*:\s*\[(.*?)\]', text, re.DOTALL)
     if not match:
-        logger.warning("_extract_highlights_by_regex: highlights array not found")
         return []
-    inner = match.group(1)
-    items = re.findall(r'"(.*?)"(?=\s*[,\]])', inner, re.DOTALL)
-    result = [i.strip() for i in items if i.strip()]
-    logger.debug(f"_extract_highlights_by_regex: found {len(result)} item(s)")
-    return result
+    return [i.strip() for i in re.findall(r'"(.*?)"(?=\s*[,\]])', match.group(1), re.DOTALL) if i.strip()]
 
 
 def _postprocess_highlights(data: dict) -> dict:
-    """
-    Post-process highlights list: flatten items the model packed into a single
-    comma-separated string, and strip stray quote characters.
-    """
     if "highlights" in data and isinstance(data["highlights"], list):
         cleaned = []
         for item in data["highlights"]:
-            parts = item.split('", "') if '", "' in item else [item]
-            for p in parts:
+            for p in (item.split('", "') if '", "' in item else [item]):
                 cleaned.append(p.replace('"', '').strip())
         data["highlights"] = [h for h in cleaned if h]
-        logger.debug(f"_postprocess_highlights: {len(data['highlights'])} highlight(s) after cleanup")
     return data
 
 
-def extract_json(text: str) -> dict:
-    """
-    Robustly extract and structure JSON from Mistral output using three
-    fallback strategies so a single malformed character never silently
-    returns an empty result.
-
-    Strategy 1 — direct parse after cleaning
-    Strategy 2 — isolate outermost { ... } block, then parse; on failure
-                 attempt a conservative in-string quote-escape repair
-    Strategy 3 — per-field regex extraction as last resort
-    """
+def _normalize_parsed(data, label: str = "") -> dict:
     empty = {"overview": "", "summary": "", "highlights": []}
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list):
+        if not data:
+            return empty
+        if isinstance(data[0], dict):
+            merged: dict = {"overview": "", "summary": "", "highlights": []}
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+                if not merged["overview"] and item.get("overview"):
+                    merged["overview"] = item["overview"]
+                if not merged["summary"] and item.get("summary"):
+                    merged["summary"] = item["summary"]
+                merged["highlights"].extend(item.get("highlights") or [])
+            logger.warning(f"extract_json {label}: got list of dicts — merged {len(data)} item(s)")
+            return merged
+        if isinstance(data[0], str):
+            return {"overview": "", "summary": "", "highlights": [s for s in data if s]}
+    logger.error(f"extract_json {label}: unexpected type {type(data).__name__}")
+    return empty
 
+
+def extract_json(text: str) -> dict:
+    empty = {"overview": "", "summary": "", "highlights": []}
     if not text or not text.strip():
-        logger.warning("extract_json: received empty text, returning empty result")
         return empty
-
-    logger.debug(f"extract_json: input length {len(text)} chars")
     cleaned = _fix_json_string(text)
-
-    # --- Strategy 1: parse the whole cleaned string directly ---
-    logger.debug("extract_json: trying strategy 1 — direct json.loads")
     try:
-        data = json.loads(cleaned)
-        logger.debug("extract_json: strategy 1 succeeded")
-        return _postprocess_highlights(data)
-    except json.JSONDecodeError as e:
-        logger.debug(f"extract_json: strategy 1 failed — {e}")
-
-    # --- Strategy 2: isolate the outermost { ... } block ---
-    logger.debug("extract_json: trying strategy 2 — isolate brace block")
+        return _postprocess_highlights(_normalize_parsed(json.loads(cleaned), "strategy-1"))
+    except json.JSONDecodeError:
+        pass
     brace_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
     if brace_match:
         candidate = brace_match.group()
         try:
-            data = json.loads(candidate)
-            logger.debug("extract_json: strategy 2 succeeded")
-            return _postprocess_highlights(data)
+            return _postprocess_highlights(_normalize_parsed(json.loads(candidate), "strategy-2"))
         except json.JSONDecodeError as e:
-            logger.warning(f"extract_json: strategy 2 failed ({e}), trying quote-escape repair")
-
-            repaired = re.sub(
-                r'(?<=[^\\])"(?=[^,\]}\n:}{\[])',
-                r'\\"',
-                candidate
-            )
+            repaired = re.sub(r'(?<=[^\\])"(?=[^,\]}\n:}{\[])', r'\\"', candidate)
             try:
-                data = json.loads(repaired)
-                logger.debug("extract_json: strategy 2 repair succeeded")
-                return _postprocess_highlights(data)
-            except json.JSONDecodeError as e2:
-                logger.warning(f"extract_json: strategy 2 repair also failed — {e2}")
-    else:
-        logger.warning("extract_json: no brace block found in output")
-
-    # --- Strategy 3: regex field extraction (last resort) ---
-    logger.error(
-        "extract_json: all JSON parse strategies failed — "
-        "falling back to per-field regex extraction"
-    )
+                return _postprocess_highlights(_normalize_parsed(json.loads(repaired), "strategy-2-repair"))
+            except json.JSONDecodeError:
+                logger.warning(f"extract_json: strategy 2 repair failed — {e}")
     overview   = _extract_field_by_regex(cleaned, "overview")
     summary    = _extract_field_by_regex(cleaned, "summary")
     highlights = _extract_highlights_by_regex(cleaned)
-
     if overview or summary or highlights:
-        logger.info("extract_json: strategy 3 recovered partial data via regex")
         return {"overview": overview, "summary": summary, "highlights": highlights}
-
-    logger.error("extract_json: strategy 3 also failed — returning empty result")
     return empty
 
 
 # ---------------------------------------------------------------------------
-# /analyze endpoint
+# Core pipeline (called by the GPU worker)
 # ---------------------------------------------------------------------------
 
-# Set to None to accept PDFs of any size.
-# Set to an integer (e.g. 200) to cap how many pages are processed —
-# pages beyond the cap are skipped but the upload is never rejected.
-MAX_PDF_PAGES = None
-
-# Empty result returned immediately for fully blank/unreadable PDFs.
-# No model inference is run — avoids wasting GPU time on placeholder text.
-_BLANK_PDF_RESULT = {"overview": "", "summary": "", "highlights": []}
-
-
-@app.post("/analyze")
-async def analyze_pdf(
-    file: UploadFile = File(...),
-    analysis_type: int = Query(
-        0,
-        ge=0,
-        le=3,
-        description="0=all, 1=overview, 2=summary, 3=highlights"
-    )
-):
-    """
-    Analyze uploaded PDF and return:
-    - overview
-    - summary
-    - highlights
-
-    Large PDFs (> MAX_PDF_PAGES) are accepted but only the first MAX_PDF_PAGES
-    pages are analysed. The response includes a 'truncated' flag and
-    'pages_analysed' / 'total_pages' fields when truncation occurs.
-
-    Fully blank PDFs (every page is blank or unreadable after extraction)
-    are detected before inference and immediately return empty fields with
-    a 'blank_pdf': true flag — no GPU time is wasted.
-
-    Uses LangChain RecursiveCharacterTextSplitter for chunking and a
-    direct map-reduce inference pipeline for large-PDF coherence.
-    """
-    request_id = str(uuid.uuid4())[:8]
-    t_start    = time.perf_counter()
-
-    logger.info(f"[{request_id}] ── NEW REQUEST ──────────────────────────────")
-    logger.info(f"[{request_id}] filename='{file.filename}' analysis_type={analysis_type}")
-
-    # Validate file type
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        logger.warning(f"[{request_id}] Rejected: not a PDF file (filename='{file.filename}')")
-        raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
-
-    safe_name = f"{uuid.uuid4()}.pdf"
-    file_path = os.path.join(UPLOAD_FOLDER, safe_name)
-    logger.debug(f"[{request_id}] Saving upload to '{file_path}'")
-
-    # Flag set below; also used in the finally block's truncation metadata
-    was_truncated  = False
-    pages_to_read  = 0
-    total_pages    = 0
+async def _process_job(job: Job) -> dict:
+    rid       = job.job_id[:8]
+    file_path = job.file_path
+    t0        = time.perf_counter()
 
     try:
-        # Step 1 — save upload
-        content = await file.read()
-        with open(file_path, "wb") as f:
-            f.write(content)
-        logger.info(f"[{request_id}] Step 1/5 — saved upload ({len(content):,} bytes → '{safe_name}')")
-
-        # Step 2 — page count (no rejection — large PDFs are always accepted)
         total_pages   = get_page_count(file_path)
         pages_to_read = total_pages if MAX_PDF_PAGES is None else min(total_pages, MAX_PDF_PAGES)
         was_truncated = MAX_PDF_PAGES is not None and total_pages > MAX_PDF_PAGES
+        logger.info(f"[{rid}] pages={total_pages} analysing={pages_to_read}")
 
-        logger.info(
-            f"[{request_id}] Step 2/5 — total pages: {total_pages}, "
-            f"will analyse: {pages_to_read} "
-            f"{'(TRUNCATED — large PDF)' if was_truncated else '(all pages)'}"
-        )
-        if was_truncated:
-            logger.warning(
-                f"[{request_id}] PDF has {total_pages} pages which exceeds "
-                f"MAX_PDF_PAGES={MAX_PDF_PAGES}. "
-                f"Only the first {pages_to_read} pages will be analysed. "
-                "Set MAX_PDF_PAGES = None in main.py to process all pages."
-            )
-
-        # Step 3 — text extraction (native + OCR fallback per page)
-        logger.info(f"[{request_id}] Step 3/5 — extracting text from {pages_to_read} page(s)")
         try:
-            t_extract = time.perf_counter()
-            pages     = load_pdf(file_path, max_pages=pages_to_read)
-            logger.info(
-                f"[{request_id}] Step 3/5 — extraction complete: "
-                f"{len(pages)} page(s) with text "
-                f"({time.perf_counter() - t_extract:.2f}s)"
-            )
+            pages = load_pdf(file_path, max_pages=pages_to_read)
         except ValueError as e:
-            logger.error(f"[{request_id}] Step 3/5 — extraction failed: {e}")
             raise HTTPException(status_code=422, detail=str(e))
 
-        # ── Blank-PDF short-circuit ───────────────────────────────────────
-        # Checked immediately after extraction, before any merging or inference.
-        # Covers two cases:
-        #   1. Native blank: PDF has pages but every page has zero native text
-        #      AND PaddleOCR-VL also extracted nothing (all blank/placeholder).
-        #   2. Image-only blank: scanned PDF where every page rendered to an
-        #      image but OCR returned no text on any page.
-        # In both cases we skip Steps 4-5 entirely and return empty fields.
         if all_pages_blank(pages):
-            elapsed = time.perf_counter() - t_start
-            logger.warning(
-                f"[{request_id}] Blank PDF detected — all {len(pages)} page(s) "
-                f"are blank or unreadable. Skipping inference. ({elapsed:.2f}s)"
-            )
-            result = dict(_BLANK_PDF_RESULT)
+            logger.warning(f"[{rid}] blank PDF — skipping inference")
+            result = dict(_BLANK_RESULT)
             result["blank_pdf"] = True
             if was_truncated:
-                result["truncated"]      = True
-                result["pages_analysed"] = pages_to_read
-                result["total_pages"]    = total_pages
-            if analysis_type == 1:
-                return {"overview": ""}
-            elif analysis_type == 2:
-                return {"summary": ""}
-            elif analysis_type == 3:
-                return {"highlights": []}
+                result.update(truncated=True, pages_analysed=pages_to_read, total_pages=total_pages)
             return result
-        # ─────────────────────────────────────────────────────────────────
 
-        # Step 4 — merge pages into one text string
-        logger.info(f"[{request_id}] Step 4/5 — merging {len(pages)} page(s) into text")
-        t_merge     = time.perf_counter()
-        merged_text = "\n\n".join(p.page_content for p in pages)
-        logger.info(
-            f"[{request_id}] Step 4/5 — merged: {len(merged_text):,} chars "
-            f"({time.perf_counter() - t_merge:.3f}s)"
-        )
-
-        # Step 5 — token-accurate map-reduce inference
-        logger.info(f"[{request_id}] Step 5/5 — running map-reduce inference")
-        t_infer      = time.perf_counter()
+        merged_text  = "\n\n".join(p.page_content for p in pages)
         final_output = await generate_analysis(merged_text)
-        logger.info(
-            f"[{request_id}] Step 5/5 — inference complete "
-            f"({time.perf_counter() - t_infer:.2f}s)"
-        )
 
-    except HTTPException:
-        raise
+        if was_truncated:
+            final_output.update(truncated=True, pages_analysed=pages_to_read, total_pages=total_pages)
 
-    except Exception as e:
-        logger.exception(f"[{request_id}] Unhandled error during processing: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error during PDF analysis.")
+        logger.info(f"[{rid}] done in {time.perf_counter()-t0:.2f}s")
+        return final_output
 
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
-            logger.debug(f"[{request_id}] Temp file deleted: '{file_path}'")
+            logger.debug(f"[{rid}] temp file deleted")
 
-    elapsed = time.perf_counter() - t_start
-    logger.info(
-        f"[{request_id}] ── REQUEST COMPLETE — total time: {elapsed:.2f}s ──────"
+
+# ---------------------------------------------------------------------------
+# Background GPU worker — drains queue one job at a time
+# ---------------------------------------------------------------------------
+
+async def _gpu_worker():
+    logger.info("[gpu_worker] started")
+    while True:
+        job: Job       = await _gpu_queue.get()
+        job.status     = JobStatus.PROCESSING
+        job.started_at = time.time()
+        wait           = job.started_at - job.enqueued_at
+        logger.info(f"[gpu_worker] job {job.job_id[:8]} started (waited {wait:.1f}s)")
+
+        try:
+            job.result = await _process_job(job)
+            job.status = JobStatus.DONE
+        except HTTPException as e:
+            job.error  = e.detail
+            job.status = JobStatus.FAILED
+            logger.error(f"[gpu_worker] job {job.job_id[:8]} HTTP error: {e.detail}")
+        except Exception as e:
+            job.error  = "Internal server error during PDF analysis."
+            job.status = JobStatus.FAILED
+            logger.exception(f"[gpu_worker] job {job.job_id[:8]} unhandled: {e}")
+        finally:
+            job.finished_at = time.time()
+            _gpu_queue.task_done()
+            logger.info(
+                f"[gpu_worker] job {job.job_id[:8]} {job.status.value} "
+                f"in {job.finished_at - job.started_at:.2f}s"
+            )
+
+
+# ---------------------------------------------------------------------------
+# Cleanup worker — purges old completed jobs every 60s
+# ---------------------------------------------------------------------------
+
+async def _cleanup_worker():
+    while True:
+        await asyncio.sleep(60)
+        now     = time.time()
+        expired = [
+            jid for jid, j in list(_job_store.items())
+            if j.status in (JobStatus.DONE, JobStatus.FAILED)
+            and (now - j.finished_at) > JOB_TTL_SECONDS
+        ]
+        for jid in expired:
+            job = _job_store.pop(jid, None)
+            if job and os.path.exists(job.file_path):
+                os.remove(job.file_path)
+        if expired:
+            logger.info(f"[cleanup] purged {len(expired)} expired job(s)")
+
+
+# ---------------------------------------------------------------------------
+# Lifespan — start workers when server boots
+# ---------------------------------------------------------------------------
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info(f"Upload folder ready: {os.path.abspath(UPLOAD_FOLDER)}")
+    gpu_task     = asyncio.create_task(_gpu_worker())
+    cleanup_task = asyncio.create_task(_cleanup_worker())
+    yield
+    gpu_task.cancel()
+    cleanup_task.cancel()
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+# ---------------------------------------------------------------------------
+# POST /analyze — save file, enqueue, return job_id instantly (HTTP 202)
+# ---------------------------------------------------------------------------
+
+@app.post("/analyze", status_code=202)
+async def analyze_pdf(
+    file: UploadFile = File(...),
+    analysis_type: int = Query(0, ge=0, le=3,
+        description="0=all, 1=overview, 2=summary, 3=highlights")
+):
+    """
+    Submit a PDF for analysis.
+
+    Returns HTTP 202 immediately with a job_id.
+    Poll GET /status/{job_id} until status is 'done' or 'failed'.
+    """
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
+
+    job_id    = str(uuid.uuid4())
+    file_path = os.path.join(UPLOAD_FOLDER, f"{job_id}.pdf")
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+    logger.info(f"[{job_id[:8]}] saved {len(content):,} bytes")
+
+    queue_depth = _gpu_queue.qsize()
+    job = Job(job_id=job_id, file_path=file_path, analysis_type=analysis_type)
+    _job_store[job_id] = job
+    await _gpu_queue.put(job)
+    logger.info(f"[{job_id[:8]}] enqueued at position {queue_depth}")
+
+    return {
+        "job_id":         job_id,
+        "status":         JobStatus.QUEUED,
+        "queue_position": queue_depth,
+        "message": (
+            "Processing will start shortly. Poll GET /status/{job_id} for results."
+            if queue_depth == 0 else
+            f"{queue_depth} job(s) ahead of yours. Poll GET /status/{{job_id}} for results."
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /status/{job_id} — poll for result
+# ---------------------------------------------------------------------------
+
+@app.get("/status/{job_id}")
+async def get_status(
+    job_id: str,
+    analysis_type: int = Query(0, ge=0, le=3,
+        description="Filter returned fields: 0=all, 1=overview, 2=summary, 3=highlights")
+):
+    """
+    Poll job status.
+
+    Responses by status:
+      queued:     { status, queue_position, wait_seconds }
+      processing: { status, elapsed_seconds }
+      done:       { status, processing_time, result: {...} }
+      failed:     { status, error }
+    """
+    job = _job_store.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404,
+            detail="Job not found. It may have expired (results kept for 10 minutes).")
+
+    if job.status == JobStatus.QUEUED:
+        ahead = sum(
+            1 for j in _job_store.values()
+            if j.status == JobStatus.QUEUED and j.enqueued_at < job.enqueued_at
+        )
+        return {"status": JobStatus.QUEUED, "queue_position": ahead,
+                "wait_seconds": round(time.time() - job.enqueued_at, 1)}
+
+    if job.status == JobStatus.PROCESSING:
+        return {"status": JobStatus.PROCESSING,
+                "elapsed_seconds": round(time.time() - job.started_at, 1)}
+
+    if job.status == JobStatus.FAILED:
+        return {"status": JobStatus.FAILED, "error": job.error}
+
+    # DONE — apply analysis_type filter
+    result = job.result or {}
+    if analysis_type == 1:
+        filtered = {"overview":   result.get("overview", "")}
+    elif analysis_type == 2:
+        filtered = {"summary":    result.get("summary", "")}
+    elif analysis_type == 3:
+        filtered = {"highlights": result.get("highlights", [])}
+    else:
+        filtered = result
+
+    return {
+        "status":          JobStatus.DONE,
+        "processing_time": round(job.finished_at - job.started_at, 2),
+        "result":          filtered,
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /queue — admin overview of current queue state
+# ---------------------------------------------------------------------------
+
+@app.get("/queue")
+async def queue_status():
+    """Summary of all jobs currently tracked."""
+    counts = {s.value: 0 for s in JobStatus}
+    for j in _job_store.values():
+        counts[j.status.value] += 1
+
+    processing = next(
+        ({"job_id": j.job_id, "elapsed_seconds": round(time.time() - j.started_at, 1)}
+         for j in _job_store.values() if j.status == JobStatus.PROCESSING),
+        None
     )
 
-    # Attach truncation metadata so the caller knows partial analysis was done
-    if was_truncated:
-        final_output["truncated"]      = True
-        final_output["pages_analysed"] = pages_to_read
-        final_output["total_pages"]    = total_pages
-        logger.info(
-            f"[{request_id}] Response includes truncation metadata "
-            f"(analysed {pages_to_read}/{total_pages} pages)"
-        )
-
-    if analysis_type == 1:
-        logger.debug(f"[{request_id}] Returning overview only")
-        return {"overview": final_output.get("overview", "")}
-    elif analysis_type == 2:
-        logger.debug(f"[{request_id}] Returning summary only")
-        return {"summary": final_output.get("summary", "")}
-    elif analysis_type == 3:
-        logger.debug(f"[{request_id}] Returning highlights only")
-        return {"highlights": final_output.get("highlights", [])}
-
-    return final_output
+    return {
+        "queue_depth":          _gpu_queue.qsize(),
+        "jobs":                 counts,
+        "currently_processing": processing,
+    }
