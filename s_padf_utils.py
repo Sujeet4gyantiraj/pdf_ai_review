@@ -67,9 +67,6 @@ def _detect_pdf_type(doc: fitz.Document, pages_to_process: int) -> str:
       'native'     - all sampled pages have text  -> text-based PDF
       'image_only' - NO sampled pages have text   -> fully scanned/image PDF
       'mixed'      - some have text, some do not  -> hybrid PDF
-
-    For image_only PDFs: skips the native extraction pass entirely,
-    routing all pages directly to PaddleOCR-VL.
     """
     sample       = min(_PDF_TYPE_SAMPLE_PAGES, pages_to_process)
     native_count = 0
@@ -111,6 +108,116 @@ def _page_to_image(page: fitz.Page, dpi: int = 150) -> np.ndarray:
         img = img[:, :, :3]
     return img
 
+
+# ---------------------------------------------------------------------------
+# Blank-PDF detection
+# ---------------------------------------------------------------------------
+
+# Matches the placeholder strings inserted by load_pdf for unreadable/blank pages
+_PLACEHOLDER_RE = re.compile(
+    r"^\[Page \d+: (blank page|content could not be extracted)\]$"
+)
+
+
+def all_pages_blank(pages: list[Document]) -> bool:
+    """
+    Return True if every page in the list is a blank/placeholder page —
+    i.e. no real content was extracted from the PDF at all.
+
+    Blank pages are those whose content either:
+      - is empty after stripping, or
+      - matches the placeholder patterns inserted by load_pdf:
+          "[Page N: blank page]"
+          "[Page N: content could not be extracted]"
+
+    Called by s_main.py after load_pdf() to short-circuit inference
+    and return empty fields immediately without hitting the model.
+    """
+    if not pages:
+        return True
+    for page in pages:
+        text = page.page_content.strip()
+        if text and not _PLACEHOLDER_RE.match(text):
+            return False  # at least one page with real content
+    return True
+
+
+# ---------------------------------------------------------------------------
+# OCR result text extractor
+# ---------------------------------------------------------------------------
+
+# These keys appear in PaddleOCR-VL's internal result objects.
+# Only "rec_text" and "text" carry actual recognised text — all others
+# are metadata, numpy arrays, or model settings that must be ignored.
+_OCR_TEXT_KEYS = ("rec_text", "text")
+
+# Heuristic: if the extracted string contains these substrings it is almost
+# certainly PaddleOCR's internal debug repr rather than document text.
+_OCR_JUNK_MARKERS = (
+    "numpy.ndarray",
+    "layout_det",
+    "rec_score",
+    "table_res",
+    "input_path",
+    "model_settings",
+    "parsing_res",
+    "spotting_res",
+    "page_id",
+)
+
+
+def _extract_ocr_text(res) -> str:
+    """
+    Safely extract the human-readable OCR text from a single PaddleOCR-VL
+    result item, ignoring internal metadata/debug fields.
+
+    PaddleOCR-VL result objects can be:
+      - A plain string                         → return as-is if non-empty
+      - A dict with "rec_text" or "text" key   → return that value
+      - An object with .rec_text / .text attr  → return that value
+      - An object with .res attr               → recurse into .res
+      - A dict  with "res"  key               → recurse into res value
+      - Anything else                          → return "" (never call str())
+
+    The critical rule: **never fall back to str(res)**.
+    str() on a PaddleOCR result object serialises the entire internal state
+    (numpy arrays, model config, layout boxes …) and that junk text gets
+    passed to the LLM which then happily "summarises" it.
+    """
+    if res is None:
+        return ""
+
+    # Plain string — sanity-check it isn't a debug repr
+    if isinstance(res, str):
+        s = res.strip()
+        if any(marker in s for marker in _OCR_JUNK_MARKERS):
+            logger.debug(f"_extract_ocr_text: discarding junk string ({s[:60]!r}…)")
+            return ""
+        return s
+
+    # Dict — look for known text keys first, then recurse into "res"
+    if isinstance(res, dict):
+        for key in _OCR_TEXT_KEYS:
+            if key in res:
+                val = res[key]
+                return val.strip() if isinstance(val, str) else ""
+        if "res" in res:
+            return _extract_ocr_text(res["res"])
+        return ""
+
+    # Object — check .rec_text / .text attributes first
+    for key in _OCR_TEXT_KEYS:
+        if hasattr(res, key):
+            val = getattr(res, key)
+            return val.strip() if isinstance(val, str) else ""
+
+    # Object with .res — recurse
+    if hasattr(res, "res"):
+        return _extract_ocr_text(res.res)
+
+    # Unknown type — log and discard rather than calling str()
+    logger.debug(f"_extract_ocr_text: unrecognised result type {type(res).__name__!r} — skipping")
+    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +311,7 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
             f"native={native_hit}, need_ocr={pages_to_process - native_hit}"
         )
 
-    native_hit   = sum(1 for v in native_results.values() if v is not None)
+    native_hit    = sum(1 for v in native_results.values() if v is not None)
     paddle_needed = [i for i, v in native_results.items() if v is None]
 
     if paddle_needed:
@@ -213,18 +320,6 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
         )
 
     # ── Pass 2: PaddleOCR-VL for all image pages ──────────────────────────
-    # Optimisation: pre-render ALL page images in parallel on CPU first,
-    # then feed them one-by-one to PaddleOCR-VL on GPU.
-    #
-    # Why this helps:
-    #   - fitz page rendering (get_pixmap) is CPU-only and thread-safe
-    #   - PaddleOCR-VL GPU inference is serial (cannot parallelise on one GPU)
-    #   - Without pre-rendering: GPU waits idle while each image renders (~0.1s/page)
-    #   - With pre-rendering: all images ready before GPU starts — zero idle wait
-    #   - For 100 image pages: saves ~10s of GPU idle time
-    #
-    # Memory note: pre-rendered images are numpy arrays (~3 MB each at 150 DPI).
-    # 232 pages × 3 MB = ~700 MB RAM — safe, this is CPU RAM not GPU VRAM.
     pre_rendered: dict[int, np.ndarray] = {}
 
     if paddle_needed:
@@ -256,14 +351,10 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
     for idx in paddle_needed:
         fitz_page = fitz_pages[idx]
         page_num  = idx + 1
+        pre_img   = pre_rendered.get(idx)
+        last_exc  = None
 
-        # Use pre-rendered image if available, else render now (fallback)
-        pre_img = pre_rendered.get(idx)
-
-        last_exc = None
         for attempt in range(1, OCR_RETRY_ATTEMPTS + 1):
-            # Attempt 1: use pre-rendered 150 DPI image
-            # Attempt 2 (retry): re-render at 200 DPI for better quality
             if attempt == 1 and pre_img is not None:
                 img = pre_img
                 dpi = 150
@@ -278,23 +369,30 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
 
                 page_parts = []
                 for res in results:
-                    if hasattr(res, "res"):
-                        page_parts.append(res.res)
-                    elif isinstance(res, dict) and "res" in res:
-                        page_parts.append(res["res"])
-                    else:
-                        page_parts.append(str(res))
+                    extracted = _extract_ocr_text(res)
+                    if extracted:
+                        page_parts.append(extracted)
 
                 del results
                 if paddle.device.is_compiled_with_cuda():
                     paddle.device.cuda.empty_cache()
 
                 text = clean_text("\n".join(page_parts))
-                logger.info(
-                    f"[pdf_utils] Page {page_num}: PaddleOCR-VL OK "
-                    f"(attempt {attempt}, dpi={dpi}, {len(page_parts)} block(s), {elapsed:.2f}s)"
-                )
-                paddle_results[idx] = text
+
+                # If OCR returned nothing meaningful, treat as blank page rather
+                # than storing an empty string that could confuse downstream logic.
+                if not text:
+                    logger.info(
+                        f"[pdf_utils] Page {page_num}: PaddleOCR-VL returned no text "
+                        f"(attempt {attempt}, dpi={dpi}, {elapsed:.2f}s) — blank page"
+                    )
+                    paddle_results[idx] = f"[Page {page_num}: blank page]"
+                else:
+                    logger.info(
+                        f"[pdf_utils] Page {page_num}: PaddleOCR-VL OK "
+                        f"(attempt {attempt}, dpi={dpi}, {len(page_parts)} block(s), {elapsed:.2f}s)"
+                    )
+                    paddle_results[idx] = text
                 break
 
             except Exception as e:
@@ -330,12 +428,10 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
                 paddle_count += 1
 
         else:
-            # Defensive fallback — should never reach here
             logger.error(f"[pdf_utils] Page {page_num}: no result -- placeholder")
             text = f"[Page {page_num}: content could not be extracted]"
             placeholder_count += 1
 
-        # Blank page guard
         if not text:
             logger.warning(f"[pdf_utils] Page {page_num}: blank after extraction")
             text = f"[Page {page_num}: blank page]"

@@ -6,7 +6,7 @@ import re
 import time
 import logging
 import logging.config
-from s_padf_utils import load_pdf, get_page_count
+from s_padf_utils import load_pdf, get_page_count, all_pages_blank
 from s_ai_model import generate_analysis
 
 # ---------------------------------------------------------------------------
@@ -211,6 +211,10 @@ def extract_json(text: str) -> dict:
 # pages beyond the cap are skipped but the upload is never rejected.
 MAX_PDF_PAGES = None
 
+# Empty result returned immediately for fully blank/unreadable PDFs.
+# No model inference is run — avoids wasting GPU time on placeholder text.
+_BLANK_PDF_RESULT = {"overview": "", "summary": "", "highlights": []}
+
 
 @app.post("/analyze")
 async def analyze_pdf(
@@ -232,6 +236,10 @@ async def analyze_pdf(
     pages are analysed. The response includes a 'truncated' flag and
     'pages_analysed' / 'total_pages' fields when truncation occurs.
 
+    Fully blank PDFs (every page is blank or unreadable after extraction)
+    are detected before inference and immediately return empty fields with
+    a 'blank_pdf': true flag — no GPU time is wasted.
+
     Uses LangChain RecursiveCharacterTextSplitter for chunking and a
     direct map-reduce inference pipeline for large-PDF coherence.
     """
@@ -249,6 +257,11 @@ async def analyze_pdf(
     safe_name = f"{uuid.uuid4()}.pdf"
     file_path = os.path.join(UPLOAD_FOLDER, safe_name)
     logger.debug(f"[{request_id}] Saving upload to '{file_path}'")
+
+    # Flag set below; also used in the finally block's truncation metadata
+    was_truncated  = False
+    pages_to_read  = 0
+    total_pages    = 0
 
     try:
         # Step 1 — save upload
@@ -289,9 +302,36 @@ async def analyze_pdf(
             logger.error(f"[{request_id}] Step 3/5 — extraction failed: {e}")
             raise HTTPException(status_code=422, detail=str(e))
 
+        # ── Blank-PDF short-circuit ───────────────────────────────────────
+        # Checked immediately after extraction, before any merging or inference.
+        # Covers two cases:
+        #   1. Native blank: PDF has pages but every page has zero native text
+        #      AND PaddleOCR-VL also extracted nothing (all blank/placeholder).
+        #   2. Image-only blank: scanned PDF where every page rendered to an
+        #      image but OCR returned no text on any page.
+        # In both cases we skip Steps 4-5 entirely and return empty fields.
+        if all_pages_blank(pages):
+            elapsed = time.perf_counter() - t_start
+            logger.warning(
+                f"[{request_id}] Blank PDF detected — all {len(pages)} page(s) "
+                f"are blank or unreadable. Skipping inference. ({elapsed:.2f}s)"
+            )
+            result = dict(_BLANK_PDF_RESULT)
+            result["blank_pdf"] = True
+            if was_truncated:
+                result["truncated"]      = True
+                result["pages_analysed"] = pages_to_read
+                result["total_pages"]    = total_pages
+            if analysis_type == 1:
+                return {"overview": ""}
+            elif analysis_type == 2:
+                return {"summary": ""}
+            elif analysis_type == 3:
+                return {"highlights": []}
+            return result
+        # ─────────────────────────────────────────────────────────────────
+
         # Step 4 — merge pages into one text string
-        # Chunking is now done inside generate_analysis() using token-accurate
-        # split_by_tokens() — this eliminates truncation caused by char-based estimates
         logger.info(f"[{request_id}] Step 4/5 — merging {len(pages)} page(s) into text")
         t_merge     = time.perf_counter()
         merged_text = "\n\n".join(p.page_content for p in pages)
