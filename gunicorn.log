@@ -3,3 +3,26 @@ nohup: ignoring input
 [2026-03-13 11:43:36 +0000] [522194] [INFO] Listening at: http://0.0.0.0:8001 (522194)
 [2026-03-13 11:43:36 +0000] [522194] [INFO] Using worker: uvicorn.workers.UvicornWorker
 [2026-03-13 11:43:36 +0000] [522194] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-20 12:29:44 +0000] [3400383] [INFO] Starting gunicorn 25.1.0
+[2026-03-20 12:29:44 +0000] [3400383] [INFO] Listening at: http://0.0.0.0:8001 (3400383)
+[2026-03-20 12:29:44 +0000] [3400383] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-20 12:29:44 +0000] [3400383] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-20 12:29:44 +0000] [3400387] [INFO] Booting worker with pid: 3400387
+[2026-03-20 12:30:24 +0000] [3400387] [INFO] Started server process [3400387]
+[2026-03-20 12:30:24 +0000] [3400387] [INFO] Waiting for application startup.
+[2026-03-20 12:30:24 +0000] [3400387] [INFO] Application startup complete.
+[2026-03-20 12:35:12 +0000] [3400383] [INFO] Handling signal: int
+[2026-03-20 12:35:12 +0000] [3400387] [INFO] Shutting down
+[2026-03-20 12:35:12 +0000] [3400387] [INFO] Waiting for application shutdown.
+[2026-03-20 12:35:12 +0000] [3400387] [INFO] Application shutdown complete.
+[2026-03-20 12:35:12 +0000] [3400387] [INFO] Finished server process [3400387]
+[2026-03-20 12:35:14 +0000] [3400383] [WARNING] Worker (pid:3400387) was sent SIGINT!
+[2026-03-20 12:35:14 +0000] [3400383] [INFO] Shutting down: Master
+[2026-03-20 12:35:14 +0000] [3402660] [INFO] Starting gunicorn 25.1.0
+[2026-03-20 12:35:14 +0000] [3402660] [INFO] Listening at: http://0.0.0.0:8001 (3402660)
+[2026-03-20 12:35:14 +0000] [3402660] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-20 12:35:14 +0000] [3402660] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-20 12:35:14 +0000] [3402662] [INFO] Booting worker with pid: 3402662
+[2026-03-20 12:35:53 +0000] [3402662] [INFO] Started server process [3402662]
+[2026-03-20 12:35:53 +0000] [3402662] [INFO] Waiting for application startup.
+[2026-03-20 12:35:53 +0000] [3402662] [INFO] Application startup complete.
