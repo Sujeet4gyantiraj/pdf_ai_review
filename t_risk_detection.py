@@ -1,18 +1,16 @@
 # u_risk_detection.py
 import logging
 from s_ai_model import run_llm
+from t_utils import extract_json_from_text
 
 logger = logging.getLogger(__name__)
 
 async def analyze_document_risks(text: str):
     """
     Scans document for legal/financial risks and returns structured JSON.
-    Reuses: s_ai_model.run_llm, s_main.extract_json
+    Reuses: s_ai_model.run_llm
     """
     
-    # Using a local import inside the function to avoid circular import errors
-    from s_main import extract_json 
-
     prompt = """
     Analyze the provided document text for legal and financial risks. 
     Identify clauses that are unfavorable to the signer (e.g., founders or business owners).
@@ -48,9 +46,9 @@ async def analyze_document_risks(text: str):
     
     # Reusing your core LLM runner
     raw_output = await run_llm(text, "You are a senior legal risk analyst.")
-    
-    # Reusing your main JSON parser
-    analysis = extract_json(raw_output)
+    print("Raw LLM Output:", raw_output)  # Debugging: see the unprocessed output
+    # Using the new generic JSON parser
+    analysis = extract_json_from_text(raw_output)
     
     return {
         "status": "success",
