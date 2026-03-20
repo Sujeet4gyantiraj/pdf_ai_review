@@ -56,3 +56,18 @@ nohup: ignoring input
 [2026-03-20 12:48:11 +0000] [3407509] [INFO] Started server process [3407509]
 [2026-03-20 12:48:11 +0000] [3407509] [INFO] Waiting for application startup.
 [2026-03-20 12:48:11 +0000] [3407509] [INFO] Application startup complete.
+[2026-03-20 12:58:49 +0000] [3407507] [INFO] Handling signal: int
+[2026-03-20 12:58:49 +0000] [3407509] [INFO] Shutting down
+[2026-03-20 12:58:49 +0000] [3407509] [INFO] Waiting for application shutdown.
+[2026-03-20 12:58:49 +0000] [3407509] [INFO] Application shutdown complete.
+[2026-03-20 12:58:49 +0000] [3407509] [INFO] Finished server process [3407509]
+[2026-03-20 12:58:51 +0000] [3407507] [WARNING] Worker (pid:3407509) was sent SIGINT!
+[2026-03-20 12:58:51 +0000] [3407507] [INFO] Shutting down: Master
+[2026-03-20 12:58:51 +0000] [3411149] [INFO] Starting gunicorn 25.1.0
+[2026-03-20 12:58:51 +0000] [3411149] [INFO] Listening at: http://0.0.0.0:8001 (3411149)
+[2026-03-20 12:58:51 +0000] [3411149] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-20 12:58:51 +0000] [3411149] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-20 12:58:51 +0000] [3411153] [INFO] Booting worker with pid: 3411153
+[2026-03-20 12:59:34 +0000] [3411153] [INFO] Started server process [3411153]
+[2026-03-20 12:59:34 +0000] [3411153] [INFO] Waiting for application startup.
+[2026-03-20 12:59:34 +0000] [3411153] [INFO] Application startup complete.
