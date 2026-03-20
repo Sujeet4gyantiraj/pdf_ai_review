@@ -12,12 +12,14 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
 
-TOKEN_CHUNK_SIZE      = 5500
-TOKEN_CHUNK_OVERLAP   = 50
-MAX_INPUT_TOKENS      = 6500
-MAX_NEW_TOKENS_MAP    = 600
-MAX_NEW_TOKENS_REDUCE = 600
-REDUCE_BATCH_SIZE     = 10
+TOKEN_CHUNK_SIZE      = 2500   # small enough for reliable JSON output from Mistral 7B
+TOKEN_CHUNK_OVERLAP   = 100
+MAX_INPUT_TOKENS      = 3200   # 2500 content + ~500 prompt + 200 buffer
+MAX_NEW_TOKENS_MAP    = 512    # per-chunk extraction
+MAX_NEW_TOKENS_SYNTH  = 1024   # synthesis — no length cap, needs room for large docs
+
+# Retry a chunk once if the model produces no usable JSON
+MAP_JSON_RETRY_ATTEMPTS = 2
 
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -52,9 +54,8 @@ def _vram_total_gb() -> float:
     return torch.cuda.get_device_properties(0).total_memory / 1024**3
 
 
-# ---------------------------------------------------------------------------
+
 # Token-accurate chunking
-# ---------------------------------------------------------------------------
 def split_by_tokens(text: str) -> list[str]:
     if not text:
         return []
@@ -79,9 +80,8 @@ def split_by_tokens(text: str) -> list[str]:
     return chunks
 
 
-# ---------------------------------------------------------------------------
+
 # Model loading
-# ---------------------------------------------------------------------------
 def _load_model():
     total_vram = _vram_total_gb()
     free_vram  = _vram_free_gb()
@@ -132,10 +132,6 @@ def _load_model():
         logger.info("[ai_model] All parameters on real devices")
 
     model.eval()
-
-    # FIX: mode="reduce-overhead" uses CUDA graphs which require fixed input
-    # shapes — our token lengths vary per chunk causing recompile on every call.
-    # mode="default" is safe with variable-length inputs.
     try:
         model = torch.compile(model, mode="default")
         logger.info("[ai_model] torch.compile enabled (mode=default)")
@@ -160,44 +156,117 @@ _EOS_TOKEN_IDS = [_tokenizer.eos_token_id]
 
 # ---------------------------------------------------------------------------
 # Prompts
+#
+# All prompts end with [/INST]\n{ — constrained generation.
+# The opening brace is the last prompt token, forcing the model to continue
+# producing JSON. It cannot output prose because the object is already open.
+# _run_inference prepends { to the decoded output.
 # ---------------------------------------------------------------------------
+
+# MAP: extract facts from one chunk.
+# No sentence count constraints — length is driven by how much content the chunk has.
 _MAP_PREFIX = (
-    "<s>[INST]\nAnalyse this document excerpt. Output ONLY valid JSON:\n"
-    '{"overview":"1-2 sentence type and purpose.",'
-    '"summary":"3-4 sentence executive summary.",'
-    '"highlights":["specific fact with number/date/name.","fact.","fact.","fact."]}\n'
-    "No markdown. No commentary. Properly escape all strings.\n\nDocument:\n---\n"
+    "<s>[INST]\n"
+    "Analyse the document excerpt below. Output ONLY a JSON object. "
+    "No prose. No markdown. No explanation. Start with { end with }\n\n"
+    "JSON format:\n"
+    '{"overview":"what this document is — type, subject, and purpose",'
+    '"summary":"cover all key points in this excerpt — as long or short as the content requires",'
+    '"highlights":["specific fact with number/name/date","fact","fact","fact"]}\n\n'
+    "Document:\n---\n"
 )
-_MAP_SUFFIX = "\n---\n[/INST]\n"
+_MAP_SUFFIX = "\n---\n[/INST]\n{"
 
-_REDUCE_PREFIX = (
-    "<s>[INST]\nSynthesize these section analyses into ONE final JSON:\n"
-    '{"overview":"1-2 sentences covering entire document.",'
-    '"summary":"4-5 sentence coherent paragraph.",'
-    '"highlights":["most important fact.","fact.","fact.","fact.","fact."]}\n'
-    "No markdown. No section numbers in output. Properly escape all strings.\n\nSections:\n---\n"
+_MAP_RETRY_PREFIX = (
+    "<s>[INST]\n"
+    "Output ONLY this JSON object. Nothing else. Begin with { immediately.\n\n"
+    '{"overview":"...","summary":"...","highlights":["...","...","..."]}\n\n'
+    "Document:\n---\n"
 )
-_REDUCE_SUFFIX = "\n---\n[/INST]\n"
+_MAP_RETRY_SUFFIX = "\n---\n[/INST]\n{"
+
+# SYNTHESIS: write ONE clean overview + summary from all chunk summaries.
+# Highlights are NOT included here — they are merged in Python, not by the LLM.
+# No sentence count constraints — length matches what the document actually needs.
+_SYNTH_PREFIX = (
+    "<s>[INST]\n"
+    "You are given summaries of consecutive sections of a single document. "
+    "Write a JSON object with two fields only:\n"
+    "- overview: describe what the entire document is — its type, subject, and main purpose. "
+    "Write as much or as little as the document warrants.\n"
+    "- summary: cover ALL major topics across the entire document. "
+    "Do NOT repeat the same topic. Work through the document from start to end. "
+    "Be specific — include key subjects, people, figures, decisions, and conclusions. "
+    "Write as much as needed to accurately represent the full document — do not pad, do not cut short.\n\n"
+    "No prose outside the JSON. No markdown. Start with { end with }\n\n"
+    'JSON format: {"overview":"...","summary":"..."}\n\n'
+    "Section summaries (in document order):\n---\n"
+)
+_SYNTH_SUFFIX = "\n---\n[/INST]\n{"
 
 
-def _build_map_prompt(text: str) -> str:
+def _build_map_prompt(text: str, retry: bool = False) -> str:
+    if retry:
+        return _MAP_RETRY_PREFIX + text + _MAP_RETRY_SUFFIX
     return _MAP_PREFIX + text + _MAP_SUFFIX
 
 
-def _build_reduce_prompt(results: list[dict]) -> str:
+def _build_synth_prompt(results: list[dict]) -> str:
+    """
+    Build synthesis prompt from all chunk overviews + summaries.
+    Kept compact: only text fields, no highlights (those are merged in Python).
+    """
     parts = []
     for i, r in enumerate(results, 1):
         overview = r.get("overview", "").strip()
-        hl       = "\n".join(f"- {h}" for h in r.get("highlights", [])[:4] if h)
-        if overview or hl:
-            parts.append(f"[{i}] {overview}\n{hl}")
-    return _REDUCE_PREFIX + "\n\n".join(parts) + _REDUCE_SUFFIX
+        summary  = r.get("summary",  "").strip()
+        if overview or summary:
+            lines = [f"[Section {i}]"]
+            if overview:
+                lines.append(f"Type: {overview}")
+            if summary:
+                lines.append(f"Content: {summary}")
+            parts.append("\n".join(lines))
+    return _SYNTH_PREFIX + "\n\n".join(parts) + _SYNTH_SUFFIX
 
 
-# ---------------------------------------------------------------------------
+
+# Highlights merge — pure Python, no LLM, preserves every distinct fact
+def _merge_highlights(results: list[dict]) -> list[str]:
+    """
+    Collect all highlights from all chunks and deduplicate by normalised text.
+
+    Normalisation: lowercase + collapse whitespace.
+    Keeps the original casing/wording of the FIRST occurrence of each fact.
+    Highlights from overlapping chunk boundaries that are near-identical
+    (same words, different capitalisation) are deduplicated.
+
+    No facts are dropped — this is a union, not a selection.
+    """
+    seen:       set  = set()
+    highlights: list = []
+
+    for r in results:
+        for h in r.get("highlights", []):
+            h = h.strip()
+            if not h:
+                continue
+            key = " ".join(h.lower().split())  # normalise for comparison only
+            if key not in seen:
+                seen.add(key)
+                highlights.append(h)
+
+    logger.info(f"[_merge_highlights] {len(highlights)} distinct highlight(s) preserved")
+    return highlights
+
+
+
 # Core inference
-# ---------------------------------------------------------------------------
 def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label: str = "") -> str:
+    """
+    Run model.generate(). Prompt ends with { so model continues from open JSON.
+    Prepends { to decoded output since it was a prompt token, not generated.
+    """
     tag          = f"[{label}] " if label else ""
     model_device = next(_model.parameters()).device
 
@@ -210,7 +279,10 @@ def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label:
 
     for attempt in range(max_oom_retries + 1):
         if token_count > current_limit:
-            logger.warning(f"{tag}truncating {token_count}→{current_limit}" + (f" (retry {attempt})" if attempt else ""))
+            logger.warning(
+                f"{tag}truncating {token_count}→{current_limit}"
+                + (f" (OOM retry {attempt})" if attempt else "")
+            )
             inputs        = _tokenizer(prompt, return_tensors="pt", truncation=True, max_length=current_limit).to(model_device)
             actual_tokens = current_limit
         else:
@@ -231,9 +303,13 @@ def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label:
                 )
             elapsed    = time.perf_counter() - t0
             new_tokens = output.shape[1] - actual_tokens
-            logger.info(f"{tag}{new_tokens} tokens_out in {elapsed:.2f}s ({new_tokens/elapsed:.1f} tok/s)" + (" [OOM-recovered]" if attempt else ""))
+            logger.info(
+                f"{tag}{new_tokens} tokens_out in {elapsed:.2f}s ({new_tokens/elapsed:.1f} tok/s)"
+                + (" [OOM-recovered]" if attempt else "")
+            )
             del inputs
-            return _tokenizer.decode(output[0][actual_tokens:], skip_special_tokens=True)
+            raw = _tokenizer.decode(output[0][actual_tokens:], skip_special_tokens=True)
+            return "{" + raw if not raw.startswith("{") else raw
 
         except torch.cuda.OutOfMemoryError:
             del inputs
@@ -253,83 +329,70 @@ def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label:
 
         finally:
             if model_device.type == "cuda":
-                free = (torch.cuda.get_device_properties(model_device).total_memory - torch.cuda.memory_allocated(model_device)) / 1024**3
+                free = (
+                    torch.cuda.get_device_properties(model_device).total_memory
+                    - torch.cuda.memory_allocated(model_device)
+                ) / 1024**3
                 if free < 2.0:
                     torch.cuda.empty_cache()
 
     raise RuntimeError("_run_inference: all attempts exhausted")
 
 
-# ---------------------------------------------------------------------------
-# Batched reduce
-# ---------------------------------------------------------------------------
-def _batched_reduce(results: list[dict], extract_json_fn) -> dict:
-    valid   = [r for r in results if r.get("overview") or r.get("highlights")]
-    skipped = len(results) - len(valid)
-    if skipped:
-        logger.info(f"[_batched_reduce] Filtered {skipped} empty result(s)")
-    if not valid:
-        logger.warning("[_batched_reduce] All map results empty — returning empty")
-        return {"overview": "", "summary": "", "highlights": []}
 
-    if len(valid) <= REDUCE_BATCH_SIZE:
-        return extract_json_fn(_run_inference(_build_reduce_prompt(valid), MAX_NEW_TOKENS_REDUCE, "reduce"))
-
-    logger.info(f"[_batched_reduce] {len(valid)} results → batches of {REDUCE_BATCH_SIZE}")
-    intermediates = []
-    for i in range(0, len(valid), REDUCE_BATCH_SIZE):
-        batch = valid[i: i + REDUCE_BATCH_SIZE]
-        lbl   = f"reduce-batch-{i // REDUCE_BATCH_SIZE + 1}"
-        logger.info(f"[_batched_reduce] {lbl}: {len(batch)} results")
-        raw = _run_inference(_build_reduce_prompt(batch), MAX_NEW_TOKENS_REDUCE, lbl)
-        intermediates.append(extract_json_fn(raw))
-
-    logger.info(f"[_batched_reduce] final reduce: {len(intermediates)} intermediates")
-    return extract_json_fn(_run_inference(_build_reduce_prompt(intermediates), MAX_NEW_TOKENS_REDUCE, "reduce-final"))
-
-
-# ---------------------------------------------------------------------------
 # Public API
-# ---------------------------------------------------------------------------
 async def generate_analysis(merged_text: str) -> dict:
     from s_main import extract_json
 
-    _EMPTY_CHUNK = {"overview": "", "summary": "", "highlights": []}
+    _EMPTY = {"overview": "", "summary": "", "highlights": []}
 
     if not merged_text or not merged_text.strip():
-        return dict(_EMPTY_CHUNK)
+        return dict(_EMPTY)
 
     t0     = time.perf_counter()
     chunks = split_by_tokens(merged_text)
-    logger.info(f"[generate_analysis] {len(chunks)} token-accurate chunk(s) in {time.perf_counter()-t0:.3f}s")
+    logger.info(f"[generate_analysis] {len(chunks)} chunk(s) in {time.perf_counter()-t0:.3f}s")
 
-    # FIX: use get_running_loop() — get_event_loop() is deprecated in Python
-    # 3.10 and raises RuntimeError in Python 3.12 inside a running event loop.
     loop        = asyncio.get_running_loop()
     t_pipeline  = time.perf_counter()
     map_results = []
 
-    # ── MAP ──────────────────────────────────────────────────────────────
+    # ── MAP: extract facts from each chunk ───────────────────────────────
     logger.info(f"[generate_analysis] MAP: {len(chunks)} chunk(s)")
     for i, chunk_text in enumerate(chunks):
         lbl = f"map {i+1}/{len(chunks)}"
         logger.info(f"[generate_analysis] [{lbl}] chars={len(chunk_text):,}")
         t_chunk = time.perf_counter()
-        try:
-            prompt = _build_map_prompt(chunk_text)
-            raw    = await loop.run_in_executor(None, lambda p=prompt, l=lbl: _run_inference(p, MAX_NEW_TOKENS_MAP, l))
-        except Exception as e:
-            logger.error(f"[generate_analysis] [{lbl}] inference failed: {e} — inserting empty")
-            map_results.append(dict(_EMPTY_CHUNK))
-            continue
 
-        parsed = extract_json(raw)
-        if not isinstance(parsed, dict):
-            logger.error(
-                f"[generate_analysis] [{lbl}] extract_json returned {type(parsed).__name__} "
-                f"instead of dict — inserting empty. raw[:200]={raw[:200]!r}"
-            )
-            parsed = dict(_EMPTY_CHUNK)
+        parsed = None
+
+        for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
+            try:
+                prompt = _build_map_prompt(chunk_text, retry=(attempt > 1))
+                if attempt > 1:
+                    logger.warning(f"[generate_analysis] [{lbl}] retry {attempt} — stronger prompt")
+                raw = await loop.run_in_executor(
+                    None,
+                    lambda p=prompt, l=f"{lbl}-a{attempt}": _run_inference(p, MAX_NEW_TOKENS_MAP, l)
+                )
+            except Exception as e:
+                logger.error(f"[generate_analysis] [{lbl}] inference error: {e}")
+                break
+
+            candidate = extract_json(raw)
+            if candidate.get("overview") or candidate.get("highlights"):
+                parsed = candidate
+                if attempt > 1:
+                    logger.info(f"[generate_analysis] [{lbl}] retry {attempt} produced valid JSON")
+                break
+            else:
+                logger.warning(
+                    f"[generate_analysis] [{lbl}] attempt {attempt}: no usable JSON — "
+                    + ("retrying" if attempt < MAP_JSON_RETRY_ATTEMPTS else "giving up on this chunk")
+                )
+
+        if not isinstance(parsed, dict) or not (parsed.get("overview") or parsed.get("highlights")):
+            parsed = dict(_EMPTY)
 
         map_results.append(parsed)
         logger.info(
@@ -341,28 +404,74 @@ async def generate_analysis(merged_text: str) -> dict:
     valid_count = sum(1 for r in map_results if r.get("overview") or r.get("highlights"))
     logger.info(f"[generate_analysis] MAP complete — {len(map_results)} total, {valid_count} with content")
 
-    # ── REDUCE ───────────────────────────────────────────────────────────
+    # ── SINGLE CHUNK: return directly, no synthesis needed ───────────────
     if len(map_results) == 1:
         result = map_results[0]
+        logger.info("[generate_analysis] single chunk — returning directly")
+
     else:
-        logger.info(f"[generate_analysis] REDUCE: {len(map_results)} results, batch_size={REDUCE_BATCH_SIZE}")
-        t_reduce = time.perf_counter()
+        # ── HIGHLIGHTS: merge all in Python — no LLM, no data loss ───────
+        #
+        # Every distinct fact from every chunk is kept.
+        # Deduplication is by normalised text (lowercase + collapsed whitespace).
+        # The LLM is NOT used for highlights — it would drop facts.
+        all_highlights = _merge_highlights(map_results)
+
+        # ── OVERVIEW + SUMMARY: one LLM synthesis call ────────────────────
+        #
+        # The LLM reads all chunk overviews+summaries and writes:
+        #   - overview: 2-3 sentences on what the whole document is
+        #   - summary:  5-7 sentences covering ALL major topics, no repetition
+        #
+        # This is what the LLM is good at — synthesising readable prose from
+        # structured inputs. It is NOT used for highlights (too lossy).
+        logger.info(f"[generate_analysis] SYNTHESIS: overview+summary from {valid_count} chunk(s)")
+        t_synth = time.perf_counter()
+
+        synth_result = {"overview": "", "summary": ""}
         try:
-            result = await loop.run_in_executor(None, lambda: _batched_reduce(map_results, extract_json))
-            logger.info(f"[generate_analysis] REDUCE done ({time.perf_counter()-t_reduce:.2f}s)")
+            synth_prompt = _build_synth_prompt(
+                [r for r in map_results if r.get("overview") or r.get("summary")]
+            )
+            raw_synth = await loop.run_in_executor(
+                None,
+                lambda: _run_inference(synth_prompt, MAX_NEW_TOKENS_SYNTH, "synthesis")
+            )
+            parsed_synth = extract_json(raw_synth)
+
+            synth_result["overview"] = parsed_synth.get("overview", "").strip()
+            synth_result["summary"]  = parsed_synth.get("summary",  "").strip()
+
+            logger.info(
+                f"[generate_analysis] SYNTHESIS done ({time.perf_counter()-t_synth:.2f}s) "
+                f"overview={'yes' if synth_result['overview'] else 'empty'} "
+                f"summary={'yes' if synth_result['summary'] else 'empty'}"
+            )
         except Exception as e:
-            logger.error(f"[generate_analysis] REDUCE failed: {e} — direct merge fallback")
-            result = {
-                "overview":   next((r["overview"] for r in map_results if r.get("overview")), ""),
-                "summary":    next((r["summary"]  for r in map_results if r.get("summary")),  ""),
-                "highlights": list({h for r in map_results for h in r.get("highlights", []) if h})[:6],
-            }
+            logger.error(f"[generate_analysis] SYNTHESIS failed: {e} — using first chunk overview")
+            synth_result["overview"] = next((r["overview"] for r in map_results if r.get("overview")), "")
+            synth_result["summary"]  = next((r["summary"]  for r in map_results if r.get("summary")),  "")
+
+        # Fallback: if synthesis produced empty overview, use first chunk's
+        if not synth_result["overview"]:
+            synth_result["overview"] = next((r["overview"] for r in map_results if r.get("overview")), "")
+        if not synth_result["summary"]:
+            synth_result["summary"]  = next((r["summary"]  for r in map_results if r.get("summary")),  "")
+
+        result = {
+            "overview":   synth_result["overview"],
+            "summary":    synth_result["summary"],
+            "highlights": all_highlights,
+        }
 
     if not isinstance(result, dict):
-        logger.error(f"[generate_analysis] Final result is {type(result).__name__} — returning empty")
-        result = dict(_EMPTY_CHUNK)
+        logger.error(f"[generate_analysis] result is {type(result).__name__} — returning empty")
+        result = dict(_EMPTY)
 
-    logger.info(f"[generate_analysis] total={time.perf_counter()-t_pipeline:.2f}s highlights={len(result.get('highlights', []))}")
+    logger.info(
+        f"[generate_analysis] total={time.perf_counter()-t_pipeline:.2f}s "
+        f"highlights={len(result.get('highlights', []))}"
+    )
     return result
 
 
@@ -396,3 +505,153 @@ Document:
 
     return result
 
+
+
+
+# ---------------------------------------------------------------------------
+# generate_analysis_stream — async generator for the SSE streaming endpoint
+#
+# Same logic as generate_analysis but yields progress events so the client
+# sees results as each chunk finishes rather than waiting for the full pipeline.
+#
+# Yielded events (event_type, payload):
+#
+#   ("chunk_start",    {"chunk": N, "total": N})
+#   ("chunk_done",     {"chunk": N, "total": N, "overview": str,
+#                       "new_highlights": [...], "all_highlights_so_far": [...]})
+#   ("synthesis_start", {})
+#   ("synthesis_done", {"overview": str, "summary": str})
+#   ("done",           {})
+# ---------------------------------------------------------------------------
+
+async def generate_analysis_stream(merged_text: str):
+    """
+    Streaming version of generate_analysis.
+
+    Yields (event_type, payload) tuples as each stage of the pipeline
+    completes. The caller (s_main.py /analyze/stream) converts these
+    into SSE messages and sends them to the client.
+
+    Highlights are yielded incrementally — after each chunk completes,
+    new highlights are yielded immediately so the client can render them
+    without waiting for the full pipeline.
+    """
+    from s_main import extract_json
+
+    _EMPTY = {"overview": "", "summary": "", "highlights": []}
+
+    if not merged_text or not merged_text.strip():
+        yield ("done", {})
+        return
+
+    t0     = time.perf_counter()
+    chunks = split_by_tokens(merged_text)
+    logger.info(f"[generate_analysis_stream] {len(chunks)} chunk(s)")
+
+    loop             = asyncio.get_running_loop()
+    map_results      = []
+    all_highlights:  list = []   # running deduped list — grows as chunks finish
+    seen_keys:       set  = set()
+
+    # ── MAP: extract from each chunk, yield progress after each ──────────
+    for i, chunk_text in enumerate(chunks):
+        lbl = f"map {i+1}/{len(chunks)}"
+        yield ("chunk_start", {"chunk": i + 1, "total": len(chunks)})
+
+        parsed = None
+        for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
+            try:
+                prompt = _build_map_prompt(chunk_text, retry=(attempt > 1))
+                if attempt > 1:
+                    logger.warning(f"[stream] [{lbl}] retry {attempt}")
+                raw = await loop.run_in_executor(
+                    None,
+                    lambda p=prompt, l=f"{lbl}-a{attempt}": _run_inference(p, MAX_NEW_TOKENS_MAP, l)
+                )
+            except Exception as e:
+                logger.error(f"[stream] [{lbl}] inference error: {e}")
+                break
+
+            candidate = extract_json(raw)
+            if candidate.get("overview") or candidate.get("highlights"):
+                parsed = candidate
+                break
+            else:
+                logger.warning(f"[stream] [{lbl}] attempt {attempt}: no usable JSON")
+
+        if not isinstance(parsed, dict) or not (parsed.get("overview") or parsed.get("highlights")):
+            parsed = dict(_EMPTY)
+
+        map_results.append(parsed)
+
+        # Collect new highlights that haven't been seen yet
+        new_highlights = []
+        for h in parsed.get("highlights", []):
+            h = h.strip()
+            if not h:
+                continue
+            key = " ".join(h.lower().split())
+            if key not in seen_keys:
+                seen_keys.add(key)
+                all_highlights.append(h)
+                new_highlights.append(h)
+
+        yield ("chunk_done", {
+            "chunk":                  i + 1,
+            "total":                  len(chunks),
+            "overview":               parsed.get("overview", ""),
+            "new_highlights":         new_highlights,
+            "all_highlights_so_far":  list(all_highlights),
+        })
+
+        logger.info(
+            f"[stream] [{lbl}] done — "
+            f"overview={'yes' if parsed.get('overview') else 'empty'} "
+            f"new_highlights={len(new_highlights)} total={len(all_highlights)}"
+        )
+
+    valid_count = sum(1 for r in map_results if r.get("overview") or r.get("highlights"))
+    logger.info(f"[stream] MAP complete — {len(map_results)} total, {valid_count} with content")
+
+    # ── SYNTHESIS: write overview + summary (single LLM call) ─────────────
+    synth_overview = ""
+    synth_summary  = ""
+
+    if len(map_results) == 1:
+        # Single chunk — use map result directly, no synthesis needed
+        synth_overview = map_results[0].get("overview", "")
+        synth_summary  = map_results[0].get("summary",  "")
+    else:
+        yield ("synthesis_start", {})
+        try:
+            synth_prompt = _build_synth_prompt(
+                [r for r in map_results if r.get("overview") or r.get("summary")]
+            )
+            raw_synth = await loop.run_in_executor(
+                None,
+                lambda: _run_inference(synth_prompt, MAX_NEW_TOKENS_SYNTH, "synthesis")
+            )
+            parsed_synth   = extract_json(raw_synth)
+            synth_overview = parsed_synth.get("overview", "").strip()
+            synth_summary  = parsed_synth.get("summary",  "").strip()
+            logger.info(
+                f"[stream] SYNTHESIS done — "
+                f"overview={'yes' if synth_overview else 'empty'} "
+                f"summary={'yes' if synth_summary else 'empty'}"
+            )
+        except Exception as e:
+            logger.error(f"[stream] SYNTHESIS failed: {e} — fallback to first chunk")
+
+        # Fallbacks
+        if not synth_overview:
+            synth_overview = next((r["overview"] for r in map_results if r.get("overview")), "")
+        if not synth_summary:
+            synth_summary  = next((r["summary"]  for r in map_results if r.get("summary")),  "")
+
+    yield ("synthesis_done", {"overview": synth_overview, "summary": synth_summary})
+
+    logger.info(
+        f"[stream] total={time.perf_counter()-t0:.2f}s "
+        f"highlights={len(all_highlights)}"
+    )
+    yield ("done", {})
