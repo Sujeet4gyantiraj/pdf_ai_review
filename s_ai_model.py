@@ -54,8 +54,9 @@ def _vram_total_gb() -> float:
     return torch.cuda.get_device_properties(0).total_memory / 1024**3
 
 
-
+# ---------------------------------------------------------------------------
 # Token-accurate chunking
+# ---------------------------------------------------------------------------
 def split_by_tokens(text: str) -> list[str]:
     if not text:
         return []
@@ -80,8 +81,9 @@ def split_by_tokens(text: str) -> list[str]:
     return chunks
 
 
-
+# ---------------------------------------------------------------------------
 # Model loading
+# ---------------------------------------------------------------------------
 def _load_model():
     total_vram = _vram_total_gb()
     free_vram  = _vram_free_gb()
@@ -230,8 +232,10 @@ def _build_synth_prompt(results: list[dict]) -> str:
     return _SYNTH_PREFIX + "\n\n".join(parts) + _SYNTH_SUFFIX
 
 
-
+# ---------------------------------------------------------------------------
 # Highlights merge — pure Python, no LLM, preserves every distinct fact
+# ---------------------------------------------------------------------------
+
 def _merge_highlights(results: list[dict]) -> list[str]:
     """
     Collect all highlights from all chunks and deduplicate by normalised text.
@@ -260,8 +264,9 @@ def _merge_highlights(results: list[dict]) -> list[str]:
     return highlights
 
 
-
+# ---------------------------------------------------------------------------
 # Core inference
+# ---------------------------------------------------------------------------
 def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label: str = "") -> str:
     """
     Run model.generate(). Prompt ends with { so model continues from open JSON.
@@ -339,8 +344,9 @@ def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label:
     raise RuntimeError("_run_inference: all attempts exhausted")
 
 
-
+# ---------------------------------------------------------------------------
 # Public API
+# ---------------------------------------------------------------------------
 async def generate_analysis(merged_text: str) -> dict:
     from s_main import extract_json
 
@@ -473,152 +479,3 @@ async def generate_analysis(merged_text: str) -> dict:
         f"highlights={len(result.get('highlights', []))}"
     )
     return result
-
-
-# ---------------------------------------------------------------------------
-# generate_analysis_stream — async generator for the SSE streaming endpoint
-#
-# Same logic as generate_analysis but yields progress events so the client
-# sees results as each chunk finishes rather than waiting for the full pipeline.
-#
-# Yielded events (event_type, payload):
-#
-#   ("chunk_start",    {"chunk": N, "total": N})
-#   ("chunk_done",     {"chunk": N, "total": N, "overview": str,
-#                       "new_highlights": [...], "all_highlights_so_far": [...]})
-#   ("synthesis_start", {})
-#   ("synthesis_done", {"overview": str, "summary": str})
-#   ("done",           {})
-# ---------------------------------------------------------------------------
-
-async def generate_analysis_stream(merged_text: str):
-    """
-    Streaming version of generate_analysis.
-
-    Yields (event_type, payload) tuples as each stage of the pipeline
-    completes. The caller (s_main.py /analyze/stream) converts these
-    into SSE messages and sends them to the client.
-
-    Highlights are yielded incrementally — after each chunk completes,
-    new highlights are yielded immediately so the client can render them
-    without waiting for the full pipeline.
-    """
-    from s_main import extract_json
-
-    _EMPTY = {"overview": "", "summary": "", "highlights": []}
-
-    if not merged_text or not merged_text.strip():
-        yield ("done", {})
-        return
-
-    t0     = time.perf_counter()
-    chunks = split_by_tokens(merged_text)
-    logger.info(f"[generate_analysis_stream] {len(chunks)} chunk(s)")
-
-    loop             = asyncio.get_running_loop()
-    map_results      = []
-    all_highlights:  list = []   # running deduped list — grows as chunks finish
-    seen_keys:       set  = set()
-
-    # ── MAP: extract from each chunk, yield progress after each ──────────
-    for i, chunk_text in enumerate(chunks):
-        lbl = f"map {i+1}/{len(chunks)}"
-        yield ("chunk_start", {"chunk": i + 1, "total": len(chunks)})
-
-        parsed = None
-        for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
-            try:
-                prompt = _build_map_prompt(chunk_text, retry=(attempt > 1))
-                if attempt > 1:
-                    logger.warning(f"[stream] [{lbl}] retry {attempt}")
-                raw = await loop.run_in_executor(
-                    None,
-                    lambda p=prompt, l=f"{lbl}-a{attempt}": _run_inference(p, MAX_NEW_TOKENS_MAP, l)
-                )
-            except Exception as e:
-                logger.error(f"[stream] [{lbl}] inference error: {e}")
-                break
-
-            candidate = extract_json(raw)
-            if candidate.get("overview") or candidate.get("highlights"):
-                parsed = candidate
-                break
-            else:
-                logger.warning(f"[stream] [{lbl}] attempt {attempt}: no usable JSON")
-
-        if not isinstance(parsed, dict) or not (parsed.get("overview") or parsed.get("highlights")):
-            parsed = dict(_EMPTY)
-
-        map_results.append(parsed)
-
-        # Collect new highlights that haven't been seen yet
-        new_highlights = []
-        for h in parsed.get("highlights", []):
-            h = h.strip()
-            if not h:
-                continue
-            key = " ".join(h.lower().split())
-            if key not in seen_keys:
-                seen_keys.add(key)
-                all_highlights.append(h)
-                new_highlights.append(h)
-
-        yield ("chunk_done", {
-            "chunk":                  i + 1,
-            "total":                  len(chunks),
-            "overview":               parsed.get("overview", ""),
-            "new_highlights":         new_highlights,
-            "all_highlights_so_far":  list(all_highlights),
-        })
-
-        logger.info(
-            f"[stream] [{lbl}] done — "
-            f"overview={'yes' if parsed.get('overview') else 'empty'} "
-            f"new_highlights={len(new_highlights)} total={len(all_highlights)}"
-        )
-
-    valid_count = sum(1 for r in map_results if r.get("overview") or r.get("highlights"))
-    logger.info(f"[stream] MAP complete — {len(map_results)} total, {valid_count} with content")
-
-    # ── SYNTHESIS: write overview + summary (single LLM call) ─────────────
-    synth_overview = ""
-    synth_summary  = ""
-
-    if len(map_results) == 1:
-        # Single chunk — use map result directly, no synthesis needed
-        synth_overview = map_results[0].get("overview", "")
-        synth_summary  = map_results[0].get("summary",  "")
-    else:
-        yield ("synthesis_start", {})
-        try:
-            synth_prompt = _build_synth_prompt(
-                [r for r in map_results if r.get("overview") or r.get("summary")]
-            )
-            raw_synth = await loop.run_in_executor(
-                None,
-                lambda: _run_inference(synth_prompt, MAX_NEW_TOKENS_SYNTH, "synthesis")
-            )
-            parsed_synth   = extract_json(raw_synth)
-            synth_overview = parsed_synth.get("overview", "").strip()
-            synth_summary  = parsed_synth.get("summary",  "").strip()
-            logger.info(
-                f"[stream] SYNTHESIS done — "
-                f"overview={'yes' if synth_overview else 'empty'} "
-                f"summary={'yes' if synth_summary else 'empty'}"
-            )
-        except Exception as e:
-            logger.error(f"[stream] SYNTHESIS failed: {e} — fallback to first chunk")
-
-        # Fallbacks
-        if not synth_overview:
-            synth_overview = next((r["overview"] for r in map_results if r.get("overview")), "")
-        if not synth_summary:
-            synth_summary  = next((r["summary"]  for r in map_results if r.get("summary")),  "")
-
-    yield ("synthesis_done", {"overview": synth_overview, "summary": synth_summary})
-
-    logger.info(
-        f"[stream] total={time.perf_counter()-t0:.2f}s "
-        f"highlights={len(all_highlights)}"
-    )
-    yield ("done", {})
