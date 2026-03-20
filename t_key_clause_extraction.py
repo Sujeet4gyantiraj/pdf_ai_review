@@ -4,7 +4,7 @@ import uuid
 import os
 import logging
 
-from t_ai_model import run_llm
+from s_ai_model import run_llm
 from s_padf_utils import load_pdf, get_page_count, all_pages_blank
 from t_utils import extract_json_from_text
 
