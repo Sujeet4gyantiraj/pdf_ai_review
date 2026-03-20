@@ -13,8 +13,7 @@ from s_padf_utils import load_pdf, get_page_count, all_pages_blank
 from s_ai_model import generate_analysis, generate_analysis_stream
 from t_key_clause_extraction import  classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
 from t_risk_detection import analyze_document_risks
-# from t_ai_model import load_model
-
+from s_ai_model import load_model
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -52,9 +51,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load the AI model on startup
+    # Model is loaded on startup by the import of s_ai_model
     logger.info("Starting up and loading AI model...")
-    load_model()
+    load_model() 
     yield
     # No cleanup specified, but this is where it would go
     logger.info("Shutting down.")
