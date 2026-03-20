@@ -6,6 +6,7 @@ import logging
 
 from t_ai_model import run_llm
 from s_padf_utils import load_pdf, get_page_count, all_pages_blank
+from s_main import extract_json # Import extract_json
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -104,11 +105,11 @@ Text:
 """
 
     result = await run_llm(text, prompt)
-
+    parsed_data = extract_json(result)
     return {
         "status": "success",
         "document_type": "contract",
-        "data": result
+        "data": parsed_data
     }
 
 
@@ -149,11 +150,11 @@ Text:
 """
 
     result = await run_llm(text, prompt)
-
+    parsed_data = extract_json(result)
     return {
         "status": "success",
         "document_type": "resume",
-        "data": result
+        "data": parsed_data
     }
 
 
@@ -209,11 +210,11 @@ Text:
 """
 
     result = await run_llm(text, prompt)
-
+    parsed_data = extract_json(result)
     return {
         "status": "success",
         "document_type": "invoice",
-        "data": result
+        "data": parsed_data
     }
 
 # ==============================
