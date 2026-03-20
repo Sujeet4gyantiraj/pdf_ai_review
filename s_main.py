@@ -4,6 +4,7 @@ import uuid
 import json
 import re
 import time
+import asyncio
 import logging
 import logging.config
 from contextlib import asynccontextmanager
@@ -16,8 +17,6 @@ from t_ai_model import load_model
 
 # ---------------------------------------------------------------------------
 # Logging configuration
-# One-time setup: writes INFO+ to console and DEBUG+ to app.log
-# Both handlers use the same structured format so grep works on either.
 # ---------------------------------------------------------------------------
 logging.config.dictConfig({
     "version": 1,
@@ -40,8 +39,8 @@ logging.config.dictConfig({
             "formatter": "standard",
             "level":     "DEBUG",
             "filename":  "app.log",
-            "maxBytes":  10 * 1024 * 1024,   # 10 MB per file
-            "backupCount": 5,                  # keep 5 rotated files
+            "maxBytes":  10 * 1024 * 1024,
+            "backupCount": 5,
             "encoding":  "utf-8",
         },
     },
@@ -68,6 +67,18 @@ app = FastAPI(lifespan=lifespan)
 UPLOAD_FOLDER = "temp"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 logger.info(f"Upload folder ready: {os.path.abspath(UPLOAD_FOLDER)}")
+
+# ---------------------------------------------------------------------------
+# GPU semaphore — serialises all inference calls to prevent concurrent GPU
+# access which causes deadlock under multiple simultaneous requests.
+#
+# Without this: two requests both call run_in_executor → two threads both
+# block on GPU → thread pool exhausted → event loop freezes.
+#
+# With this: only one request enters generate_analysis() at a time.
+# All others await here on the event loop (zero cost, no thread consumed).
+# ---------------------------------------------------------------------------
+_gpu_semaphore = asyncio.Semaphore(1)
 
 
 # ---------------------------------------------------------------------------
@@ -99,10 +110,6 @@ def _fix_json_string(raw: str) -> str:
 
 
 def _extract_field_by_regex(text: str, field: str) -> str:
-    """
-    Fallback: extract a single string field value directly with regex
-    when the whole JSON block can't be parsed.
-    """
     logger.debug(f"_extract_field_by_regex: extracting field '{field}'")
     pattern = rf'"{field}"\s*:\s*"(.*?)"(?=\s*[,}}])'
     match = re.search(pattern, text, re.DOTALL)
@@ -114,26 +121,28 @@ def _extract_field_by_regex(text: str, field: str) -> str:
 
 
 def _extract_highlights_by_regex(text: str) -> list:
-    """
-    Fallback: extract highlights array items directly with regex.
-    """
     logger.debug("_extract_highlights_by_regex: attempting regex extraction")
     match = re.search(r'"highlights"\s*:\s*\[(.*?)\]', text, re.DOTALL)
     if not match:
-        logger.warning("_extract_highlights_by_regex: highlights array not found")
-        return []
-    inner = match.group(1)
-    items = re.findall(r'"(.*?)"(?=\s*[,\]])', inner, re.DOTALL)
+        # FIX (Issue 2): also try extracting from a truncated/unclosed array —
+        # when Mistral hits MAX_NEW_TOKENS the highlights array is cut off mid-way.
+        # Find the opening bracket and grab all complete quoted strings before cutoff.
+        match_open = re.search(r'"highlights"\s*:\s*\[(.*)', text, re.DOTALL)
+        if not match_open:
+            logger.warning("_extract_highlights_by_regex: highlights array not found")
+            return []
+        inner = match_open.group(1)
+        logger.debug("_extract_highlights_by_regex: found truncated highlights array")
+    else:
+        inner = match.group(1)
+
+    items = re.findall(r'"((?:[^"\\]|\\.)*)"', inner, re.DOTALL)
     result = [i.strip() for i in items if i.strip()]
     logger.debug(f"_extract_highlights_by_regex: found {len(result)} item(s)")
     return result
 
 
 def _postprocess_highlights(data: dict) -> dict:
-    """
-    Post-process highlights list: flatten items the model packed into a single
-    comma-separated string, and strip stray quote characters.
-    """
     if "highlights" in data and isinstance(data["highlights"], list):
         cleaned = []
         for item in data["highlights"]:
@@ -145,16 +154,79 @@ def _postprocess_highlights(data: dict) -> dict:
     return data
 
 
+def _normalize_parsed(data, label: str = "") -> dict:
+    """
+    Ensure json.loads() output is always a dict with the expected keys.
+    Handles the case where Mistral returns a JSON array instead of an object.
+    """
+    empty = {"overview": "", "summary": "", "highlights": []}
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list):
+        if not data:
+            return empty
+        if isinstance(data[0], dict):
+            merged: dict = {"overview": "", "summary": "", "highlights": []}
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+                if not merged["overview"] and item.get("overview"):
+                    merged["overview"] = item["overview"]
+                if not merged["summary"] and item.get("summary"):
+                    merged["summary"] = item["summary"]
+                merged["highlights"].extend(item.get("highlights") or [])
+            logger.warning(f"extract_json {label}: got list of dicts — merged {len(data)} item(s)")
+            return merged
+        if isinstance(data[0], str):
+            return {"overview": "", "summary": "", "highlights": [s for s in data if s]}
+    logger.error(f"extract_json {label}: unexpected type {type(data).__name__} — using empty sentinel")
+    return empty
+
+
+def _recover_truncated_json(text: str) -> dict | None:
+    """
+    FIX (Issue 2): Handle the case where Mistral hits MAX_NEW_TOKENS and the
+    JSON output is cut off mid-stream (always at exactly 600 tokens_out).
+
+    The model reliably outputs fields in order: overview → summary → highlights.
+    So a truncated response has overview and summary complete, but highlights
+    is an unclosed array. We extract what we can from each field individually.
+    """
+    result = {"overview": "", "summary": "", "highlights": []}
+
+    # Extract overview — usually always complete even in truncated output
+    ov_match = re.search(r'"overview"\s*:\s*"((?:[^"\\]|\\.)*)"', text, re.DOTALL)
+    if ov_match:
+        result["overview"] = ov_match.group(1).strip()
+
+    # Extract summary — usually complete too
+    sm_match = re.search(r'"summary"\s*:\s*"((?:[^"\\]|\\.)*)"', text, re.DOTALL)
+    if sm_match:
+        result["summary"] = sm_match.group(1).strip()
+
+    # Extract whatever highlights were written before truncation
+    result["highlights"] = _extract_highlights_by_regex(text)
+
+    if result["overview"] or result["summary"] or result["highlights"]:
+        logger.info(
+            f"_recover_truncated_json: recovered overview={'yes' if result['overview'] else 'no'} "
+            f"summary={'yes' if result['summary'] else 'no'} "
+            f"highlights={len(result['highlights'])}"
+        )
+        return result
+    return None
+
+
 def extract_json(text: str) -> dict:
     """
-    Robustly extract and structure JSON from Mistral output using three
-    fallback strategies so a single malformed character never silently
-    returns an empty result.
+    Robustly extract and structure JSON from Mistral output using four
+    strategies so truncation and malformed output never silently lose data.
 
     Strategy 1 — direct parse after cleaning
     Strategy 2 — isolate outermost { ... } block, then parse; on failure
                  attempt a conservative in-string quote-escape repair
-    Strategy 3 — per-field regex extraction as last resort
+    Strategy 3 — truncation recovery (for outputs cut at MAX_NEW_TOKENS)
+    Strategy 4 — per-field regex extraction as last resort
     """
     empty = {"overview": "", "summary": "", "highlights": []}
 
@@ -170,7 +242,7 @@ def extract_json(text: str) -> dict:
     try:
         data = json.loads(cleaned)
         logger.debug("extract_json: strategy 1 succeeded")
-        return _postprocess_highlights(data)
+        return _postprocess_highlights(_normalize_parsed(data, "strategy-1"))
     except json.JSONDecodeError as e:
         logger.debug(f"extract_json: strategy 1 failed — {e}")
 
@@ -182,7 +254,7 @@ def extract_json(text: str) -> dict:
         try:
             data = json.loads(candidate)
             logger.debug("extract_json: strategy 2 succeeded")
-            return _postprocess_highlights(data)
+            return _postprocess_highlights(_normalize_parsed(data, "strategy-2"))
         except json.JSONDecodeError as e:
             logger.warning(f"extract_json: strategy 2 failed ({e}), trying quote-escape repair")
 
@@ -194,13 +266,22 @@ def extract_json(text: str) -> dict:
             try:
                 data = json.loads(repaired)
                 logger.debug("extract_json: strategy 2 repair succeeded")
-                return _postprocess_highlights(data)
+                return _postprocess_highlights(_normalize_parsed(data, "strategy-2-repair"))
             except json.JSONDecodeError as e2:
                 logger.warning(f"extract_json: strategy 2 repair also failed — {e2}")
     else:
         logger.warning("extract_json: no brace block found in output")
 
-    # --- Strategy 3: regex field extraction (last resort) ---
+    # --- Strategy 3: truncation recovery ---
+    # Handles the frequent case where 600 tokens_out = output cut mid-JSON.
+    # Recovers overview + summary (usually complete) + partial highlights.
+    logger.debug("extract_json: trying strategy 3 — truncation recovery")
+    recovered = _recover_truncated_json(cleaned)
+    if recovered:
+        logger.info("extract_json: strategy 3 (truncation recovery) succeeded")
+        return _postprocess_highlights(recovered)
+
+    # --- Strategy 4: regex field extraction (last resort) ---
     logger.error(
         "extract_json: all JSON parse strategies failed — "
         "falling back to per-field regex extraction"
@@ -210,10 +291,10 @@ def extract_json(text: str) -> dict:
     highlights = _extract_highlights_by_regex(cleaned)
 
     if overview or summary or highlights:
-        logger.info("extract_json: strategy 3 recovered partial data via regex")
+        logger.info("extract_json: strategy 4 recovered partial data via regex")
         return {"overview": overview, "summary": summary, "highlights": highlights}
 
-    logger.error("extract_json: strategy 3 also failed — returning empty result")
+    logger.error("extract_json: strategy 4 also failed — returning empty result")
     return empty
 
 
@@ -221,13 +302,7 @@ def extract_json(text: str) -> dict:
 # /analyze endpoint
 # ---------------------------------------------------------------------------
 
-# Set to None to accept PDFs of any size.
-# Set to an integer (e.g. 200) to cap how many pages are processed —
-# pages beyond the cap are skipped but the upload is never rejected.
 MAX_PDF_PAGES = None
-
-# Empty result returned immediately for fully blank/unreadable PDFs.
-# No model inference is run — avoids wasting GPU time on placeholder text.
 _BLANK_PDF_RESULT = {"overview": "", "summary": "", "highlights": []}
 
 
@@ -242,21 +317,13 @@ async def analyze_pdf(
     )
 ):
     """
-    Analyze uploaded PDF and return:
-    - overview
-    - summary
-    - highlights
+    Analyze uploaded PDF and return overview, summary, and highlights.
 
-    Large PDFs (> MAX_PDF_PAGES) are accepted but only the first MAX_PDF_PAGES
-    pages are analysed. The response includes a 'truncated' flag and
-    'pages_analysed' / 'total_pages' fields when truncation occurs.
-
-    Fully blank PDFs (every page is blank or unreadable after extraction)
-    are detected before inference and immediately return empty fields with
-    a 'blank_pdf': true flag — no GPU time is wasted.
-
-    Uses LangChain RecursiveCharacterTextSplitter for chunking and a
-    direct map-reduce inference pipeline for large-PDF coherence.
+    Concurrent requests are handled safely:
+    - Upload, page count, and text extraction run freely in parallel.
+    - GPU inference is serialised via asyncio.Semaphore(1) — only one request
+      runs inference at a time, others wait on the event loop (not in a thread)
+      so the server never deadlocks or freezes under concurrent load.
     """
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
@@ -264,7 +331,6 @@ async def analyze_pdf(
     logger.info(f"[{request_id}] ── NEW REQUEST ──────────────────────────────")
     logger.info(f"[{request_id}] filename='{file.filename}' analysis_type={analysis_type}")
 
-    # Validate file type
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         logger.warning(f"[{request_id}] Rejected: not a PDF file (filename='{file.filename}')")
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
@@ -273,10 +339,9 @@ async def analyze_pdf(
     file_path = os.path.join(UPLOAD_FOLDER, safe_name)
     logger.debug(f"[{request_id}] Saving upload to '{file_path}'")
 
-    # Flag set below; also used in the finally block's truncation metadata
-    was_truncated  = False
-    pages_to_read  = 0
-    total_pages    = 0
+    was_truncated = False
+    pages_to_read = 0
+    total_pages   = 0
 
     try:
         # Step 1 — save upload
@@ -285,7 +350,7 @@ async def analyze_pdf(
             f.write(content)
         logger.info(f"[{request_id}] Step 1/5 — saved upload ({len(content):,} bytes → '{safe_name}')")
 
-        # Step 2 — page count (no rejection — large PDFs are always accepted)
+        # Step 2 — page count
         total_pages   = get_page_count(file_path)
         pages_to_read = total_pages if MAX_PDF_PAGES is None else min(total_pages, MAX_PDF_PAGES)
         was_truncated = MAX_PDF_PAGES is not None and total_pages > MAX_PDF_PAGES
@@ -295,15 +360,8 @@ async def analyze_pdf(
             f"will analyse: {pages_to_read} "
             f"{'(TRUNCATED — large PDF)' if was_truncated else '(all pages)'}"
         )
-        if was_truncated:
-            logger.warning(
-                f"[{request_id}] PDF has {total_pages} pages which exceeds "
-                f"MAX_PDF_PAGES={MAX_PDF_PAGES}. "
-                f"Only the first {pages_to_read} pages will be analysed. "
-                "Set MAX_PDF_PAGES = None in main.py to process all pages."
-            )
 
-        # Step 3 — text extraction (native + OCR fallback per page)
+        # Step 3 — text extraction (runs freely, no semaphore needed)
         logger.info(f"[{request_id}] Step 3/5 — extracting text from {pages_to_read} page(s)")
         try:
             t_extract = time.perf_counter()
@@ -317,14 +375,8 @@ async def analyze_pdf(
             logger.error(f"[{request_id}] Step 3/5 — extraction failed: {e}")
             raise HTTPException(status_code=422, detail=str(e))
 
-        # ── Blank-PDF short-circuit ───────────────────────────────────────
-        # Checked immediately after extraction, before any merging or inference.
-        # Covers two cases:
-        #   1. Native blank: PDF has pages but every page has zero native text
-        #      AND PaddleOCR-VL also extracted nothing (all blank/placeholder).
-        #   2. Image-only blank: scanned PDF where every page rendered to an
-        #      image but OCR returned no text on any page.
-        # In both cases we skip Steps 4-5 entirely and return empty fields.
+        # Blank PDF short-circuit — checked before acquiring the semaphore
+        # so blank PDFs never consume a GPU slot
         if all_pages_blank(pages):
             elapsed = time.perf_counter() - t_start
             logger.warning(
@@ -344,9 +396,8 @@ async def analyze_pdf(
             elif analysis_type == 3:
                 return {"highlights": []}
             return result
-        # ─────────────────────────────────────────────────────────────────
 
-        # Step 4 — merge pages into one text string
+        # Step 4 — merge pages
         logger.info(f"[{request_id}] Step 4/5 — merging {len(pages)} page(s) into text")
         t_merge     = time.perf_counter()
         merged_text = "\n\n".join(p.page_content for p in pages)
@@ -355,14 +406,22 @@ async def analyze_pdf(
             f"({time.perf_counter() - t_merge:.3f}s)"
         )
 
-        # Step 5 — token-accurate map-reduce inference
-        logger.info(f"[{request_id}] Step 5/5 — running map-reduce inference")
-        t_infer      = time.perf_counter()
-        final_output = await generate_analysis(merged_text)
-        logger.info(
-            f"[{request_id}] Step 5/5 — inference complete "
-            f"({time.perf_counter() - t_infer:.2f}s)"
-        )
+        # Step 5 — GPU inference, serialised by semaphore.
+        # Other requests wait here on the event loop (non-blocking) until
+        # the current inference finishes and releases the semaphore.
+        t_wait = time.perf_counter()
+        async with _gpu_semaphore:
+            wait_time = time.perf_counter() - t_wait
+            if wait_time > 0.1:
+                logger.info(f"[{request_id}] waited {wait_time:.1f}s for GPU semaphore")
+
+            logger.info(f"[{request_id}] Step 5/5 — running map-reduce inference")
+            t_infer      = time.perf_counter()
+            final_output = await generate_analysis(merged_text)
+            logger.info(
+                f"[{request_id}] Step 5/5 — inference complete "
+                f"({time.perf_counter() - t_infer:.2f}s)"
+            )
 
     except HTTPException:
         raise
@@ -377,19 +436,12 @@ async def analyze_pdf(
             logger.debug(f"[{request_id}] Temp file deleted: '{file_path}'")
 
     elapsed = time.perf_counter() - t_start
-    logger.info(
-        f"[{request_id}] ── REQUEST COMPLETE — total time: {elapsed:.2f}s ──────"
-    )
+    logger.info(f"[{request_id}] ── REQUEST COMPLETE — total time: {elapsed:.2f}s ──────")
 
-    # Attach truncation metadata so the caller knows partial analysis was done
     if was_truncated:
         final_output["truncated"]      = True
         final_output["pages_analysed"] = pages_to_read
         final_output["total_pages"]    = total_pages
-        logger.info(
-            f"[{request_id}] Response includes truncation metadata "
-            f"(analysed {pages_to_read}/{total_pages} pages)"
-        )
 
     if analysis_type == 1:
         logger.debug(f"[{request_id}] Returning overview only")

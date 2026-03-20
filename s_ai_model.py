@@ -8,16 +8,16 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Config — calibrated from Finance Bill 2026 actual logs
+# Config
 # ---------------------------------------------------------------------------
 MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
 
-TOKEN_CHUNK_SIZE      = 5500   # content tokens — measured by tokenizer, not chars
-TOKEN_CHUNK_OVERLAP   = 50     # overlap in tokens
-MAX_INPUT_TOKENS      = 6500   # hard ceiling: 5500 content + 150 prompt + 850 buffer
-MAX_NEW_TOKENS_MAP    = 600    # enough for full JSON output
+TOKEN_CHUNK_SIZE      = 5500
+TOKEN_CHUNK_OVERLAP   = 50
+MAX_INPUT_TOKENS      = 6500
+MAX_NEW_TOKENS_MAP    = 600
 MAX_NEW_TOKENS_REDUCE = 600
-REDUCE_BATCH_SIZE     = 10     # 10 results per reduce call → fewer reduce calls
+REDUCE_BATCH_SIZE     = 10
 
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -25,7 +25,7 @@ torch.backends.cudnn.benchmark        = True
 torch.backends.cuda.matmul.allow_tf32 = True
 
 # ---------------------------------------------------------------------------
-# Tokenizer — loaded once at import time
+# Tokenizer
 # ---------------------------------------------------------------------------
 logger.info(f"[ai_model] Loading tokenizer: {MODEL_NAME}")
 t0         = time.perf_counter()
@@ -56,9 +56,6 @@ def _vram_total_gb() -> float:
 # Token-accurate chunking
 # ---------------------------------------------------------------------------
 def split_by_tokens(text: str) -> list[str]:
-    """
-    Split text into chunks of exactly TOKEN_CHUNK_SIZE tokens.
-    """
     if not text:
         return []
 
@@ -135,15 +132,19 @@ def _load_model():
         logger.info("[ai_model] All parameters on real devices")
 
     model.eval()
+
+    # FIX: mode="reduce-overhead" uses CUDA graphs which require fixed input
+    # shapes — our token lengths vary per chunk causing recompile on every call.
+    # mode="default" is safe with variable-length inputs.
     try:
-        model = torch.compile(model, mode="reduce-overhead")
-        logger.info("[ai_model] torch.compile enabled")
+        model = torch.compile(model, mode="default")
+        logger.info("[ai_model] torch.compile enabled (mode=default)")
     except Exception as e:
         logger.info(f"[ai_model] torch.compile skipped ({e})")
     return model
 
 
-logger.info(f"[ai_model] Loading model ...")
+logger.info("[ai_model] Loading model ...")
 t0     = time.perf_counter()
 _model = _load_model()
 logger.info(f"[ai_model] Model ready ({time.perf_counter() - t0:.2f}s)")
@@ -184,7 +185,6 @@ def _build_map_prompt(text: str) -> str:
 
 
 def _build_reduce_prompt(results: list[dict]) -> str:
-    """Overview + highlights only per result — keeps reduce prompt compact."""
     parts = []
     for i, r in enumerate(results, 1):
         overview = r.get("overview", "").strip()
@@ -195,13 +195,9 @@ def _build_reduce_prompt(results: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Core inference — direct model.generate() with OOM auto-retry
+# Core inference
 # ---------------------------------------------------------------------------
 def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label: str = "") -> str:
-    """
-    Run model.generate() on prompt.
-    On CUDA OOM: clear cache, halve input, retry up to 3 times.
-    """
     tag          = f"[{label}] " if label else ""
     model_device = next(_model.parameters()).device
 
@@ -268,9 +264,6 @@ def _run_inference(prompt: str, max_new_tokens: int = MAX_NEW_TOKENS_MAP, label:
 # Batched reduce
 # ---------------------------------------------------------------------------
 def _batched_reduce(results: list[dict], extract_json_fn) -> dict:
-    """
-    Filter out empty map results, then reduce in batches of REDUCE_BATCH_SIZE.
-    """
     valid   = [r for r in results if r.get("overview") or r.get("highlights")]
     skipped = len(results) - len(valid)
     if skipped:
@@ -299,9 +292,6 @@ def _batched_reduce(results: list[dict], extract_json_fn) -> dict:
 # Public API
 # ---------------------------------------------------------------------------
 async def generate_analysis(merged_text: str) -> dict:
-    """
-    Full map-reduce pipeline.
-    """
     from s_main import extract_json
 
     _EMPTY_CHUNK = {"overview": "", "summary": "", "highlights": []}
@@ -313,8 +303,10 @@ async def generate_analysis(merged_text: str) -> dict:
     chunks = split_by_tokens(merged_text)
     logger.info(f"[generate_analysis] {len(chunks)} token-accurate chunk(s) in {time.perf_counter()-t0:.3f}s")
 
-    loop       = asyncio.get_event_loop()
-    t_pipeline = time.perf_counter()
+    # FIX: use get_running_loop() — get_event_loop() is deprecated in Python
+    # 3.10 and raises RuntimeError in Python 3.12 inside a running event loop.
+    loop        = asyncio.get_running_loop()
+    t_pipeline  = time.perf_counter()
     map_results = []
 
     # ── MAP ──────────────────────────────────────────────────────────────
@@ -331,12 +323,6 @@ async def generate_analysis(merged_text: str) -> dict:
             map_results.append(dict(_EMPTY_CHUNK))
             continue
 
-        # ── Guard: extract_json must return a dict ────────────────────────
-        # Mistral sometimes outputs a JSON array instead of an object.
-        # extract_json() now normalises this via _normalize_parsed(), but we
-        # add a second safety net here so a bad return can never propagate
-        # as a list and crash _build_reduce_prompt / _batched_reduce with
-        # "AttributeError: 'list' object has no attribute 'get'".
         parsed = extract_json(raw)
         if not isinstance(parsed, dict):
             logger.error(
@@ -372,7 +358,6 @@ async def generate_analysis(merged_text: str) -> dict:
                 "highlights": list({h for r in map_results for h in r.get("highlights", []) if h})[:6],
             }
 
-    # Final guard — ensure result is always a dict before returning
     if not isinstance(result, dict):
         logger.error(f"[generate_analysis] Final result is {type(result).__name__} — returning empty")
         result = dict(_EMPTY_CHUNK)
