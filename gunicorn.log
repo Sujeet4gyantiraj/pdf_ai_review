@@ -71,3 +71,35 @@ nohup: ignoring input
 [2026-03-20 12:59:34 +0000] [3411153] [INFO] Started server process [3411153]
 [2026-03-20 12:59:34 +0000] [3411153] [INFO] Waiting for application startup.
 [2026-03-20 12:59:34 +0000] [3411153] [INFO] Application startup complete.
+[2026-03-20 13:02:47 +0000] [3411149] [INFO] Handling signal: int
+[2026-03-20 13:02:52 +0000] [3411153] [INFO] Shutting down
+[2026-03-20 13:02:52 +0000] [3411153] [INFO] Waiting for connections to close. (CTRL+C to force quit)
+[2026-03-20 13:03:14 +0000] [3411153] [INFO] Waiting for background tasks to complete. (CTRL+C to force quit)
+[2026-03-20 13:03:42 +0000] [3411153] [INFO] Waiting for application shutdown.
+[2026-03-20 13:03:42 +0000] [3411153] [INFO] Application shutdown complete.
+[2026-03-20 13:03:42 +0000] [3411153] [INFO] Finished server process [3411153]
+[2026-03-20 13:03:45 +0000] [3411149] [WARNING] Worker (pid:3411153) was sent SIGINT!
+[2026-03-20 13:03:45 +0000] [3411149] [INFO] Shutting down: Master
+[2026-03-20 13:03:45 +0000] [3413396] [INFO] Starting gunicorn 25.1.0
+[2026-03-20 13:03:45 +0000] [3413396] [INFO] Listening at: http://0.0.0.0:8001 (3413396)
+[2026-03-20 13:03:45 +0000] [3413396] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-20 13:03:45 +0000] [3413396] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-20 13:03:45 +0000] [3413400] [INFO] Booting worker with pid: 3413400
+[2026-03-20 13:04:24 +0000] [3413400] [INFO] Started server process [3413400]
+[2026-03-20 13:04:24 +0000] [3413400] [INFO] Waiting for application startup.
+[2026-03-20 13:04:24 +0000] [3413400] [INFO] Application startup complete.
+[2026-03-20 13:16:18 +0000] [3413396] [INFO] Handling signal: int
+[2026-03-20 13:16:18 +0000] [3413400] [INFO] Shutting down
+[2026-03-20 13:16:18 +0000] [3413400] [INFO] Waiting for application shutdown.
+[2026-03-20 13:16:18 +0000] [3413400] [INFO] Application shutdown complete.
+[2026-03-20 13:16:18 +0000] [3413400] [INFO] Finished server process [3413400]
+[2026-03-20 13:16:21 +0000] [3413396] [WARNING] Worker (pid:3413400) was sent SIGINT!
+[2026-03-20 13:16:21 +0000] [3413396] [INFO] Shutting down: Master
+[2026-03-20 13:16:21 +0000] [3417346] [INFO] Starting gunicorn 25.1.0
+[2026-03-20 13:16:21 +0000] [3417346] [INFO] Listening at: http://0.0.0.0:8001 (3417346)
+[2026-03-20 13:16:21 +0000] [3417346] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-20 13:16:21 +0000] [3417346] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-20 13:16:21 +0000] [3417350] [INFO] Booting worker with pid: 3417350
+[2026-03-20 13:17:02 +0000] [3417350] [INFO] Started server process [3417350]
+[2026-03-20 13:17:02 +0000] [3417350] [INFO] Waiting for application startup.
+[2026-03-20 13:17:02 +0000] [3417350] [INFO] Application startup complete.
