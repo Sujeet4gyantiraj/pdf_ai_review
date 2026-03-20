@@ -231,7 +231,7 @@ async def extract_text_from_upload(
     endpoint: str = "",
     max_pages: int | None = None,
 ) -> tuple[str, int, int, str, float, str]:
-    print(f"Received file: {file.filename} for endpoint: {endpoint}")
+    logger.info(f"Received file: {file.filename} for endpoint: {endpoint}")
     request_id = str(uuid.uuid4())[:8]
     t_start = time.perf_counter()
 

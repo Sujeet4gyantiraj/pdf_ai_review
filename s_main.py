@@ -6,9 +6,12 @@ import re
 import time
 import logging
 import logging.config
+from contextlib import asynccontextmanager
 from s_padf_utils import load_pdf, get_page_count, all_pages_blank
 from s_ai_model import generate_analysis
 from t_key_clause_extraction import  classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
+from t_risk_detection import analyze_document_risks
+from t_ai_model import load_model
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +53,17 @@ logging.config.dictConfig({
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the AI model on startup
+    logger.info("Starting up and loading AI model...")
+    load_model()
+    yield
+    # No cleanup specified, but this is where it would go
+    logger.info("Shutting down.")
+
+
+app = FastAPI(lifespan=lifespan)
 
 UPLOAD_FOLDER = "temp"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -448,3 +461,37 @@ async def key_clause_extraction(file: UploadFile = File(...)):
         if os.path.exists(file_path):
             os.remove(file_path)
             logger.debug(f"[{request_id}] Temp file deleted: '{file_path}'")
+
+@app.post("/detect-risks")
+async def detect_risks(file: UploadFile = File(...)):
+    """
+    AI Risk Detection Endpoint (Phase 1.2)
+    Reuses the extraction logic from Phase 1.1
+    """
+    # Reuse the PDF extraction utility you already wrote
+    from t_key_clause_extraction import extract_text_from_upload
+    
+    # Extract text from PDF
+    text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
+        file, 
+        endpoint="/detect-risks"
+    )
+
+    try:
+        logger.info(f"[{request_id}] Starting Risk Detection...")
+        
+        # Run the risk analysis
+        result = await analyze_document_risks(text)
+        
+        # Return the final analysis
+        return result
+
+    except Exception as e:
+        logger.exception(f"[{request_id}] Risk Analysis failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal error during risk detection.")
+
+    finally:
+        # Cleanup the temp PDF file
+        import os
+        if os.path.exists(file_path):
+            os.remove(file_path)
