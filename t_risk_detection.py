@@ -45,7 +45,7 @@ async def analyze_document_risks(text: str):
     logger.info("[risk_detection] Running AI analysis...")
     
     # Reusing your core LLM runner
-    raw_output = await run_llm(text, "You are a senior legal risk analyst.")
+    raw_output = await run_llm(text, prompt)
     print("Raw LLM Output:", raw_output)  # Debugging: see the unprocessed output
     # Using the new generic JSON parser
     analysis = extract_json_from_text(raw_output)
