@@ -693,3 +693,104 @@ async def analyze_pdf_stream(
             "Connection":        "keep-alive",
         },
     )
+
+
+
+ 
+# ---------------------------------------------------------------------------
+# POST /convert/pdf-to-docx — PDF to DOCX conversion
+#
+# Converts an uploaded PDF to a downloadable DOCX file.
+# Uses existing load_pdf() pipeline which handles:
+#   - Native text PDFs (PyMuPDF, fast)
+#   - Scanned/image PDFs (PaddleOCR-VL, GPU)
+#   - Mixed PDFs (both)
+#
+# Does NOT use GPU inference (no Mistral) — no semaphore needed.
+# Runs in thread pool via run_in_executor to avoid blocking event loop.
+# ---------------------------------------------------------------------------
+ 
+@app.post("/convert/pdf-to-docx")
+async def convert_pdf_to_docx(file: UploadFile = File(...)):
+    """
+    Convert an uploaded PDF to a downloadable DOCX file.
+ 
+    Handles all PDF types:
+      - Native text PDF → PyMuPDF extraction → DOCX
+      - Scanned/image PDF → PaddleOCR-VL → DOCX
+      - Mixed PDF → best available per page → DOCX
+ 
+    Returns the .docx file as a binary download.
+    No AI inference — fast conversion without GPU queue wait.
+    """
+    request_id = str(uuid.uuid4())[:8]
+    t_start    = time.perf_counter()
+ 
+    logger.info(f"[{request_id}] ── PDF TO DOCX ───────────────────────────────")
+    logger.info(f"[{request_id}] filename='{file.filename}'")
+ 
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
+ 
+    safe_name = f"{uuid.uuid4()}.pdf"
+    file_path = os.path.join(UPLOAD_FOLDER, safe_name)
+ 
+    try:
+        # Step 1 — save upload
+        content = await file.read()
+        with open(file_path, "wb") as f:
+            f.write(content)
+        logger.info(f"[{request_id}] saved {len(content):,} bytes")
+ 
+        # Step 2 — extract text (reuses existing pipeline)
+        # load_pdf handles native + OCR automatically
+        try:
+            pages = load_pdf(file_path)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+ 
+        logger.info(f"[{request_id}] extracted {len(pages)} page(s)")
+ 
+        # Step 3 — convert to DOCX in thread pool
+        def _do_convert():
+            from s_pdf_to_docx import _extract_blocks_ocr, _build_docx
+ 
+            all_blocks = []
+            for page in pages:
+                blocks = _extract_blocks_ocr(page.page_content)
+                all_blocks.append(blocks)
+ 
+            return _build_docx(all_blocks, file.filename)
+ 
+        loop = asyncio.get_running_loop()
+        docx = await loop.run_in_executor(None, _do_convert)
+ 
+        # Step 4 — save to in-memory buffer and return
+        buffer = io.BytesIO()
+        docx.save(buffer)
+        buffer.seek(0)
+ 
+        output_filename = file.filename.replace(".pdf", ".docx")
+        elapsed = time.perf_counter() - t_start
+        logger.info(f"[{request_id}] ── DOCX COMPLETE — {elapsed:.2f}s → '{output_filename}'")
+ 
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={
+                "Content-Disposition": f'attachment; filename="{output_filename}"',
+                "X-Pages":             str(len(pages)),
+                "X-Processing-Time":   str(round(elapsed, 2)),
+            }
+        )
+ 
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"[{request_id}] conversion failed: {e}")
+        raise HTTPException(status_code=500, detail="PDF to DOCX conversion failed.")
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logger.debug(f"[{request_id}] temp file deleted")
+ 
