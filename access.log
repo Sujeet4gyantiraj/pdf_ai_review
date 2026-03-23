@@ -38,3 +38,13 @@
 23.106.66.131:54497 - "POST /key-clause-extraction HTTP/1.1" 200
 103.70.177.179:25119 - "POST /detect-risks HTTP/1.1" 200
 103.70.177.179:40294 - "POST /key-clause-extraction HTTP/1.1" 200
+103.70.177.179:40294 - "POST /key-clause-extraction HTTP/1.1" 200
+103.70.177.179:40294 - "POST /detect-risks HTTP/1.1" 200
+103.70.177.179:22254 - "GET /docs HTTP/1.1" 200
+103.70.177.179:22254 - "GET /openapi.json HTTP/1.1" 200
+103.70.177.179:40294 - "POST /detect-risks HTTP/1.1" 200
+103.70.177.179:61141 - "GET /docs HTTP/1.1" 200
+103.70.177.179:9544 - "GET /docs HTTP/1.1" 200
+103.70.177.179:26763 - "GET /docs HTTP/1.1" 200
+103.70.177.179:26763 - "GET /openapi.json HTTP/1.1" 200
+103.70.177.179:26763 - "POST /convert/pdf-to-docx HTTP/1.1" 500
