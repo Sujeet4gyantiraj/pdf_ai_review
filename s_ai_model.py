@@ -136,12 +136,16 @@ async def _run_inference(messages: list[dict], label: str = "") -> str:
     tag = f"[{label}] " if label else ""
     t0  = time.perf_counter()
     try:
-        response = await _client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            response_format={"type": "json_object"},
-            temperature=0.0,
-        )
+        _FIXED_TEMPERATURE_MODELS = {"gpt-5-nano", "gpt-4o-mini", "o1", "o1-mini", "o3-mini"}
+        api_kwargs = {
+            "model": MODEL_NAME,
+            "messages": messages,
+            "response_format": {"type": "json_object"},
+        }
+        if MODEL_NAME not in _FIXED_TEMPERATURE_MODELS:
+            api_kwargs["temperature"] = 0.0
+
+        response = await _client.chat.completions.create(**api_kwargs)
         elapsed = time.perf_counter() - t0
         content = response.choices[0].message.content or ""
         usage   = response.usage
