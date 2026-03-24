@@ -27,7 +27,7 @@ TOKEN_CHUNK_OVERLAP = 500
 MAP_JSON_RETRY_ATTEMPTS = 2
 
 # Max concurrent map calls — reduce to 2 if hitting TPM rate limits
-_MAP_CONCURRENCY = 3
+_MAP_CONCURRENCY = 1
 
 _client   = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
 _encoding = tiktoken.encoding_for_model("gpt-4o")   # cl100k_base — works for all GPT-4 family
