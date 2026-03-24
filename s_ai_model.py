@@ -12,10 +12,13 @@ logger = logging.getLogger(__name__)
 # Config
 # ---------------------------------------------------------------------------
 
-MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-5-nano")  # ← set in .env, fallback to gpt-4o if missing
+MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o")  # ← set in .env
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY is not set in environment variables. Please set it in your .env file.")
+
+# Models that only accept default temperature (1) and reject 0.0
+_FIXED_TEMPERATURE_MODELS = {"gpt-5-nano", "gpt-4o-mini", "o1", "o1-mini", "o3-mini", "o3"}
 
 # GPT-4.1-nano supports 1M token context; large chunks reduce API calls
 TOKEN_CHUNK_SIZE    = 50000
@@ -23,8 +26,11 @@ TOKEN_CHUNK_OVERLAP = 500
 
 MAP_JSON_RETRY_ATTEMPTS = 2
 
+# Max concurrent map calls — reduce to 2 if hitting TPM rate limits
+_MAP_CONCURRENCY = 3
+
 _client   = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
-_encoding = tiktoken.encoding_for_model(MODEL_NAME)   # cl100k_base — same family
+_encoding = tiktoken.encoding_for_model("gpt-4o")   # cl100k_base — works for all GPT-4 family
 
 
 # ---------------------------------------------------------------------------
@@ -136,19 +142,19 @@ async def _run_inference(messages: list[dict], label: str = "") -> str:
     tag = f"[{label}] " if label else ""
     t0  = time.perf_counter()
     try:
-        _FIXED_TEMPERATURE_MODELS = {"gpt-5-nano", "gpt-4o-mini", "o1", "o1-mini", "o3-mini"}
         api_kwargs = {
-            "model": MODEL_NAME,
-            "messages": messages,
+            "model":           MODEL_NAME,
+            "messages":        messages,
             "response_format": {"type": "json_object"},
         }
+        # Some models (gpt-5-nano, o1, o3-mini …) only accept default temperature
         if MODEL_NAME not in _FIXED_TEMPERATURE_MODELS:
             api_kwargs["temperature"] = 0.0
 
         response = await _client.chat.completions.create(**api_kwargs)
-        elapsed = time.perf_counter() - t0
-        content = response.choices[0].message.content or ""
-        usage   = response.usage
+        elapsed  = time.perf_counter() - t0
+        content  = response.choices[0].message.content or ""
+        usage    = response.usage
         logger.info(
             f"{tag}in={usage.prompt_tokens} out={usage.completion_tokens} "
             f"in {elapsed:.2f}s"
@@ -160,7 +166,7 @@ async def _run_inference(messages: list[dict], label: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-# generate_analysis — full pipeline, returns complete result
+# generate_analysis — full pipeline, parallel map + serial synthesis
 # ---------------------------------------------------------------------------
 async def generate_analysis(merged_text: str) -> dict:
     from s_main import extract_json
@@ -173,47 +179,53 @@ async def generate_analysis(merged_text: str) -> dict:
     chunks = split_by_tokens(merged_text)
     logger.info(f"[generate_analysis] {len(chunks)} chunk(s) in {time.perf_counter()-t0:.3f}s")
 
-    t_pipeline  = time.perf_counter()
-    map_results = []
+    t_pipeline = time.perf_counter()
 
-    # ── MAP ──────────────────────────────────────────────────────────────
-    logger.info(f"[generate_analysis] MAP: {len(chunks)} chunk(s)")
-    for i, chunk_text in enumerate(chunks):
-        lbl     = f"map {i+1}/{len(chunks)}"
-        t_chunk = time.perf_counter()
-        parsed  = None
+    # ── MAP — all chunks in parallel ─────────────────────────────────────
+    logger.info(f"[generate_analysis] MAP: {len(chunks)} chunk(s) (parallel, concurrency={_MAP_CONCURRENCY})")
 
-        for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
-            try:
-                messages = _build_map_messages(chunk_text, retry=(attempt > 1))
-                if attempt > 1:
-                    logger.warning(f"[generate_analysis] [{lbl}] retry {attempt}")
-                raw = await _run_inference(messages, f"{lbl}-a{attempt}")
-            except Exception as e:
-                logger.error(f"[generate_analysis] [{lbl}] inference error: {e}")
-                break
+    semaphore = asyncio.Semaphore(_MAP_CONCURRENCY)
 
-            candidate = extract_json(raw)
-            if candidate.get("overview") or candidate.get("highlights"):
-                parsed = candidate
-                if attempt > 1:
-                    logger.info(f"[generate_analysis] [{lbl}] retry {attempt} produced valid JSON")
-                break
-            else:
-                logger.warning(
-                    f"[generate_analysis] [{lbl}] attempt {attempt}: no usable JSON — "
-                    + ("retrying" if attempt < MAP_JSON_RETRY_ATTEMPTS else "giving up")
-                )
+    async def _process_chunk(i: int, chunk_text: str) -> dict:
+        async with semaphore:
+            lbl     = f"map {i+1}/{len(chunks)}"
+            t_chunk = time.perf_counter()
+            parsed  = None
 
-        if not isinstance(parsed, dict) or not (parsed.get("overview") or parsed.get("highlights")):
-            parsed = dict(_EMPTY)
+            for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
+                try:
+                    messages = _build_map_messages(chunk_text, retry=(attempt > 1))
+                    if attempt > 1:
+                        logger.warning(f"[generate_analysis] [{lbl}] retry {attempt}")
+                    raw = await _run_inference(messages, f"{lbl}-a{attempt}")
+                except Exception as e:
+                    logger.error(f"[generate_analysis] [{lbl}] inference error: {e}")
+                    break
 
-        map_results.append(parsed)
-        logger.info(
-            f"[generate_analysis] [{lbl}] done ({time.perf_counter()-t_chunk:.2f}s) "
-            f"overview={'yes' if parsed.get('overview') else 'empty'} "
-            f"highlights={len(parsed.get('highlights', []))}"
-        )
+                candidate = extract_json(raw)
+                if candidate.get("overview") or candidate.get("highlights"):
+                    parsed = candidate
+                    if attempt > 1:
+                        logger.info(f"[generate_analysis] [{lbl}] retry {attempt} produced valid JSON")
+                    break
+                else:
+                    logger.warning(
+                        f"[generate_analysis] [{lbl}] attempt {attempt}: no usable JSON — "
+                        + ("retrying" if attempt < MAP_JSON_RETRY_ATTEMPTS else "giving up")
+                    )
+
+            if not isinstance(parsed, dict) or not (parsed.get("overview") or parsed.get("highlights")):
+                parsed = dict(_EMPTY)
+
+            logger.info(
+                f"[generate_analysis] [{lbl}] done ({time.perf_counter()-t_chunk:.2f}s) "
+                f"overview={'yes' if parsed.get('overview') else 'empty'} "
+                f"highlights={len(parsed.get('highlights', []))}"
+            )
+            return parsed
+
+    map_tasks   = [_process_chunk(i, chunk_text) for i, chunk_text in enumerate(chunks)]
+    map_results = list(await asyncio.gather(*map_tasks))
 
     valid_count = sum(1 for r in map_results if r.get("overview") or r.get("highlights"))
     logger.info(f"[generate_analysis] MAP complete — {len(map_results)} total, {valid_count} with content")
@@ -301,6 +313,9 @@ async def run_llm(
 #   ("synthesis_start", {})
 #   ("synthesis_done", {"overview": str, "summary": str})
 #   ("done",           {})
+#
+# NOTE: map chunks are processed in parallel but results are yielded in
+# chunk-index order so the SSE stream remains coherent for the client.
 # ---------------------------------------------------------------------------
 async def generate_analysis_stream(merged_text: str):
     from s_main import extract_json
@@ -312,39 +327,47 @@ async def generate_analysis_stream(merged_text: str):
 
     t0     = time.perf_counter()
     chunks = split_by_tokens(merged_text)
-    logger.info(f"[generate_analysis_stream] {len(chunks)} chunk(s)")
+    logger.info(f"[generate_analysis_stream] {len(chunks)} chunk(s) (parallel, concurrency={_MAP_CONCURRENCY})")
 
-    map_results    = []
+    semaphore      = asyncio.Semaphore(_MAP_CONCURRENCY)
     all_highlights: list = []
     seen_keys:      set  = set()
 
-    # ── MAP ──────────────────────────────────────────────────────────────
-    for i, chunk_text in enumerate(chunks):
-        lbl = f"map {i+1}/{len(chunks)}"
+    # ── MAP — parallel with ordered result delivery ───────────────────────
+    async def _process_chunk_stream(i: int, chunk_text: str) -> dict:
+        async with semaphore:
+            lbl    = f"map {i+1}/{len(chunks)}"
+            parsed = None
+
+            for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
+                try:
+                    messages = _build_map_messages(chunk_text, retry=(attempt > 1))
+                    if attempt > 1:
+                        logger.warning(f"[stream] [{lbl}] retry {attempt}")
+                    raw = await _run_inference(messages, f"{lbl}-a{attempt}")
+                except Exception as e:
+                    logger.error(f"[stream] [{lbl}] inference error: {e}")
+                    break
+
+                candidate = extract_json(raw)
+                if candidate.get("overview") or candidate.get("highlights"):
+                    parsed = candidate
+                    break
+                else:
+                    logger.warning(f"[stream] [{lbl}] attempt {attempt}: no usable JSON")
+
+            if not isinstance(parsed, dict) or not (parsed.get("overview") or parsed.get("highlights")):
+                parsed = dict(_EMPTY)
+
+            return parsed
+
+    # Fire all chunks simultaneously, preserve index order
+    map_tasks   = [_process_chunk_stream(i, ct) for i, ct in enumerate(chunks)]
+    map_results = list(await asyncio.gather(*map_tasks))
+
+    # Yield events in order now that all results are available
+    for i, parsed in enumerate(map_results):
         yield ("chunk_start", {"chunk": i + 1, "total": len(chunks)})
-
-        parsed = None
-        for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
-            try:
-                messages = _build_map_messages(chunk_text, retry=(attempt > 1))
-                if attempt > 1:
-                    logger.warning(f"[stream] [{lbl}] retry {attempt}")
-                raw = await _run_inference(messages, f"{lbl}-a{attempt}")
-            except Exception as e:
-                logger.error(f"[stream] [{lbl}] inference error: {e}")
-                break
-
-            candidate = extract_json(raw)
-            if candidate.get("overview") or candidate.get("highlights"):
-                parsed = candidate
-                break
-            else:
-                logger.warning(f"[stream] [{lbl}] attempt {attempt}: no usable JSON")
-
-        if not isinstance(parsed, dict) or not (parsed.get("overview") or parsed.get("highlights")):
-            parsed = dict(_EMPTY)
-
-        map_results.append(parsed)
 
         new_highlights = []
         for h in parsed.get("highlights", []):
@@ -366,7 +389,7 @@ async def generate_analysis_stream(merged_text: str):
         })
 
         logger.info(
-            f"[stream] [{lbl}] done — "
+            f"[stream] [map {i+1}/{len(chunks)}] yielded — "
             f"overview={'yes' if parsed.get('overview') else 'empty'} "
             f"new_highlights={len(new_highlights)} total={len(all_highlights)}"
         )
