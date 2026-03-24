@@ -4,9 +4,8 @@ import time
 import logging
 import tiktoken
 from openai import AsyncOpenAI
-import pydotenv
-
-pydotenv.load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
