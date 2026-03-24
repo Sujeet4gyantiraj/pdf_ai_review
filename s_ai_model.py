@@ -169,7 +169,7 @@ async def _run_inference(messages: list[dict], label: str = "") -> str:
 # generate_analysis — full pipeline, parallel map + serial synthesis
 # ---------------------------------------------------------------------------
 async def generate_analysis(merged_text: str) -> dict:
-    from s_main import extract_json
+    from s_route import extract_json
 
     _EMPTY = {"overview": "", "summary": "", "highlights": []}
     if not merged_text or not merged_text.strip():
