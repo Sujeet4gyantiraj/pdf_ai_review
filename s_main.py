@@ -14,7 +14,6 @@ from s_padf_utils import load_pdf, get_page_count, all_pages_blank
 from s_ai_model import generate_analysis, generate_analysis_stream
 from t_key_clause_extraction import  classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
 from t_risk_detection import analyze_document_risks
-from s_ai_model import _load_model
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -52,11 +51,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Model is loaded on startup by the import of s_ai_model
-    logger.info("Starting up and loading AI model...")
-    _load_model() 
+    logger.info("Starting up...")
     yield
-    # No cleanup specified, but this is where it would go
     logger.info("Shutting down.")
 
 
@@ -65,12 +61,6 @@ app = FastAPI(lifespan=lifespan)
 UPLOAD_FOLDER = "temp"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 logger.info(f"Upload folder ready: {os.path.abspath(UPLOAD_FOLDER)}")
-
-# ---------------------------------------------------------------------------
-# GPU semaphore — one request on GPU at a time.
-# Others wait on the event loop (zero cost, no thread deadlock).
-# ---------------------------------------------------------------------------
-_gpu_semaphore = asyncio.Semaphore(1)
 
 MAX_PDF_PAGES     = None
 _BLANK_PDF_RESULT = {"overview": "", "summary": "", "highlights": []}
@@ -399,15 +389,10 @@ async def analyze_pdf(
         merged_text = "\n\n".join(p.page_content for p in pages)
         logger.info(f"[{request_id}] Step 4/5 — merged {len(merged_text):,} chars")
 
-        t_wait = time.perf_counter()
-        async with _gpu_semaphore:
-            wait_time = time.perf_counter() - t_wait
-            if wait_time > 0.1:
-                logger.info(f"[{request_id}] waited {wait_time:.1f}s for GPU semaphore")
-            logger.info(f"[{request_id}] Step 5/5 — running inference")
-            t_infer      = time.perf_counter()
-            final_output = await generate_analysis(merged_text)
-            logger.info(f"[{request_id}] Step 5/5 — done ({time.perf_counter()-t_infer:.2f}s)")
+        logger.info(f"[{request_id}] Step 5/5 — running inference")
+        t_infer      = time.perf_counter()
+        final_output = await generate_analysis(merged_text)
+        logger.info(f"[{request_id}] Step 5/5 — done ({time.perf_counter()-t_infer:.2f}s)")
 
     except HTTPException:
         raise
@@ -606,63 +591,53 @@ async def analyze_pdf_stream(
             merged_text = "\n\n".join(p.page_content for p in pages)
             logger.info(f"[{request_id}] merged {len(merged_text):,} chars")
 
-            t_wait = time.perf_counter()
-            async with _gpu_semaphore:
-                wait_time = time.perf_counter() - t_wait
-                if wait_time > 0.1:
-                    logger.info(f"[{request_id}] waited {wait_time:.1f}s for GPU semaphore")
+            overview_sent   = False
+            highlight_index = 0
+            final_overview  = ""
+            final_summary   = ""
+
+            async for event_type, payload in generate_analysis_stream(merged_text):
+
+                if event_type == "chunk_start":
                     yield _sse("status", {
-                        "step": "queued",
-                        "message": f"Waiting for GPU ({wait_time:.0f}s queue time)...",
+                        "step":    "inference",
+                        "message": f"Analysing chunk {payload['chunk']} of {payload['total']}...",
+                        "chunk":   payload["chunk"],
+                        "total":   payload["total"],
                     })
 
-                overview_sent   = False
-                highlight_index = 0
-                final_overview  = ""
-                final_summary   = ""
-
-                async for event_type, payload in generate_analysis_stream(merged_text):
-
-                    if event_type == "chunk_start":
-                        yield _sse("status", {
-                            "step":    "inference",
-                            "message": f"Analysing chunk {payload['chunk']} of {payload['total']}...",
-                            "chunk":   payload["chunk"],
-                            "total":   payload["total"],
-                        })
-
-                    elif event_type == "chunk_done":
-                        if not overview_sent and payload.get("overview"):
-                            if analysis_type in (0, 1):
-                                yield _sse("overview", {"text": payload["overview"]})
-                            final_overview = payload["overview"]
-                            overview_sent  = True
-
-                        if analysis_type in (0, 3):
-                            for h in payload.get("new_highlights", []):
-                                yield _sse("highlight", {"text": h, "index": highlight_index})
-                                highlight_index += 1
-
-                        final_highlights = payload.get("all_highlights_so_far", final_highlights)
-                        yield _sse("status", {
-                            "step":              "chunk_done",
-                            "chunk":             payload["chunk"],
-                            "total":             payload["total"],
-                            "highlights_so_far": len(final_highlights),
-                        })
-
-                    elif event_type == "synthesis_start":
-                        yield _sse("status", {
-                            "step": "synthesis", "message": "Writing overview and summary...",
-                        })
-
-                    elif event_type == "synthesis_done":
-                        final_overview = payload.get("overview", final_overview)
-                        final_summary  = payload.get("summary", "")
+                elif event_type == "chunk_done":
+                    if not overview_sent and payload.get("overview"):
                         if analysis_type in (0, 1):
-                            yield _sse("overview", {"text": final_overview})
-                        if analysis_type in (0, 2):
-                            yield _sse("summary",  {"text": final_summary})
+                            yield _sse("overview", {"text": payload["overview"]})
+                        final_overview = payload["overview"]
+                        overview_sent  = True
+
+                    if analysis_type in (0, 3):
+                        for h in payload.get("new_highlights", []):
+                            yield _sse("highlight", {"text": h, "index": highlight_index})
+                            highlight_index += 1
+
+                    final_highlights = payload.get("all_highlights_so_far", final_highlights)
+                    yield _sse("status", {
+                        "step":              "chunk_done",
+                        "chunk":             payload["chunk"],
+                        "total":             payload["total"],
+                        "highlights_so_far": len(final_highlights),
+                    })
+
+                elif event_type == "synthesis_start":
+                    yield _sse("status", {
+                        "step": "synthesis", "message": "Writing overview and summary...",
+                    })
+
+                elif event_type == "synthesis_done":
+                    final_overview = payload.get("overview", final_overview)
+                    final_summary  = payload.get("summary", "")
+                    if analysis_type in (0, 1):
+                        yield _sse("overview", {"text": final_overview})
+                    if analysis_type in (0, 2):
+                        yield _sse("summary",  {"text": final_summary})
 
         except Exception as e:
             logger.exception(f"[{request_id}] stream error: {e}")

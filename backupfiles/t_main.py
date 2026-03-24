@@ -56,13 +56,13 @@ from fastapi.responses import JSONResponse
 from t_key_clause_extraction import  classify_document, DOCUMENT_HANDLERS
 
 
-from t_ai_model import (
+from pdf_ai_review.backupfiles.t_ai_model import (
     generate_analysis,
     load_model,
     synthesize_final,
     synthesize_section,
 )
-from t_pdf_utils import chunk_text, clean_text, extract_text_from_pdf
+from pdf_ai_review.backupfiles.t_pdf_utils import chunk_text, clean_text, extract_text_from_pdf
 
 logger = logging.getLogger(__name__)
 
