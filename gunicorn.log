@@ -150,3 +150,54 @@ nohup: ignoring input
 [2026-03-23 06:43:10 +0000] [255595] [INFO] Started server process [255595]
 [2026-03-23 06:43:10 +0000] [255595] [INFO] Waiting for application startup.
 [2026-03-23 06:43:19 +0000] [255595] [INFO] Application startup complete.
+[2026-03-23 06:46:32 +0000] [255591] [INFO] Handling signal: int
+[2026-03-23 06:46:32 +0000] [255595] [INFO] Shutting down
+[2026-03-23 06:46:33 +0000] [255595] [INFO] Waiting for application shutdown.
+[2026-03-23 06:46:33 +0000] [255595] [INFO] Application shutdown complete.
+[2026-03-23 06:46:33 +0000] [255595] [INFO] Finished server process [255595]
+[2026-03-23 06:46:34 +0000] [255591] [WARNING] Worker (pid:255595) was sent SIGINT!
+[2026-03-23 06:46:35 +0000] [255591] [INFO] Shutting down: Master
+[2026-03-23 06:46:35 +0000] [257452] [INFO] Starting gunicorn 25.1.0
+[2026-03-23 06:46:35 +0000] [257452] [INFO] Listening at: http://0.0.0.0:8001 (257452)
+[2026-03-23 06:46:35 +0000] [257452] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-23 06:46:35 +0000] [257452] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-23 06:46:35 +0000] [257455] [INFO] Booting worker with pid: 257455
+[2026-03-23 06:47:16 +0000] [257455] [INFO] Started server process [257455]
+[2026-03-23 06:47:16 +0000] [257455] [INFO] Waiting for application startup.
+[2026-03-23 06:47:24 +0000] [257455] [INFO] Application startup complete.
+[2026-03-23 09:22:45 +0000] [257455] [WARNING] Invalid HTTP request received.
+[2026-03-23 09:28:08 +0000] [257455] [WARNING] Invalid HTTP request received.
+[2026-03-23 10:22:10 +0000] [257455] [WARNING] Invalid HTTP request received.
+[2026-03-23 11:47:14 +0000] [257455] [WARNING] Invalid HTTP request received.
+[2026-03-23 11:47:21 +0000] [257455] [WARNING] Invalid HTTP request received.
+[2026-03-23 11:48:38 +0000] [257455] [WARNING] Invalid HTTP request received.
+[2026-03-23 14:21:16 +0000] [257455] [WARNING] Invalid HTTP request received.
+[2026-03-23 18:32:36 +0000] [257455] [WARNING] Invalid HTTP request received.
+[2026-03-23 22:55:21 +0000] [257452] [CRITICAL] WORKER TIMEOUT (pid:257455)
+[2026-03-23 22:55:23 +0000] [257452] [WARNING] Worker (pid:257455) was sent SIGABRT!
+[2026-03-23 22:55:23 +0000] [563934] [INFO] Booting worker with pid: 563934
+[2026-03-23 22:56:03 +0000] [563934] [INFO] Started server process [563934]
+[2026-03-23 22:56:03 +0000] [563934] [INFO] Waiting for application startup.
+[2026-03-23 22:56:12 +0000] [563934] [INFO] Application startup complete.
+[2026-03-24 00:47:42 +0000] [563934] [WARNING] Invalid HTTP request received.
+[2026-03-24 05:13:07 +0000] [563934] [WARNING] Invalid HTTP request received.
+[2026-03-24 05:28:06 +0000] [563934] [WARNING] Invalid HTTP request received.
+[2026-03-24 05:33:29 +0000] [563934] [WARNING] Invalid HTTP request received.
+[2026-03-24 06:53:13 +0000] [563934] [WARNING] Invalid HTTP request received.
+[2026-03-24 07:15:18 +0000] [257452] [INFO] Handling signal: int
+[2026-03-24 07:16:04 +0000] [563934] [INFO] Shutting down
+[2026-03-24 07:16:04 +0000] [563934] [INFO] Waiting for connections to close. (CTRL+C to force quit)
+[2026-03-24 07:16:13 +0000] [563934] [INFO] Waiting for application shutdown.
+[2026-03-24 07:16:13 +0000] [563934] [INFO] Application shutdown complete.
+[2026-03-24 07:16:13 +0000] [563934] [INFO] Finished server process [563934]
+[2026-03-24 07:16:15 +0000] [257452] [WARNING] Worker (pid:563934) was sent SIGINT!
+[2026-03-24 07:16:15 +0000] [257452] [INFO] Shutting down: Master
+[2026-03-24 07:16:16 +0000] [678488] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 07:16:16 +0000] [678488] [INFO] Listening at: http://0.0.0.0:8001 (678488)
+[2026-03-24 07:16:16 +0000] [678488] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 07:16:16 +0000] [678488] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 07:16:16 +0000] [678490] [INFO] Booting worker with pid: 678490
+[2026-03-24 07:16:56 +0000] [678490] [INFO] Started server process [678490]
+[2026-03-24 07:16:56 +0000] [678490] [INFO] Waiting for application startup.
+[2026-03-24 07:17:05 +0000] [678490] [INFO] Application startup complete.
+[2026-03-24 07:52:11 +0000] [678490] [WARNING] Invalid HTTP request received.
