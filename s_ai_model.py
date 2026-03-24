@@ -4,13 +4,19 @@ import time
 import logging
 import tiktoken
 from openai import AsyncOpenAI
+import pydotenv
 
+pydotenv.load_dotenv()
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-MODEL_NAME = "gpt-5-nano"
+
+MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-5-nano")  # ← set in .env, fallback to gpt-4o if missing
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+if not OPENAI_API_KEY:
+    logger.error("OPENAI_API_KEY is not set in environment variables. Please set it in your .env file.")
 
 # GPT-4.1-nano supports 1M token context; large chunks reduce API calls
 TOKEN_CHUNK_SIZE    = 50000
@@ -19,7 +25,7 @@ TOKEN_CHUNK_OVERLAP = 500
 MAP_JSON_RETRY_ATTEMPTS = 2
 
 _client   = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
-_encoding = tiktoken.encoding_for_model("gpt-4o")   # cl100k_base — same family
+_encoding = tiktoken.encoding_for_model(MODEL_NAME)   # cl100k_base — same family
 
 
 # ---------------------------------------------------------------------------

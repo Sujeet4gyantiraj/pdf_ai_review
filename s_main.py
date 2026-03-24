@@ -10,7 +10,7 @@ import asyncio
 import logging
 import logging.config
 from contextlib import asynccontextmanager
-from s_padf_utils import load_pdf, get_page_count, all_pages_blank
+from s_pdf_utils import load_pdf, get_page_count, all_pages_blank
 from s_ai_model import generate_analysis, generate_analysis_stream
 from t_key_clause_extraction import  classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
 from t_risk_detection import analyze_document_risks

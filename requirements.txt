@@ -93,3 +93,4 @@ rich==14.3.2
 
 pdf2docx 
 python-docx
+python-dotenv
