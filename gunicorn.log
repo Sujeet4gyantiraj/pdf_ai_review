@@ -1,0 +1,286 @@
+[2026-03-24 08:35:04 +0000] [697792] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 08:35:04 +0000] [697792] [INFO] Listening at: http://0.0.0.0:8001 (697792)
+[2026-03-24 08:35:04 +0000] [697792] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 08:35:04 +0000] [697792] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 08:35:04 +0000] [697796] [INFO] Booting worker with pid: 697796
+[2026-03-24 08:35:43 +0000] [697796] [INFO] Started server process [697796]
+[2026-03-24 08:35:43 +0000] [697796] [INFO] Waiting for application startup.
+[2026-03-24 08:35:52 +0000] [697796] [INFO] Application startup complete.
+[2026-03-24 08:45:01 +0000] [697792] [INFO] Handling signal: int
+[2026-03-24 08:45:02 +0000] [697796] [INFO] Shutting down
+[2026-03-24 08:45:02 +0000] [697796] [INFO] Waiting for application shutdown.
+[2026-03-24 08:45:02 +0000] [697796] [INFO] Application shutdown complete.
+[2026-03-24 08:45:02 +0000] [697796] [INFO] Finished server process [697796]
+[2026-03-24 08:45:04 +0000] [697792] [WARNING] Worker (pid:697796) was sent SIGINT!
+[2026-03-24 08:45:04 +0000] [697792] [INFO] Shutting down: Master
+[2026-03-24 08:45:04 +0000] [701130] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 08:45:04 +0000] [701130] [INFO] Listening at: http://0.0.0.0:8001 (701130)
+[2026-03-24 08:45:04 +0000] [701130] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 08:45:04 +0000] [701130] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 08:45:04 +0000] [701136] [INFO] Booting worker with pid: 701136
+[2026-03-24 08:45:31 +0000] [701136] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/ubuntu/pdf_ai_review/s_main.py", line 14, in <module>
+    from s_ai_model import generate_analysis, generate_analysis_stream
+  File "/home/ubuntu/pdf_ai_review/s_ai_model.py", line 7, in <module>
+    import pydotenv
+ModuleNotFoundError: No module named 'pydotenv'
+[2026-03-24 08:45:31 +0000] [701136] [INFO] Worker exiting (pid: 701136)
+[2026-03-24 08:45:33 +0000] [701130] [ERROR] Worker (pid:701136) exited with code 3.
+[2026-03-24 08:45:33 +0000] [701130] [ERROR] Shutting down: Master
+[2026-03-24 08:45:33 +0000] [701130] [ERROR] Reason: Worker failed to boot.
+[2026-03-24 08:45:44 +0000] [702049] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 08:45:44 +0000] [702049] [INFO] Listening at: http://0.0.0.0:8001 (702049)
+[2026-03-24 08:45:44 +0000] [702049] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 08:45:44 +0000] [702049] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 08:45:44 +0000] [702055] [INFO] Booting worker with pid: 702055
+[2026-03-24 08:46:11 +0000] [702055] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/ubuntu/pdf_ai_review/s_main.py", line 14, in <module>
+    from s_ai_model import generate_analysis, generate_analysis_stream
+  File "/home/ubuntu/pdf_ai_review/s_ai_model.py", line 7, in <module>
+    import pydotenv
+ModuleNotFoundError: No module named 'pydotenv'
+[2026-03-24 08:46:11 +0000] [702055] [INFO] Worker exiting (pid: 702055)
+[2026-03-24 08:46:13 +0000] [702049] [ERROR] Worker (pid:702055) exited with code 3.
+[2026-03-24 08:46:13 +0000] [702049] [ERROR] Shutting down: Master
+[2026-03-24 08:46:13 +0000] [702049] [ERROR] Reason: Worker failed to boot.
+[2026-03-24 08:46:24 +0000] [702970] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 08:46:24 +0000] [702970] [INFO] Listening at: http://0.0.0.0:8001 (702970)
+[2026-03-24 08:46:24 +0000] [702970] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 08:46:24 +0000] [702970] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 08:46:24 +0000] [702972] [INFO] Booting worker with pid: 702972
+[2026-03-24 08:46:51 +0000] [702972] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/ubuntu/pdf_ai_review/s_main.py", line 14, in <module>
+    from s_ai_model import generate_analysis, generate_analysis_stream
+  File "/home/ubuntu/pdf_ai_review/s_ai_model.py", line 7, in <module>
+    import pydotenv
+ModuleNotFoundError: No module named 'pydotenv'
+[2026-03-24 08:46:51 +0000] [702972] [INFO] Worker exiting (pid: 702972)
+[2026-03-24 08:46:53 +0000] [702970] [ERROR] Worker (pid:702972) exited with code 3.
+[2026-03-24 08:46:53 +0000] [702970] [ERROR] Shutting down: Master
+[2026-03-24 08:46:53 +0000] [702970] [ERROR] Reason: Worker failed to boot.
+[2026-03-24 08:46:58 +0000] [703880] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 08:46:58 +0000] [703880] [INFO] Listening at: http://0.0.0.0:8001 (703880)
+[2026-03-24 08:46:58 +0000] [703880] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 08:46:58 +0000] [703880] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 08:46:58 +0000] [703886] [INFO] Booting worker with pid: 703886
+[2026-03-24 08:47:24 +0000] [703886] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/ubuntu/pdf_ai_review/s_main.py", line 14, in <module>
+    from s_ai_model import generate_analysis, generate_analysis_stream
+  File "/home/ubuntu/pdf_ai_review/s_ai_model.py", line 7, in <module>
+    import pydotenv
+ModuleNotFoundError: No module named 'pydotenv'
+[2026-03-24 08:47:24 +0000] [703886] [INFO] Worker exiting (pid: 703886)
+[2026-03-24 08:47:27 +0000] [703880] [ERROR] Worker (pid:703886) exited with code 3.
+[2026-03-24 08:47:27 +0000] [703880] [ERROR] Shutting down: Master
+[2026-03-24 08:47:27 +0000] [703880] [ERROR] Reason: Worker failed to boot.
+[2026-03-24 08:47:37 +0000] [704824] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 08:47:37 +0000] [704824] [INFO] Listening at: http://0.0.0.0:8001 (704824)
+[2026-03-24 08:47:37 +0000] [704824] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 08:47:37 +0000] [704824] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 08:47:37 +0000] [704826] [INFO] Booting worker with pid: 704826
+[2026-03-24 08:48:04 +0000] [704826] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/ubuntu/pdf_ai_review/s_main.py", line 14, in <module>
+    from s_ai_model import generate_analysis, generate_analysis_stream
+  File "/home/ubuntu/pdf_ai_review/s_ai_model.py", line 7, in <module>
+    import pydotenv
+ModuleNotFoundError: No module named 'pydotenv'
+[2026-03-24 08:48:04 +0000] [704826] [INFO] Worker exiting (pid: 704826)
+[2026-03-24 08:48:07 +0000] [704824] [ERROR] Worker (pid:704826) exited with code 3.
+[2026-03-24 08:48:07 +0000] [704824] [ERROR] Shutting down: Master
+[2026-03-24 08:48:07 +0000] [704824] [ERROR] Reason: Worker failed to boot.
+[2026-03-24 08:48:17 +0000] [705743] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 08:48:17 +0000] [705743] [INFO] Listening at: http://0.0.0.0:8001 (705743)
+[2026-03-24 08:48:17 +0000] [705743] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 08:48:17 +0000] [705743] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 08:48:17 +0000] [705745] [INFO] Booting worker with pid: 705745
+[2026-03-24 08:48:44 +0000] [705745] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/ubuntu/pdf_ai_review/s_main.py", line 14, in <module>
+    from s_ai_model import generate_analysis, generate_analysis_stream
+  File "/home/ubuntu/pdf_ai_review/s_ai_model.py", line 7, in <module>
+    import pydotenv
+ModuleNotFoundError: No module named 'pydotenv'
+[2026-03-24 08:48:44 +0000] [705745] [INFO] Worker exiting (pid: 705745)
+[2026-03-24 08:48:47 +0000] [705743] [ERROR] Worker (pid:705745) exited with code 3.
+[2026-03-24 08:48:47 +0000] [705743] [ERROR] Shutting down: Master
+[2026-03-24 08:48:47 +0000] [705743] [ERROR] Reason: Worker failed to boot.
+[2026-03-24 08:48:57 +0000] [706658] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 08:48:57 +0000] [706658] [INFO] Listening at: http://0.0.0.0:8001 (706658)
+[2026-03-24 08:48:57 +0000] [706658] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 08:48:57 +0000] [706658] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 08:48:57 +0000] [706660] [INFO] Booting worker with pid: 706660
+[2026-03-24 08:49:24 +0000] [706660] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/ubuntu/pdf_ai_review/s_main.py", line 14, in <module>
+    from s_ai_model import generate_analysis, generate_analysis_stream
+  File "/home/ubuntu/pdf_ai_review/s_ai_model.py", line 7, in <module>
+    import pydotenv
+ModuleNotFoundError: No module named 'pydotenv'
+[2026-03-24 08:49:24 +0000] [706660] [INFO] Worker exiting (pid: 706660)
+[2026-03-24 08:49:26 +0000] [706658] [ERROR] Worker (pid:706660) exited with code 3.
+[2026-03-24 08:49:26 +0000] [706658] [ERROR] Shutting down: Master
+[2026-03-24 08:49:26 +0000] [706658] [ERROR] Reason: Worker failed to boot.
+[2026-03-24 08:49:37 +0000] [707599] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 08:49:37 +0000] [707599] [INFO] Listening at: http://0.0.0.0:8001 (707599)
+[2026-03-24 08:49:37 +0000] [707599] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-24 08:49:37 +0000] [707599] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-24 08:49:37 +0000] [707601] [INFO] Booting worker with pid: 707601
