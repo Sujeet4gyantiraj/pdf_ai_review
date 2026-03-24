@@ -1,6 +1,7 @@
 import re
 import time
 import logging
+import warnings
 import numpy as np
 import fitz  # PyMuPDF
 import paddle
@@ -9,6 +10,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from paddleocr import PaddleOCRVL
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
+
+# Suppress noisy internal PaddleOCR tensor-copy warning — harmless, not our code
+warnings.filterwarnings(
+    "ignore",
+    message="To copy construct from a tensor",
+    category=UserWarning,
+)
 
 logger = logging.getLogger(__name__)
 
