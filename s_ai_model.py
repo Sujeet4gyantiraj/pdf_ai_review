@@ -368,10 +368,129 @@ async def run_llm(
 
 
 # ---------------------------------------------------------------------------
-# generate_analysis_stream — SSE streaming
+# _run_inference_stream — streaming OpenAI call, yields token deltas
+#
+# Yields:  ("delta", str)          — one raw token string at a time
+#          ("done",  (int, int))    — (input_tokens, output_tokens) at end
+#
+# NOTE: response_format="json_object" is incompatible with stream=True on
+# some older SDK versions; we omit it here and rely on prompt instructions
+# + extract_json() post-processing instead (same strategy as non-stream).
+# ---------------------------------------------------------------------------
+async def _run_inference_stream(messages: list[dict], label: str = ""):
+    tag = f"[{label}] " if label else ""
+    t0  = time.perf_counter()
+
+    api_kwargs: dict = {
+        "model":    MODEL_NAME,
+        "messages": messages,
+        "stream":   True,
+        # request usage stats in the final chunk (supported since openai>=1.26)
+        "stream_options": {"include_usage": True},
+    }
+
+    if MODEL_NAME not in _FIXED_TEMPERATURE_MODELS:
+        api_kwargs["temperature"] = 0.0
+
+    if MODEL_NAME in _MAX_COMPLETION_TOKENS_MODELS:
+        api_kwargs["max_completion_tokens"] = MAX_OUTPUT_TOKENS
+    else:
+        api_kwargs["max_tokens"] = MAX_OUTPUT_TOKENS
+
+    input_tokens  = 0
+    output_tokens = 0
+
+    try:
+        async with await _client.chat.completions.create(**api_kwargs) as stream:
+            async for chunk in stream:
+                # Token deltas arrive in choices[0].delta.content
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield ("delta", chunk.choices[0].delta.content)
+
+                # Usage arrives in the final chunk (choices is empty)
+                if chunk.usage:
+                    input_tokens  = chunk.usage.prompt_tokens
+                    output_tokens = chunk.usage.completion_tokens
+
+        logger.info(
+            f"{tag}stream done — in={input_tokens} out={output_tokens} "
+            f"({time.perf_counter()-t0:.2f}s)"
+        )
+    except Exception as e:
+        logger.exception(f"{tag}streaming OpenAI call failed: {e}")
+        raise
+
+    yield ("done", (input_tokens, output_tokens))
+
+
+# ---------------------------------------------------------------------------
+# _run_map_chunk_stream — stream one map chunk, yielding deltas then result
+#
+# Yields:  ("delta",      str)   — raw token for the client to forward
+#          ("chunk_done", dict)  — parsed result after the chunk completes
+# ---------------------------------------------------------------------------
+async def _run_map_chunk_stream(i: int, total: int, chunk_text: str):
+    _EMPTY = {"overview": "", "summary": "", "highlights": []}
+    sem    = _get_semaphore()
+    lbl    = f"map {i+1}/{total}"
+
+    async with sem:
+        t_chunk    = time.perf_counter()
+        in_tokens  = 0
+        out_tokens = 0
+        parsed     = None
+
+        for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
+            messages   = _build_map_messages(chunk_text, retry=(attempt > 1))
+            raw_buffer = ""
+
+            if attempt > 1:
+                logger.warning(f"[stream] [{lbl}] retry {attempt}")
+
+            try:
+                async for event_type, payload in _run_inference_stream(messages, f"{lbl}-a{attempt}"):
+                    if event_type == "delta":
+                        raw_buffer += payload
+                        yield ("delta", payload)          # ← live tokens to client
+                    elif event_type == "done":
+                        in_tokens  += payload[0]
+                        out_tokens += payload[1]
+            except Exception as e:
+                logger.error(f"[stream] [{lbl}] inference error: {e}")
+                break
+
+            candidate = extract_json(raw_buffer)
+            if candidate.get("overview") or candidate.get("highlights"):
+                parsed = candidate
+                break
+            else:
+                logger.warning(
+                    f"[stream] [{lbl}] attempt {attempt}: no usable JSON — "
+                    + ("retrying" if attempt < MAP_JSON_RETRY_ATTEMPTS else "giving up")
+                )
+
+        if not isinstance(parsed, dict) or not (parsed.get("overview") or parsed.get("highlights")):
+            parsed = dict(_EMPTY)
+
+        logger.info(
+            f"[stream] [{lbl}] done ({time.perf_counter()-t_chunk:.2f}s) "
+            f"overview={'yes' if parsed.get('overview') else 'empty'} "
+            f"highlights={len(parsed.get('highlights', []))}"
+        )
+        yield ("chunk_done", {**parsed, "_in_tokens": in_tokens, "_out_tokens": out_tokens})
+
+
+# ---------------------------------------------------------------------------
+# generate_analysis_stream — true SSE streaming
+#
+# Key changes vs previous version:
+#   1. Chunks are processed SEQUENTIALLY so the client receives events as
+#      each one finishes rather than waiting for all of them.
+#   2. _run_map_chunk_stream uses stream=True, so raw token deltas flow to
+#      the client in real time during each chunk's inference call.
+#   3. The synthesis step also streams tokens live.
 # ---------------------------------------------------------------------------
 async def generate_analysis_stream(merged_text: str):
-    _EMPTY = {"overview": "", "summary": "", "highlights": []}
     if not merged_text or not merged_text.strip():
         yield ("done", {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
         return
@@ -380,52 +499,53 @@ async def generate_analysis_stream(merged_text: str):
     chunks        = split_by_tokens(merged_text)
     total_in_tok  = 0
     total_out_tok = 0
-    logger.info(
-        f"[generate_analysis_stream] {len(chunks)} chunk(s) "
-        f"(parallel, concurrency={_MAP_CONCURRENCY})"
-    )
-
-    # ── MAP ───────────────────────────────────────────────────────────────
-    map_tasks   = [_run_map_chunk(i, len(chunks), ct) for i, ct in enumerate(chunks)]
-    raw_results = list(await asyncio.gather(*map_tasks))
-
-    map_results = []
-    for parsed, i_tok, o_tok in raw_results:
-        map_results.append(parsed)
-        total_in_tok  += i_tok
-        total_out_tok += o_tok
-
-    # ── Yield events in chunk-index order ────────────────────────────────
+    map_results:  list = []
     all_highlights: list = []
     seen_keys:      set  = set()
 
-    for i, parsed in enumerate(map_results):
+    logger.info(f"[generate_analysis_stream] {len(chunks)} chunk(s) — sequential streaming")
+
+    # ── MAP — one chunk at a time so events reach the client immediately ──
+    for i, chunk_text in enumerate(chunks):
         yield ("chunk_start", {"chunk": i + 1, "total": len(chunks)})
 
-        new_highlights = []
-        for h in parsed.get("highlights", []):
-            h = h.strip()
-            if not h:
-                continue
-            key = " ".join(h.lower().split())
-            if key not in seen_keys:
-                seen_keys.add(key)
-                all_highlights.append(h)
-                new_highlights.append(h)
+        parsed = None
+        async for event_type, payload in _run_map_chunk_stream(i, len(chunks), chunk_text):
 
-        yield ("chunk_done", {
-            "chunk":                 i + 1,
-            "total":                 len(chunks),
-            "overview":              parsed.get("overview", ""),
-            "new_highlights":        new_highlights,
-            "all_highlights_so_far": list(all_highlights),
-        })
+            if event_type == "delta":
+                # Forward raw LLM tokens so the client can show live typing
+                yield ("token", {"chunk": i + 1, "delta": payload})
 
-        logger.info(
-            f"[stream] [map {i+1}/{len(chunks)}] yielded — "
-            f"overview={'yes' if parsed.get('overview') else 'empty'} "
-            f"new_highlights={len(new_highlights)} total={len(all_highlights)}"
-        )
+            elif event_type == "chunk_done":
+                parsed         = payload
+                total_in_tok  += payload.pop("_in_tokens",  0)
+                total_out_tok += payload.pop("_out_tokens", 0)
+
+                new_highlights = []
+                for h in parsed.get("highlights", []):
+                    h = h.strip()
+                    if not h:
+                        continue
+                    key = " ".join(h.lower().split())
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        all_highlights.append(h)
+                        new_highlights.append(h)
+
+                map_results.append(parsed)
+
+                yield ("chunk_done", {
+                    "chunk":                 i + 1,
+                    "total":                 len(chunks),
+                    "overview":              parsed.get("overview", ""),
+                    "new_highlights":        new_highlights,
+                    "all_highlights_so_far": list(all_highlights),
+                })
+                logger.info(
+                    f"[stream] [map {i+1}/{len(chunks)}] yielded — "
+                    f"overview={'yes' if parsed.get('overview') else 'empty'} "
+                    f"new_highlights={len(new_highlights)} total={len(all_highlights)}"
+                )
 
     valid_count = sum(1 for r in map_results if r.get("overview") or r.get("highlights"))
     logger.info(f"[stream] MAP complete — {len(map_results)} total, {valid_count} with content")
@@ -437,17 +557,24 @@ async def generate_analysis_stream(merged_text: str):
     if len(map_results) == 1:
         synth_overview = map_results[0].get("overview", "")
         synth_summary  = map_results[0].get("summary",  "")
+        yield ("synthesis_done", {"overview": synth_overview, "summary": synth_summary})
+
     else:
         yield ("synthesis_start", {})
+        synth_buffer = ""
         try:
             synth_messages = _build_synth_messages(
                 [r for r in map_results if r.get("overview") or r.get("summary")]
             )
-            raw_synth, s_in, s_out = await _run_inference(synth_messages, "synthesis")
-            total_in_tok  += s_in
-            total_out_tok += s_out
+            async for event_type, payload in _run_inference_stream(synth_messages, "synthesis"):
+                if event_type == "delta":
+                    synth_buffer += payload
+                    yield ("token", {"chunk": "synthesis", "delta": payload})
+                elif event_type == "done":
+                    total_in_tok  += payload[0]
+                    total_out_tok += payload[1]
 
-            parsed_synth = extract_json(raw_synth)
+            parsed_synth = extract_json(synth_buffer)
             ov = parsed_synth.get("overview", "")
             sm = parsed_synth.get("summary",  "")
             synth_overview = (ov if isinstance(ov, str) else str(ov)).strip()
@@ -465,7 +592,7 @@ async def generate_analysis_stream(merged_text: str):
         if not synth_summary:
             synth_summary  = next((r["summary"]  for r in map_results if r.get("summary")),  "")
 
-    yield ("synthesis_done", {"overview": synth_overview, "summary": synth_summary})
+        yield ("synthesis_done", {"overview": synth_overview, "summary": synth_summary})
 
     logger.info(
         f"[stream] total={time.perf_counter()-t0:.2f}s "
