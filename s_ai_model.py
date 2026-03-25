@@ -24,21 +24,27 @@ if not OPENAI_API_KEY:
 # Models that only accept default temperature (1) and reject 0.0
 _FIXED_TEMPERATURE_MODELS = {"gpt-5-nano", "gpt-4o-mini", "o1", "o1-mini", "o3-mini", "o3"}
 
+# Models that use max_completion_tokens instead of max_tokens
+_MAX_COMPLETION_TOKENS_MODELS = {"gpt-4o-mini", "gpt-5-nano", "o1", "o1-mini", "o3-mini", "o3"}
+
 # Token chunking
 # 120,000 fits comfortably within gpt-4o / gpt-4o-mini 128k context window
 # leaving ~8k tokens headroom for system prompt + output
 TOKEN_CHUNK_SIZE    = 120000
 TOKEN_CHUNK_OVERLAP = 500
 
-# Max output tokens per API call — prevents runaway verbose responses
+# Max output tokens per API call
 # 4096 is enough for a detailed summary + 20 highlights
 MAX_OUTPUT_TOKENS = 4096
 
 MAP_JSON_RETRY_ATTEMPTS = 2
 
-# Max concurrent OpenAI API calls across all workers
-# With 4 gunicorn workers this allows 4 × 3 = 12 concurrent calls
-_MAP_CONCURRENCY = 3
+# ---------------------------------------------------------------------------
+# Module-level semaphore — controls max concurrent OpenAI API calls
+# across ALL requests hitting this server simultaneously.
+# Reduce to 2 if you hit 429 rate-limit errors.
+# ---------------------------------------------------------------------------
+_MAP_CONCURRENCY  = 3
 _MAP_SEMAPHORE: asyncio.Semaphore | None = None
 
 
@@ -163,6 +169,10 @@ async def _run_inference(messages: list[dict], label: str = "") -> tuple[str, in
     """
     Run one OpenAI API call.
     Returns (response_text, input_tokens, output_tokens).
+
+    Handles model-specific parameter differences:
+      - temperature: not supported by o1/o3/gpt-5-nano family
+      - max_tokens vs max_completion_tokens: depends on model
     """
     tag = f"[{label}] " if label else ""
     t0  = time.perf_counter()
@@ -171,10 +181,17 @@ async def _run_inference(messages: list[dict], label: str = "") -> tuple[str, in
             "model":           MODEL_NAME,
             "messages":        messages,
             "response_format": {"type": "json_object"},
-            "max_tokens":      MAX_OUTPUT_TOKENS,
         }
+
+        # temperature: only supported on standard GPT models
         if MODEL_NAME not in _FIXED_TEMPERATURE_MODELS:
             api_kwargs["temperature"] = 0.0
+
+        # max output tokens: newer models use max_completion_tokens
+        if MODEL_NAME in _MAX_COMPLETION_TOKENS_MODELS:
+            api_kwargs["max_completion_tokens"] = MAX_OUTPUT_TOKENS
+        else:
+            api_kwargs["max_tokens"] = MAX_OUTPUT_TOKENS
 
         response      = await _client.chat.completions.create(**api_kwargs)
         elapsed       = time.perf_counter() - t0
@@ -200,10 +217,10 @@ async def _run_map_chunk(i: int, total: int, chunk_text: str) -> tuple[dict, int
     lbl    = f"map {i+1}/{total}"
 
     async with sem:
-        t_chunk       = time.perf_counter()
-        parsed        = None
-        in_tokens     = 0
-        out_tokens    = 0
+        t_chunk    = time.perf_counter()
+        parsed     = None
+        in_tokens  = 0
+        out_tokens = 0
 
         for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
             try:
@@ -265,7 +282,7 @@ async def generate_analysis(merged_text: str) -> tuple[dict, int, int]:
         f"[generate_analysis] MAP: {len(chunks)} chunk(s) "
         f"(parallel, concurrency={_MAP_CONCURRENCY})"
     )
-    map_tasks = [_run_map_chunk(i, len(chunks), ct) for i, ct in enumerate(chunks)]
+    map_tasks   = [_run_map_chunk(i, len(chunks), ct) for i, ct in enumerate(chunks)]
     raw_results = list(await asyncio.gather(*map_tasks))
 
     map_results = []
@@ -352,10 +369,6 @@ async def run_llm(
 
 # ---------------------------------------------------------------------------
 # generate_analysis_stream — SSE streaming
-#
-# Yields (event_type, payload) tuples.
-# Final "done" event includes token totals:
-#   ("done", {"input_tokens": N, "output_tokens": N, "total_tokens": N})
 # ---------------------------------------------------------------------------
 async def generate_analysis_stream(merged_text: str):
     _EMPTY = {"overview": "", "summary": "", "highlights": []}
