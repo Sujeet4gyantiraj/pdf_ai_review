@@ -36,7 +36,7 @@ MAP_JSON_RETRY_ATTEMPTS = 2
 # Increase if your OpenAI tier supports higher TPM/RPM.
 # Reduce to 2 if you hit 429 rate-limit errors.
 # ---------------------------------------------------------------------------
-_MAP_CONCURRENCY  = 3
+_MAP_CONCURRENCY  = 1
 _MAP_SEMAPHORE: asyncio.Semaphore | None = None   # created lazily on first use
 
 
@@ -54,7 +54,7 @@ def _get_semaphore() -> asyncio.Semaphore:
 
 
 _client   = AsyncOpenAI(api_key=OPENAI_API_KEY)
-_encoding = tiktoken.encoding_for_model("gpt-4o")   # cl100k_base — works for all GPT-4 family
+_encoding = tiktoken.encoding_for_model(MODEL_NAME)   # cl100k_base — works for all GPT-4 family
 
 
 # ---------------------------------------------------------------------------
