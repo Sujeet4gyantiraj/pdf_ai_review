@@ -7,10 +7,12 @@ import json
 import time
 import asyncio
 import logging
+from functools import partial
 
 from s_pdf_utils import load_pdf, get_page_count, all_pages_blank
 from s_ai_model import generate_analysis, generate_analysis_stream
 from s_json_utils import extract_json
+from s_db import log_request
 from t_key_clause_extraction import classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
 from t_risk_detection import analyze_document_risks
 
@@ -23,6 +25,30 @@ MAX_PDF_PAGES     = None
 _BLANK_PDF_RESULT = {"overview": "", "summary": "", "highlights": []}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Async wrapper for load_pdf
+#
+# PaddleOCR-VL's .predict() is a blocking synchronous call that can take
+# 7-20s per page on GPU. Running it directly on the asyncio event loop
+# freezes the entire server for that duration — no other requests are
+# served, no timeouts fire, health checks fail.
+#
+# Solution: run load_pdf in the default ThreadPoolExecutor so the event
+# loop remains free to handle other work while OCR runs in a thread.
+# ---------------------------------------------------------------------------
+async def _load_pdf_async(file_path: str, max_pages: int | None = None):
+    """
+    Non-blocking wrapper around load_pdf.
+    Runs the synchronous PDF extraction + OCR in a thread pool so the
+    asyncio event loop is never blocked.
+    """
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None,                              # default ThreadPoolExecutor
+        partial(load_pdf, file_path, max_pages)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -45,10 +71,19 @@ async def analyze_pdf(
 ):
     """
     Analyse a PDF and return the full result as a single JSON response.
-    Use POST /analyze/stream for real-time streaming progress.
+    Every request is logged to PostgreSQL (pdf_requests table).
+    PDF extraction (including OCR) runs in a thread pool — event loop never blocked.
     """
-    request_id = str(uuid.uuid4())[:8]
-    t_start    = time.perf_counter()
+    request_id    = str(uuid.uuid4())[:8]
+    t_start       = time.perf_counter()
+    total_in_tok  = 0
+    total_out_tok = 0
+    total_pages   = 0
+    pages_to_read = 0
+    was_truncated = False
+    pdf_size      = 0
+    status        = "success"
+    error_msg     = None
 
     logger.info(f"[{request_id}] ── NEW REQUEST ──────────────────────────────")
     logger.info(f"[{request_id}] filename='{file.filename}' analysis_type={analysis_type}")
@@ -56,17 +91,15 @@ async def analyze_pdf(
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
 
-    safe_name     = f"{uuid.uuid4()}.pdf"
-    file_path     = os.path.join(UPLOAD_FOLDER, safe_name)
-    was_truncated = False
-    pages_to_read = 0
-    total_pages   = 0
+    safe_name = f"{uuid.uuid4()}.pdf"
+    file_path = os.path.join(UPLOAD_FOLDER, safe_name)
 
     try:
-        content = await file.read()
+        content  = await file.read()
+        pdf_size = len(content)
         with open(file_path, "wb") as f:
             f.write(content)
-        logger.info(f"[{request_id}] Step 1/5 — saved {len(content):,} bytes → '{safe_name}'")
+        logger.info(f"[{request_id}] Step 1/5 — saved {pdf_size:,} bytes → '{safe_name}'")
 
         total_pages   = get_page_count(file_path)
         pages_to_read = total_pages if MAX_PDF_PAGES is None else min(total_pages, MAX_PDF_PAGES)
@@ -78,13 +111,18 @@ async def analyze_pdf(
 
         try:
             t_extract = time.perf_counter()
-            pages     = load_pdf(file_path, max_pages=pages_to_read)
-            logger.info(f"[{request_id}] Step 3/5 — extracted {len(pages)} page(s) ({time.perf_counter()-t_extract:.2f}s)")
+            # ── Non-blocking: OCR runs in thread pool ──────────────────────
+            pages = await _load_pdf_async(file_path, pages_to_read)
+            logger.info(
+                f"[{request_id}] Step 3/5 — extracted {len(pages)} page(s) "
+                f"({time.perf_counter()-t_extract:.2f}s)"
+            )
         except ValueError as e:
             raise HTTPException(status_code=422, detail=str(e))
 
         if all_pages_blank(pages):
             logger.warning(f"[{request_id}] blank PDF — skipping inference")
+            status = "blank_pdf"
             result = dict(_BLANK_PDF_RESULT)
             result["blank_pdf"] = True
             if was_truncated:
@@ -98,19 +136,38 @@ async def analyze_pdf(
         logger.info(f"[{request_id}] Step 4/5 — merged {len(merged_text):,} chars")
 
         logger.info(f"[{request_id}] Step 5/5 — running inference")
-        t_infer      = time.perf_counter()
-        final_output = await generate_analysis(merged_text)
+        t_infer = time.perf_counter()
+        final_output, total_in_tok, total_out_tok = await generate_analysis(merged_text)
         logger.info(f"[{request_id}] Step 5/5 — done ({time.perf_counter()-t_infer:.2f}s)")
 
     except HTTPException:
+        status    = "error"
+        error_msg = "HTTP error"
         raise
     except Exception as e:
+        status    = "error"
+        error_msg = str(e)
         logger.exception(f"[{request_id}] unhandled error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error during PDF analysis.")
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
             logger.debug(f"[{request_id}] temp file deleted")
+
+        elapsed = time.perf_counter() - t_start
+        await log_request(
+            request_id        = request_id,
+            pdf_name          = file.filename or "unknown",
+            pdf_size_bytes    = pdf_size,
+            total_pages       = total_pages,
+            pages_analysed    = pages_to_read,
+            input_tokens      = total_in_tok,
+            output_tokens     = total_out_tok,
+            completion_time_s = elapsed,
+            endpoint          = "/analyze",
+            status            = status,
+            error_message     = error_msg,
+        )
 
     elapsed = time.perf_counter() - t_start
     logger.info(f"[{request_id}] ── COMPLETE — {elapsed:.2f}s ──────")
@@ -196,16 +253,6 @@ async def detect_risks(file: UploadFile = File(...)):
 
 # ---------------------------------------------------------------------------
 # POST /analyze/stream — Server-Sent Events
-#
-# Event sequence:
-#   status    {"step":"saving"|"extracting"|"inference"|"chunk_done"|"synthesis"}
-#   overview  {"text":"..."}        — after chunk 1, updated after synthesis
-#   summary   {"text":"..."}        — after synthesis
-#   highlight {"text":"...","index":N} — one per highlight as each chunk finishes
-#   done      {"total_time":N,"total_highlights":N,"pages":N}
-#   error     {"message":"..."}
-#
-# nginx: add proxy_buffering off to the location block for this route.
 # ---------------------------------------------------------------------------
 
 @router.post("/analyze/stream")
@@ -216,6 +263,9 @@ async def analyze_pdf_stream(
 ):
     """
     Analyse a PDF and stream results in real time using Server-Sent Events.
+    PDF extraction runs in a thread pool — event loop never blocked during OCR.
+    Token usage and timing are logged to PostgreSQL after the stream completes.
+    nginx: add proxy_buffering off to the location block for this route.
     """
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
@@ -239,13 +289,19 @@ async def analyze_pdf_stream(
         final_highlights = []
         final_overview   = ""
         final_summary    = ""
+        total_in_tok     = 0
+        total_out_tok    = 0
+        pdf_size         = 0
+        status           = "success"
+        error_msg        = None
 
         try:
             yield _sse("status", {"step": "saving", "message": "Saving uploaded file..."})
-            content = await file.read()
+            content  = await file.read()
+            pdf_size = len(content)
             with open(file_path, "wb") as f:
                 f.write(content)
-            logger.info(f"[{request_id}] saved {len(content):,} bytes")
+            logger.info(f"[{request_id}] saved {pdf_size:,} bytes")
 
             total_pages   = get_page_count(file_path)
             pages_to_read = total_pages if MAX_PDF_PAGES is None else min(total_pages, MAX_PDF_PAGES)
@@ -256,20 +312,27 @@ async def analyze_pdf_stream(
                 "message": f"Extracting text from {pages_to_read} page(s)...",
                 "pages":   pages_to_read,
             })
+
             try:
-                pages = load_pdf(file_path, max_pages=pages_to_read)
+                # ── Non-blocking: OCR runs in thread pool ──────────────────
+                pages = await _load_pdf_async(file_path, pages_to_read)
             except ValueError as e:
+                status    = "error"
+                error_msg = str(e)
                 yield _sse("error", {"message": str(e)})
                 return
 
             if all_pages_blank(pages):
+                status = "blank_pdf"
                 logger.warning(f"[{request_id}] blank PDF")
                 yield _sse("status", {"step": "blank", "message": "PDF has no extractable content."})
                 if analysis_type in (0, 1): yield _sse("overview", {"text": ""})
                 if analysis_type in (0, 2): yield _sse("summary",  {"text": ""})
                 yield _sse("done", {
-                    "total_time": round(time.perf_counter() - t_start, 2),
-                    "total_highlights": 0, "pages": total_pages, "blank_pdf": True,
+                    "total_time":       round(time.perf_counter() - t_start, 2),
+                    "total_highlights": 0,
+                    "pages":            total_pages,
+                    "blank_pdf":        True,
                 })
                 return
 
@@ -322,7 +385,13 @@ async def analyze_pdf_stream(
                     if analysis_type in (0, 2):
                         yield _sse("summary",  {"text": final_summary})
 
+                elif event_type == "done":
+                    total_in_tok  = payload.get("input_tokens",  0)
+                    total_out_tok = payload.get("output_tokens", 0)
+
         except Exception as e:
+            status    = "error"
+            error_msg = str(e)
             logger.exception(f"[{request_id}] stream error: {e}")
             yield _sse("error", {"message": "Internal server error during PDF analysis."})
             return
@@ -331,6 +400,21 @@ async def analyze_pdf_stream(
                 os.remove(file_path)
                 logger.debug(f"[{request_id}] temp file deleted")
 
+            elapsed = time.perf_counter() - t_start
+            await log_request(
+                request_id        = request_id,
+                pdf_name          = file.filename or "unknown",
+                pdf_size_bytes    = pdf_size,
+                total_pages       = total_pages,
+                pages_analysed    = pages_to_read,
+                input_tokens      = total_in_tok,
+                output_tokens     = total_out_tok,
+                completion_time_s = elapsed,
+                endpoint          = "/analyze/stream",
+                status            = status,
+                error_message     = error_msg,
+            )
+
         elapsed = time.perf_counter() - t_start
         logger.info(f"[{request_id}] ── STREAM COMPLETE — {elapsed:.2f}s ──────")
 
@@ -338,6 +422,9 @@ async def analyze_pdf_stream(
             "total_time":       round(elapsed, 2),
             "total_highlights": len(final_highlights),
             "pages":            total_pages,
+            "input_tokens":     total_in_tok,
+            "output_tokens":    total_out_tok,
+            "total_tokens":     total_in_tok + total_out_tok,
         }
         if was_truncated:
             done_payload.update(truncated=True, pages_analysed=pages_to_read, total_pages=total_pages)
@@ -363,6 +450,7 @@ async def convert_pdf_to_docx(file: UploadFile = File(...)):
     """
     Convert an uploaded PDF to a downloadable DOCX file.
     Handles native, scanned, and mixed PDFs. No AI inference.
+    PDF extraction runs in a thread pool — event loop never blocked during OCR.
     """
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
@@ -383,7 +471,8 @@ async def convert_pdf_to_docx(file: UploadFile = File(...)):
         logger.info(f"[{request_id}] saved {len(content):,} bytes")
 
         try:
-            pages = load_pdf(file_path)
+            # ── Non-blocking: OCR runs in thread pool ──────────────────────
+            pages = await _load_pdf_async(file_path)
         except ValueError as e:
             raise HTTPException(status_code=422, detail=str(e))
 

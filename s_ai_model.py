@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from s_json_utils import extract_json  # ← no longer imports from s_main/s_route
+from s_json_utils import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +33,13 @@ MAP_JSON_RETRY_ATTEMPTS = 2
 # ---------------------------------------------------------------------------
 # Module-level semaphore — controls max concurrent OpenAI API calls
 # across ALL requests hitting this server simultaneously.
-# Increase if your OpenAI tier supports higher TPM/RPM.
 # Reduce to 2 if you hit 429 rate-limit errors.
 # ---------------------------------------------------------------------------
-_MAP_CONCURRENCY  = 1
-_MAP_SEMAPHORE: asyncio.Semaphore | None = None   # created lazily on first use
+_MAP_CONCURRENCY  = 3
+_MAP_SEMAPHORE: asyncio.Semaphore | None = None
 
 
 def _get_semaphore() -> asyncio.Semaphore:
-    """
-    Return the module-level semaphore, creating it on the first call.
-    Must be called from within a running event loop (i.e. inside an async function).
-    Creating it at import time fails when there is no running loop yet.
-    """
     global _MAP_SEMAPHORE
     if _MAP_SEMAPHORE is None:
         _MAP_SEMAPHORE = asyncio.Semaphore(_MAP_CONCURRENCY)
@@ -54,7 +48,7 @@ def _get_semaphore() -> asyncio.Semaphore:
 
 
 _client   = AsyncOpenAI(api_key=OPENAI_API_KEY)
-_encoding = tiktoken.encoding_for_model(MODEL_NAME)   # cl100k_base — works for all GPT-4 family
+_encoding = tiktoken.encoding_for_model("gpt-4o")
 
 
 # ---------------------------------------------------------------------------
@@ -160,9 +154,13 @@ def _merge_highlights(results: list[dict]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Core inference — single OpenAI API call
+# Core inference — returns (content, input_tokens, output_tokens)
 # ---------------------------------------------------------------------------
-async def _run_inference(messages: list[dict], label: str = "") -> str:
+async def _run_inference(messages: list[dict], label: str = "") -> tuple[str, int, int]:
+    """
+    Run one OpenAI API call.
+    Returns (response_text, input_tokens, output_tokens).
+    """
     tag = f"[{label}] " if label else ""
     t0  = time.perf_counter()
     try:
@@ -174,39 +172,43 @@ async def _run_inference(messages: list[dict], label: str = "") -> str:
         if MODEL_NAME not in _FIXED_TEMPERATURE_MODELS:
             api_kwargs["temperature"] = 0.0
 
-        response = await _client.chat.completions.create(**api_kwargs)
-        elapsed  = time.perf_counter() - t0
-        content  = response.choices[0].message.content or ""
-        usage    = response.usage
+        response      = await _client.chat.completions.create(**api_kwargs)
+        elapsed       = time.perf_counter() - t0
+        content       = response.choices[0].message.content or ""
+        input_tokens  = response.usage.prompt_tokens
+        output_tokens = response.usage.completion_tokens
         logger.info(
-            f"{tag}in={usage.prompt_tokens} out={usage.completion_tokens} "
+            f"{tag}in={input_tokens} out={output_tokens} "
             f"in {elapsed:.2f}s"
         )
-        return content
+        return content, input_tokens, output_tokens
     except Exception as e:
         logger.exception(f"{tag}OpenAI API call failed: {e}")
         raise
 
 
 # ---------------------------------------------------------------------------
-# _run_map_chunk — one map chunk with semaphore + retry
-# Semaphore is module-level so concurrency is shared across all requests.
+# _run_map_chunk — one map chunk, returns (parsed_dict, input_tokens, output_tokens)
 # ---------------------------------------------------------------------------
-async def _run_map_chunk(i: int, total: int, chunk_text: str) -> dict:
+async def _run_map_chunk(i: int, total: int, chunk_text: str) -> tuple[dict, int, int]:
     _EMPTY = {"overview": "", "summary": "", "highlights": []}
     sem    = _get_semaphore()
     lbl    = f"map {i+1}/{total}"
 
     async with sem:
-        t_chunk = time.perf_counter()
-        parsed  = None
+        t_chunk       = time.perf_counter()
+        parsed        = None
+        in_tokens     = 0
+        out_tokens    = 0
 
         for attempt in range(1, MAP_JSON_RETRY_ATTEMPTS + 1):
             try:
                 messages = _build_map_messages(chunk_text, retry=(attempt > 1))
                 if attempt > 1:
                     logger.warning(f"[generate_analysis] [{lbl}] retry {attempt}")
-                raw = await _run_inference(messages, f"{lbl}-a{attempt}")
+                raw, i_tok, o_tok = await _run_inference(messages, f"{lbl}-a{attempt}")
+                in_tokens  += i_tok
+                out_tokens += o_tok
             except Exception as e:
                 logger.error(f"[generate_analysis] [{lbl}] inference error: {e}")
                 break
@@ -231,30 +233,42 @@ async def _run_map_chunk(i: int, total: int, chunk_text: str) -> dict:
             f"overview={'yes' if parsed.get('overview') else 'empty'} "
             f"highlights={len(parsed.get('highlights', []))}"
         )
-        return parsed
+        return parsed, in_tokens, out_tokens
 
 
 # ---------------------------------------------------------------------------
-# generate_analysis — full pipeline
+# generate_analysis — returns (result_dict, input_tokens, output_tokens)
 # ---------------------------------------------------------------------------
-async def generate_analysis(merged_text: str) -> dict:
+async def generate_analysis(merged_text: str) -> tuple[dict, int, int]:
+    """
+    Full map+synthesise pipeline.
+    Returns (result, total_input_tokens, total_output_tokens).
+    """
     _EMPTY = {"overview": "", "summary": "", "highlights": []}
     if not merged_text or not merged_text.strip():
-        return dict(_EMPTY)
+        return dict(_EMPTY), 0, 0
 
     t0     = time.perf_counter()
     chunks = split_by_tokens(merged_text)
     logger.info(f"[generate_analysis] {len(chunks)} chunk(s) in {time.perf_counter()-t0:.3f}s")
 
-    t_pipeline = time.perf_counter()
+    t_pipeline    = time.perf_counter()
+    total_in_tok  = 0
+    total_out_tok = 0
 
-    # ── MAP — all chunks fired simultaneously ─────────────────────────────
+    # ── MAP ───────────────────────────────────────────────────────────────
     logger.info(
         f"[generate_analysis] MAP: {len(chunks)} chunk(s) "
         f"(parallel, concurrency={_MAP_CONCURRENCY})"
     )
-    map_tasks   = [_run_map_chunk(i, len(chunks), ct) for i, ct in enumerate(chunks)]
-    map_results = list(await asyncio.gather(*map_tasks))
+    map_tasks = [_run_map_chunk(i, len(chunks), ct) for i, ct in enumerate(chunks)]
+    raw_results = list(await asyncio.gather(*map_tasks))
+
+    map_results = []
+    for parsed, i_tok, o_tok in raw_results:
+        map_results.append(parsed)
+        total_in_tok  += i_tok
+        total_out_tok += o_tok
 
     valid_count = sum(1 for r in map_results if r.get("overview") or r.get("highlights"))
     logger.info(f"[generate_analysis] MAP complete — {len(map_results)} total, {valid_count} with content")
@@ -265,7 +279,7 @@ async def generate_analysis(merged_text: str) -> dict:
         result = map_results[0]
 
     else:
-        # ── HIGHLIGHTS: merge in Python ────────────────────────────────────
+        # ── HIGHLIGHTS merge ───────────────────────────────────────────────
         all_highlights = _merge_highlights(map_results)
 
         # ── SYNTHESIS ─────────────────────────────────────────────────────
@@ -276,9 +290,11 @@ async def generate_analysis(merged_text: str) -> dict:
             synth_messages = _build_synth_messages(
                 [r for r in map_results if r.get("overview") or r.get("summary")]
             )
-            raw_synth    = await _run_inference(synth_messages, "synthesis")
-            parsed_synth = extract_json(raw_synth)
+            raw_synth, s_in, s_out = await _run_inference(synth_messages, "synthesis")
+            total_in_tok  += s_in
+            total_out_tok += s_out
 
+            parsed_synth = extract_json(raw_synth)
             ov = parsed_synth.get("overview", "")
             sm = parsed_synth.get("summary",  "")
             synth_result["overview"] = (ov if isinstance(ov, str) else str(ov)).strip()
@@ -308,9 +324,10 @@ async def generate_analysis(merged_text: str) -> dict:
 
     logger.info(
         f"[generate_analysis] total={time.perf_counter()-t_pipeline:.2f}s "
+        f"tokens={total_in_tok}in/{total_out_tok}out "
         f"highlights={len(result.get('highlights', []))}"
     )
-    return result
+    return result, total_in_tok, total_out_tok
 
 
 # ---------------------------------------------------------------------------
@@ -325,40 +342,41 @@ async def run_llm(
         {"role": "system", "content": system_prompt},
         {"role": "user",   "content": f"Document:\n----------------\n{text}\n----------------"},
     ]
-    return await _run_inference(messages, "run_llm")
+    content, _, _ = await _run_inference(messages, "run_llm")
+    return content
 
 
 # ---------------------------------------------------------------------------
 # generate_analysis_stream — SSE streaming
 #
-# Yields (event_type, payload) tuples:
-#   ("chunk_start",    {"chunk": N, "total": N})
-#   ("chunk_done",     {"chunk": N, "total": N, "overview": str,
-#                       "new_highlights": [...], "all_highlights_so_far": [...]})
-#   ("synthesis_start", {})
-#   ("synthesis_done", {"overview": str, "summary": str})
-#   ("done",           {})
-#
-# All map chunks run in parallel via the shared module-level semaphore.
-# Results are yielded in chunk-index order so the client always sees
-# events in document sequence.
+# Yields (event_type, payload) tuples.
+# Final "done" event includes token totals:
+#   ("done", {"input_tokens": N, "output_tokens": N, "total_tokens": N})
 # ---------------------------------------------------------------------------
 async def generate_analysis_stream(merged_text: str):
     _EMPTY = {"overview": "", "summary": "", "highlights": []}
     if not merged_text or not merged_text.strip():
-        yield ("done", {})
+        yield ("done", {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
         return
 
-    t0     = time.perf_counter()
-    chunks = split_by_tokens(merged_text)
+    t0            = time.perf_counter()
+    chunks        = split_by_tokens(merged_text)
+    total_in_tok  = 0
+    total_out_tok = 0
     logger.info(
         f"[generate_analysis_stream] {len(chunks)} chunk(s) "
         f"(parallel, concurrency={_MAP_CONCURRENCY})"
     )
 
-    # ── MAP — all chunks in parallel ─────────────────────────────────────
+    # ── MAP ───────────────────────────────────────────────────────────────
     map_tasks   = [_run_map_chunk(i, len(chunks), ct) for i, ct in enumerate(chunks)]
-    map_results = list(await asyncio.gather(*map_tasks))
+    raw_results = list(await asyncio.gather(*map_tasks))
+
+    map_results = []
+    for parsed, i_tok, o_tok in raw_results:
+        map_results.append(parsed)
+        total_in_tok  += i_tok
+        total_out_tok += o_tok
 
     # ── Yield events in chunk-index order ────────────────────────────────
     all_highlights: list = []
@@ -408,7 +426,10 @@ async def generate_analysis_stream(merged_text: str):
             synth_messages = _build_synth_messages(
                 [r for r in map_results if r.get("overview") or r.get("summary")]
             )
-            raw_synth    = await _run_inference(synth_messages, "synthesis")
+            raw_synth, s_in, s_out = await _run_inference(synth_messages, "synthesis")
+            total_in_tok  += s_in
+            total_out_tok += s_out
+
             parsed_synth = extract_json(raw_synth)
             ov = parsed_synth.get("overview", "")
             sm = parsed_synth.get("summary",  "")
@@ -431,6 +452,11 @@ async def generate_analysis_stream(merged_text: str):
 
     logger.info(
         f"[stream] total={time.perf_counter()-t0:.2f}s "
+        f"tokens={total_in_tok}in/{total_out_tok}out "
         f"highlights={len(all_highlights)}"
     )
-    yield ("done", {})
+    yield ("done", {
+        "input_tokens":  total_in_tok,
+        "output_tokens": total_out_tok,
+        "total_tokens":  total_in_tok + total_out_tok,
+    })

@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from s_route import router
+from s_db import init_db, close_pool
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -42,13 +43,15 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Lifespan
+# Lifespan — DB pool open on startup, closed on shutdown
 # ---------------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up...")
+    await init_db()      # creates pdf_requests table if not exists, opens pool
     yield
+    await close_pool()   # gracefully closes all DB connections
     logger.info("Shutting down.")
 
 
