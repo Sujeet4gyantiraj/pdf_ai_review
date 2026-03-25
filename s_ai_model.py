@@ -25,17 +25,20 @@ if not OPENAI_API_KEY:
 _FIXED_TEMPERATURE_MODELS = {"gpt-5-nano", "gpt-4o-mini", "o1", "o1-mini", "o3-mini", "o3"}
 
 # Token chunking
-TOKEN_CHUNK_SIZE    = 50000
+# 120,000 fits comfortably within gpt-4o / gpt-4o-mini 128k context window
+# leaving ~8k tokens headroom for system prompt + output
+TOKEN_CHUNK_SIZE    = 120000
 TOKEN_CHUNK_OVERLAP = 500
+
+# Max output tokens per API call — prevents runaway verbose responses
+# 4096 is enough for a detailed summary + 20 highlights
+MAX_OUTPUT_TOKENS = 4096
 
 MAP_JSON_RETRY_ATTEMPTS = 2
 
-# ---------------------------------------------------------------------------
-# Module-level semaphore — controls max concurrent OpenAI API calls
-# across ALL requests hitting this server simultaneously.
-# Reduce to 2 if you hit 429 rate-limit errors.
-# ---------------------------------------------------------------------------
-_MAP_CONCURRENCY  = 3
+# Max concurrent OpenAI API calls across all workers
+# With 4 gunicorn workers this allows 4 × 3 = 12 concurrent calls
+_MAP_CONCURRENCY = 3
 _MAP_SEMAPHORE: asyncio.Semaphore | None = None
 
 
@@ -168,6 +171,7 @@ async def _run_inference(messages: list[dict], label: str = "") -> tuple[str, in
             "model":           MODEL_NAME,
             "messages":        messages,
             "response_format": {"type": "json_object"},
+            "max_tokens":      MAX_OUTPUT_TOKENS,
         }
         if MODEL_NAME not in _FIXED_TEMPERATURE_MODELS:
             api_kwargs["temperature"] = 0.0
