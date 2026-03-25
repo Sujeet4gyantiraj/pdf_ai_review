@@ -5,7 +5,7 @@ import warnings
 import numpy as np
 import fitz  # PyMuPDF
 import paddle
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeoutError
 
 from paddleocr import PaddleOCRVL
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Chunking config
 # ---------------------------------------------------------------------------
-CHUNK_SIZE    = 12000  # ~5640 tokens for dense legal text — safe under 7500 token limit
+CHUNK_SIZE    = 12000
 CHUNK_OVERLAP = 200
 
 # Pre-compiled regex patterns
@@ -34,8 +34,8 @@ _RE_SPACES    = re.compile(r" {2,}")
 # ---------------------------------------------------------------------------
 # Thresholds
 # ---------------------------------------------------------------------------
-NATIVE_TEXT_THRESHOLD = 0   # any native char -> use native; only 0 falls back to OCR
-OCR_RETRY_ATTEMPTS    = 2   # PaddleOCR-VL retries before inserting placeholder
+NATIVE_TEXT_THRESHOLD = 0
+OCR_RETRY_ATTEMPTS    = 2
 
 # Parallel workers for native extraction (fitz is thread-safe for reads)
 _NATIVE_EXTRACT_WORKERS = 4
@@ -44,12 +44,24 @@ _NATIVE_EXTRACT_WORKERS = 4
 _PDF_TYPE_SAMPLE_PAGES = 5
 
 # ---------------------------------------------------------------------------
+# OCR timeout — if PaddleOCR takes longer than this per page, abort and
+# insert a placeholder. Prevents a single bad page from freezing the server.
+# 60s is generous for a single page (normal is 7-10s).
+# ---------------------------------------------------------------------------
+OCR_PAGE_TIMEOUT = 60   # seconds per page
+
+# ---------------------------------------------------------------------------
 # PaddleOCR-VL — loaded once at import time
 # ---------------------------------------------------------------------------
 logger.info("[pdf_utils] Loading PaddleOCR-VL 1.5 ...")
 t0      = time.perf_counter()
 _ocr_vl = PaddleOCRVL("v1.5")
 logger.info(f"[pdf_utils] PaddleOCR-VL ready ({time.perf_counter() - t0:.2f}s)")
+
+# Dedicated single-thread executor for OCR — one GPU job at a time
+# Using a single thread guarantees no concurrent GPU calls which can
+# cause CUDA OOM errors or unpredictable slowdowns.
+_OCR_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ocr_worker")
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +133,6 @@ def _page_to_image(page: fitz.Page, dpi: int = 150) -> np.ndarray:
 # Blank-PDF detection
 # ---------------------------------------------------------------------------
 
-# Matches the placeholder strings inserted by load_pdf for unreadable/blank pages
 _PLACEHOLDER_RE = re.compile(
     r"^\[Page \d+: (blank page|content could not be extracted)\]$"
 )
@@ -129,24 +140,14 @@ _PLACEHOLDER_RE = re.compile(
 
 def all_pages_blank(pages: list[Document]) -> bool:
     """
-    Return True if every page in the list is a blank/placeholder page —
-    i.e. no real content was extracted from the PDF at all.
-
-    Blank pages are those whose content either:
-      - is empty after stripping, or
-      - matches the placeholder patterns inserted by load_pdf:
-          "[Page N: blank page]"
-          "[Page N: content could not be extracted]"
-
-    Called by s_main.py after load_pdf() to short-circuit inference
-    and return empty fields immediately without hitting the model.
+    Return True if every page in the list is a blank/placeholder page.
     """
     if not pages:
         return True
     for page in pages:
         text = page.page_content.strip()
         if text and not _PLACEHOLDER_RE.match(text):
-            return False  # at least one page with real content
+            return False
     return True
 
 
@@ -154,13 +155,8 @@ def all_pages_blank(pages: list[Document]) -> bool:
 # OCR result text extractor
 # ---------------------------------------------------------------------------
 
-# These keys appear in PaddleOCR-VL's internal result objects.
-# Only "rec_text" and "text" carry actual recognised text — all others
-# are metadata, numpy arrays, or model settings that must be ignored.
 _OCR_TEXT_KEYS = ("rec_text", "text")
 
-# Heuristic: if the extracted string contains these substrings it is almost
-# certainly PaddleOCR's internal debug repr rather than document text.
 _OCR_JUNK_MARKERS = (
     "numpy.ndarray",
     "layout_det",
@@ -178,24 +174,11 @@ def _extract_ocr_text(res) -> str:
     """
     Safely extract the human-readable OCR text from a single PaddleOCR-VL
     result item, ignoring internal metadata/debug fields.
-
-    PaddleOCR-VL result objects can be:
-      - A plain string                         → return as-is if non-empty
-      - A dict with "rec_text" or "text" key   → return that value
-      - An object with .rec_text / .text attr  → return that value
-      - An object with .res attr               → recurse into .res
-      - A dict  with "res"  key               → recurse into res value
-      - Anything else                          → return "" (never call str())
-
-    The critical rule: **never fall back to str(res)**.
-    str() on a PaddleOCR result object serialises the entire internal state
-    (numpy arrays, model config, layout boxes …) and that junk text gets
-    passed to the LLM which then happily "summarises" it.
+    Never falls back to str(res) to avoid serialising internal state.
     """
     if res is None:
         return ""
 
-    # Plain string — sanity-check it isn't a debug repr
     if isinstance(res, str):
         s = res.strip()
         if any(marker in s for marker in _OCR_JUNK_MARKERS):
@@ -203,7 +186,6 @@ def _extract_ocr_text(res) -> str:
             return ""
         return s
 
-    # Dict — look for known text keys first, then recurse into "res"
     if isinstance(res, dict):
         for key in _OCR_TEXT_KEYS:
             if key in res:
@@ -213,19 +195,29 @@ def _extract_ocr_text(res) -> str:
             return _extract_ocr_text(res["res"])
         return ""
 
-    # Object — check .rec_text / .text attributes first
     for key in _OCR_TEXT_KEYS:
         if hasattr(res, key):
             val = getattr(res, key)
             return val.strip() if isinstance(val, str) else ""
 
-    # Object with .res — recurse
     if hasattr(res, "res"):
         return _extract_ocr_text(res.res)
 
-    # Unknown type — log and discard rather than calling str()
     logger.debug(f"_extract_ocr_text: unrecognised result type {type(res).__name__!r} — skipping")
     return ""
+
+
+# ---------------------------------------------------------------------------
+# OCR worker — runs in _OCR_EXECUTOR thread
+# ---------------------------------------------------------------------------
+
+def _ocr_predict(img: np.ndarray) -> list:
+    """
+    Thin wrapper around _ocr_vl.predict so it can be submitted to the
+    executor and cancelled via future.cancel() / timeout.
+    Returns the raw result list from PaddleOCR-VL.
+    """
+    return _ocr_vl.predict(img)
 
 
 # ---------------------------------------------------------------------------
@@ -239,18 +231,15 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
     Extraction pipeline per page:
 
       Tier 1 — PyMuPDF native  (parallel, ~0.01s/page, zero GPU cost)
-                Any page with native text uses this path.
-        |
-        v  only if page has ZERO native text
-      Tier 2 — PaddleOCR-VL   (serial GPU, ~1-3s/page, with retry)
-                Handles scanned pages, images, complex layouts.
-        |
-        v  only if ALL OCR attempts fail
+      Tier 2 — PaddleOCR-VL   (serial GPU, ~7-10s/page, with timeout + retry)
       Tier 3 — Placeholder     ("[Page N: content could not be extracted]")
-                Page is still included so page count stays accurate.
+
+    OCR timeout: each page is given OCR_PAGE_TIMEOUT seconds (default 60s).
+    If PaddleOCR hangs (e.g. corrupted image), the page gets a placeholder
+    after the timeout rather than blocking the server for minutes.
 
     PDF type detection:
-      'native'     -> Pass 1 (parallel native) only
+      'native'     -> Pass 1 only
       'image_only' -> Pass 1 skipped, all pages go to PaddleOCR-VL
       'mixed'      -> Pass 1 for text pages, PaddleOCR-VL for image pages
 
@@ -276,11 +265,10 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
         f"({'all' if pages_to_process == total_pages else f'first {pages_to_process}'})"
     )
 
-    # Detect PDF type upfront
     pdf_type   = _detect_pdf_type(doc, pages_to_process)
     fitz_pages = [doc[i] for i in range(pages_to_process)]
 
-    # ── Pass 1: parallel native extraction (skipped for image_only) ───────
+    # ── Pass 1: parallel native extraction ───────────────────────────────
     native_results: dict[int, str | None] = {}
 
     if pdf_type == "image_only":
@@ -324,10 +312,11 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
 
     if paddle_needed:
         logger.info(
-            f"[pdf_utils] Pass 2 -- PaddleOCR-VL (GPU) for {len(paddle_needed)} page(s)"
+            f"[pdf_utils] Pass 2 -- PaddleOCR-VL (GPU) for {len(paddle_needed)} page(s) "
+            f"(timeout={OCR_PAGE_TIMEOUT}s/page)"
         )
 
-    # ── Pass 2: PaddleOCR-VL for all image pages ──────────────────────────
+    # ── Pass 2: pre-render images in parallel ─────────────────────────────
     pre_rendered: dict[int, np.ndarray] = {}
 
     if paddle_needed:
@@ -354,13 +343,13 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
             f"{len(pre_rendered)}/{len(paddle_needed)} images ready"
         )
 
+    # ── Pass 2: OCR with per-page timeout ─────────────────────────────────
     paddle_results: dict[int, str] = {}
 
     for idx in paddle_needed:
         fitz_page = fitz_pages[idx]
         page_num  = idx + 1
         pre_img   = pre_rendered.get(idx)
-        last_exc  = None
 
         for attempt in range(1, OCR_RETRY_ATTEMPTS + 1):
             if attempt == 1 and pre_img is not None:
@@ -370,9 +359,11 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
                 dpi = 150 + (attempt - 1) * 50
                 img = _page_to_image(fitz_page, dpi=dpi)
 
+            t_ocr = time.perf_counter()
             try:
-                t_ocr   = time.perf_counter()
-                results = _ocr_vl.predict(img)
+                # Submit OCR to dedicated single-thread executor
+                future  = _OCR_EXECUTOR.submit(_ocr_predict, img)
+                results = future.result(timeout=OCR_PAGE_TIMEOUT)
                 elapsed = time.perf_counter() - t_ocr
 
                 page_parts = []
@@ -387,8 +378,6 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
 
                 text = clean_text("\n".join(page_parts))
 
-                # If OCR returned nothing meaningful, treat as blank page rather
-                # than storing an empty string that could confuse downstream logic.
                 if not text:
                     logger.info(
                         f"[pdf_utils] Page {page_num}: PaddleOCR-VL returned no text "
@@ -401,18 +390,40 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
                         f"(attempt {attempt}, dpi={dpi}, {len(page_parts)} block(s), {elapsed:.2f}s)"
                     )
                     paddle_results[idx] = text
-                break
+                break   # success — move to next page
+
+            except FuturesTimeoutError:
+                elapsed = time.perf_counter() - t_ocr
+                logger.error(
+                    f"[pdf_utils] Page {page_num}: PaddleOCR-VL TIMEOUT "
+                    f"(attempt {attempt}, {elapsed:.1f}s > {OCR_PAGE_TIMEOUT}s limit) "
+                    + ("— retrying at higher DPI" if attempt < OCR_RETRY_ATTEMPTS else "— giving up")
+                )
+                # Cancel the hung future so it doesn't hold the executor slot forever
+                future.cancel()
+                if paddle.device.is_compiled_with_cuda():
+                    paddle.device.cuda.empty_cache()
+                # Don't break — retry loop will try again at higher DPI
 
             except Exception as e:
-                last_exc = e
+                elapsed = time.perf_counter() - t_ocr
                 logger.warning(
-                    f"[pdf_utils] Page {page_num}: PaddleOCR-VL attempt {attempt} failed ({e})"
+                    f"[pdf_utils] Page {page_num}: PaddleOCR-VL attempt {attempt} failed "
+                    f"({elapsed:.2f}s, {e})"
                     + (" -- retrying" if attempt < OCR_RETRY_ATTEMPTS else " -- exhausted")
                 )
                 if paddle.device.is_compiled_with_cuda():
                     paddle.device.cuda.empty_cache()
+
         else:
-            logger.error(f"[pdf_utils] Page {page_num}: all OCR attempts failed -- placeholder")
+            # All attempts exhausted (either errors or timeouts)
+            logger.error(
+                f"[pdf_utils] Page {page_num}: all OCR attempts failed/timed out — placeholder"
+            )
+            paddle_results[idx] = f"[Page {page_num}: content could not be extracted]"
+
+        # Ensure a result exists even if the loop fell through unexpectedly
+        if idx not in paddle_results:
             paddle_results[idx] = f"[Page {page_num}: content could not be extracted]"
 
     # ── Assemble results in page order ────────────────────────────────────
@@ -429,7 +440,7 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
             logger.debug(f"[pdf_utils] Page {page_num}: native ({len(text)} chars)")
 
         elif idx in paddle_needed:
-            text = paddle_results[idx]
+            text = paddle_results.get(idx, f"[Page {page_num}: content could not be extracted]")
             if text.startswith("[Page "):
                 placeholder_count += 1
             else:
