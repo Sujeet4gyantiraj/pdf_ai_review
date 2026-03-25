@@ -352,13 +352,15 @@ async def analyze_pdf_stream(
                         "total":   payload["total"],
                     })
 
-                elif event_type == "chunk_done":
-                    if not overview_sent and payload.get("overview"):
-                        if analysis_type in (0, 1):
-                            yield _sse("overview", {"text": payload["overview"]})
-                        final_overview = payload["overview"]
-                        overview_sent  = True
+                elif event_type == "token":
+                    # Live token delta — forward immediately so the client
+                    # can render the LLM output as it is being generated.
+                    yield _sse("token", {
+                        "chunk": payload["chunk"],
+                        "delta": payload["delta"],
+                    })
 
+                elif event_type == "chunk_done":
                     if analysis_type in (0, 3):
                         for h in payload.get("new_highlights", []):
                             yield _sse("highlight", {"text": h, "index": highlight_index})
@@ -378,10 +380,12 @@ async def analyze_pdf_stream(
                     })
 
                 elif event_type == "synthesis_done":
+                    # Fired for both single- and multi-chunk paths
                     final_overview = payload.get("overview", final_overview)
                     final_summary  = payload.get("summary", "")
                     if analysis_type in (0, 1):
                         yield _sse("overview", {"text": final_overview})
+                        overview_sent = True
                     if analysis_type in (0, 2):
                         yield _sse("summary",  {"text": final_summary})
 
