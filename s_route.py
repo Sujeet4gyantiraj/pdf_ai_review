@@ -4,13 +4,13 @@ import os
 import io
 import uuid
 import json
-import re
 import time
 import asyncio
 import logging
 
 from s_pdf_utils import load_pdf, get_page_count, all_pages_blank
 from s_ai_model import generate_analysis, generate_analysis_stream
+from s_json_utils import extract_json
 from t_key_clause_extraction import classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
 from t_risk_detection import analyze_document_risks
 
@@ -23,240 +23,6 @@ MAX_PDF_PAGES     = None
 _BLANK_PDF_RESULT = {"overview": "", "summary": "", "highlights": []}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-
-# ---------------------------------------------------------------------------
-# JSON extraction helpers
-# ---------------------------------------------------------------------------
-
-def _fix_json_string(raw: str) -> str:
-    raw = raw.replace("```json", "").replace("```", "").strip()
-    raw = raw.replace("\r\n", "\n").replace("\r", "\n")
-    raw = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', raw)
-    raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', raw)
-    return raw
-
-
-def _extract_field_by_regex(text: str, field: str) -> str:
-    pattern = rf'"{field}"\s*:\s*"(.*?)"(?=\s*[,}}])'
-    match = re.search(pattern, text, re.DOTALL)
-    return match.group(1).strip() if match else ""
-
-
-def _extract_highlights_by_regex(text: str) -> list:
-    match = re.search(r'"highlights"\s*:\s*\[(.*?)\]', text, re.DOTALL)
-    if not match:
-        match_open = re.search(r'"highlights"\s*:\s*\[(.*)', text, re.DOTALL)
-        if not match_open:
-            return []
-        inner = match_open.group(1)
-    else:
-        inner = match.group(1)
-    items = re.findall(r'"((?:[^"\\]|\\.)*)"', inner, re.DOTALL)
-    return [i.strip() for i in items if i.strip()]
-
-
-def _postprocess_highlights(data: dict) -> dict:
-    if "highlights" in data and isinstance(data["highlights"], list):
-        cleaned = []
-        for item in data["highlights"]:
-            if isinstance(item, dict):
-                text = ""
-                for key in ("fact", "highlight", "text", "value", "item", "point"):
-                    if isinstance(item.get(key), str):
-                        text = item[key]
-                        break
-                if not text:
-                    text = next((v for v in item.values() if isinstance(v, str)), "")
-                if text:
-                    cleaned.append(text.replace('"', '').strip())
-                continue
-            if not isinstance(item, str):
-                continue
-            parts = item.split('", "') if '", "' in item else [item]
-            for p in parts:
-                cleaned.append(p.replace('"', '').strip())
-        data["highlights"] = [h for h in cleaned if h]
-    return data
-
-
-def _flatten_field(value) -> str:
-    if value is None:
-        return ""
-    if isinstance(value, str):
-        return value.strip()
-    if isinstance(value, (int, float)):
-        return str(value)
-    if isinstance(value, list):
-        parts = [_flatten_field(v) for v in value]
-        return ". ".join(p for p in parts if p)
-    if isinstance(value, dict):
-        parts = []
-        for k, v in value.items():
-            flat = _flatten_field(v)
-            if flat:
-                label = str(k).replace("_", " ").capitalize()
-                parts.append(f"{label}: {flat}")
-        return ". ".join(parts)
-    return str(value).strip()
-
-
-def _flatten_highlights(value) -> list:
-    if not value:
-        return []
-    if isinstance(value, str):
-        return [value.strip()] if value.strip() else []
-    if isinstance(value, dict):
-        items = []
-        for k, v in value.items():
-            flat = _flatten_field(v)
-            if flat:
-                label = str(k).replace("_", " ").capitalize()
-                items.append(f"{label}: {flat}")
-        return items
-    if isinstance(value, list):
-        result = []
-        for item in value:
-            if isinstance(item, str) and item.strip():
-                result.append(item.strip())
-            elif isinstance(item, dict):
-                flat = _flatten_field(item)
-                if flat:
-                    result.append(flat)
-            elif item is not None:
-                s = str(item).strip()
-                if s:
-                    result.append(s)
-        return result
-    return []
-
-
-def _normalize_parsed(data, label: str = "") -> dict:
-    empty = {"overview": "", "summary": "", "highlights": []}
-
-    if isinstance(data, list):
-        if not data:
-            return empty
-        if isinstance(data[0], dict):
-            merged: dict = {"overview": "", "summary": "", "highlights": []}
-            for item in data:
-                if not isinstance(item, dict):
-                    continue
-                if not merged["overview"] and item.get("overview"):
-                    merged["overview"] = item["overview"]
-                if not merged["summary"] and item.get("summary"):
-                    merged["summary"] = item["summary"]
-                merged["highlights"].extend(item.get("highlights") or [])
-            logger.warning(f"extract_json {label}: got list of dicts — merged {len(data)} item(s)")
-            data = merged
-        elif isinstance(data[0], str):
-            return {"overview": "", "summary": "", "highlights": [s for s in data if s]}
-        else:
-            return empty
-
-    if not isinstance(data, dict):
-        logger.error(f"extract_json {label}: unexpected type {type(data).__name__}")
-        return empty
-
-    overview = data.get("overview", "")
-    if not isinstance(overview, str):
-        logger.warning(f"extract_json {label}: overview is {type(overview).__name__} — flattening")
-        overview = _flatten_field(overview)
-
-    summary = data.get("summary", "")
-    if not isinstance(summary, str):
-        logger.warning(f"extract_json {label}: summary is {type(summary).__name__} — flattening")
-        summary = _flatten_field(summary)
-
-    raw_highlights = data.get("highlights", [])
-    if not isinstance(raw_highlights, list) or (
-        raw_highlights and not isinstance(raw_highlights[0], str)
-    ):
-        logger.warning(f"extract_json {label}: highlights has non-string items — flattening")
-        highlights = _flatten_highlights(raw_highlights)
-    else:
-        highlights = raw_highlights
-
-    return {
-        "overview":   overview.strip(),
-        "summary":    summary.strip(),
-        "highlights": highlights,
-    }
-
-
-def _recover_truncated_json(text: str) -> dict | None:
-    result = {"overview": "", "summary": "", "highlights": []}
-    ov_match = re.search(r'"overview"\s*:\s*"((?:[^"\\]|\\.)*)"', text, re.DOTALL)
-    if ov_match:
-        result["overview"] = ov_match.group(1).strip()
-    sm_match = re.search(r'"summary"\s*:\s*"((?:[^"\\]|\\.)*)"', text, re.DOTALL)
-    if sm_match:
-        result["summary"] = sm_match.group(1).strip()
-    result["highlights"] = _extract_highlights_by_regex(text)
-    if result["overview"] or result["summary"] or result["highlights"]:
-        logger.info(
-            f"_recover_truncated_json: recovered "
-            f"overview={'yes' if result['overview'] else 'no'} "
-            f"summary={'yes' if result['summary'] else 'no'} "
-            f"highlights={len(result['highlights'])}"
-        )
-        return result
-    return None
-
-
-def extract_json(text: str) -> dict:
-    """
-    Robustly extract JSON from AI output.
-    Strategy 1 — direct parse after cleaning
-    Strategy 2 — isolate { } block + quote-escape repair
-    Strategy 3 — truncation recovery
-    Strategy 4 — per-field regex (last resort)
-    """
-    empty = {"overview": "", "summary": "", "highlights": []}
-    if not text or not text.strip():
-        logger.warning("extract_json: received empty text")
-        return empty
-
-    cleaned = _fix_json_string(text)
-
-    try:
-        data = json.loads(cleaned)
-        logger.debug("extract_json: strategy 1 succeeded")
-        return _postprocess_highlights(_normalize_parsed(data, "strategy-1"))
-    except json.JSONDecodeError as e:
-        logger.debug(f"extract_json: strategy 1 failed — {e}")
-
-    brace_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
-    if brace_match:
-        candidate = brace_match.group()
-        try:
-            data = json.loads(candidate)
-            return _postprocess_highlights(_normalize_parsed(data, "strategy-2"))
-        except json.JSONDecodeError as e:
-            logger.warning(f"extract_json: strategy 2 failed ({e}), trying repair")
-            repaired = re.sub(r'(?<=[^\\])"(?=[^,\]}\n:}{\[])', r'\\"', candidate)
-            try:
-                data = json.loads(repaired)
-                return _postprocess_highlights(_normalize_parsed(data, "strategy-2-repair"))
-            except json.JSONDecodeError as e2:
-                logger.warning(f"extract_json: strategy 2 repair failed — {e2}")
-    else:
-        logger.warning("extract_json: no brace block found in output")
-
-    recovered = _recover_truncated_json(cleaned)
-    if recovered:
-        logger.info("extract_json: strategy 3 (truncation recovery) succeeded")
-        return _postprocess_highlights(recovered)
-
-    logger.error("extract_json: all strategies failed — falling back to regex")
-    overview   = _extract_field_by_regex(cleaned, "overview")
-    summary    = _extract_field_by_regex(cleaned, "summary")
-    highlights = _extract_highlights_by_regex(cleaned)
-    if overview or summary or highlights:
-        return {"overview": overview, "summary": summary, "highlights": highlights}
-
-    logger.error("extract_json: all strategies exhausted — returning empty")
-    return empty
 
 
 # ---------------------------------------------------------------------------
@@ -365,19 +131,16 @@ async def analyze_pdf(
 @router.post("/key-clause-extraction")
 async def key_clause_extraction(file: UploadFile = File(...)):
 
-    # Step 1: text extraction
     text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
         file,
         endpoint="/key-clause-extraction"
     )
 
     try:
-        # Step 2: Classification
         doc_type = await classify_document(text)
         doc_type = doc_type.lower().strip()
         logger.info(f"[{request_id}] Step 3 — classified as: '{doc_type}'")
 
-        # Step 3: Route
         handler = DOCUMENT_HANDLERS.get(doc_type)
 
         if handler:
@@ -388,7 +151,6 @@ async def key_clause_extraction(file: UploadFile = File(...)):
             )
             return result
 
-        # Step 4: Fallback
         logger.warning(f"[{request_id}] No handler found for doc_type='{doc_type}'")
         return {
             "status": "unsupported",
@@ -402,7 +164,6 @@ async def key_clause_extraction(file: UploadFile = File(...)):
         logger.exception(f"[{request_id}] Unhandled error during processing: {e}")
         raise HTTPException(status_code=500, detail="Internal server error during key clause extraction.")
     finally:
-        # Step 5: Cleanup
         if os.path.exists(file_path):
             os.remove(file_path)
             logger.debug(f"[{request_id}] Temp file deleted: '{file_path}'")
@@ -414,10 +175,7 @@ async def key_clause_extraction(file: UploadFile = File(...)):
 
 @router.post("/detect-risks")
 async def detect_risks(file: UploadFile = File(...)):
-    """
-    AI Risk Detection Endpoint (Phase 1.2)
-    Reuses the extraction logic from Phase 1.1
-    """
+    """AI Risk Detection Endpoint."""
     text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
         file,
         endpoint="/detect-risks"
@@ -437,10 +195,10 @@ async def detect_risks(file: UploadFile = File(...)):
 
 
 # ---------------------------------------------------------------------------
-# POST /analyze/stream — Server-Sent Events streaming response
+# POST /analyze/stream — Server-Sent Events
 #
 # Event sequence:
-#   status    {"step":"saving"|"extracting"|"inference"|"chunk_done"|"synthesis"|"queued"}
+#   status    {"step":"saving"|"extracting"|"inference"|"chunk_done"|"synthesis"}
 #   overview  {"text":"..."}        — after chunk 1, updated after synthesis
 #   summary   {"text":"..."}        — after synthesis
 #   highlight {"text":"...","index":N} — one per highlight as each chunk finishes
@@ -458,8 +216,6 @@ async def analyze_pdf_stream(
 ):
     """
     Analyse a PDF and stream results in real time using Server-Sent Events.
-    Highlights stream one-by-one as each chunk finishes (~8s intervals).
-    Overview arrives after chunk 1. Summary arrives after synthesis.
     """
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
@@ -481,6 +237,8 @@ async def analyze_pdf_stream(
         pages_to_read    = 0
         total_pages      = 0
         final_highlights = []
+        final_overview   = ""
+        final_summary    = ""
 
         try:
             yield _sse("status", {"step": "saving", "message": "Saving uploaded file..."})
@@ -520,8 +278,6 @@ async def analyze_pdf_stream(
 
             overview_sent   = False
             highlight_index = 0
-            final_overview  = ""
-            final_summary   = ""
 
             async for event_type, payload in generate_analysis_stream(merged_text):
 
@@ -599,21 +355,14 @@ async def analyze_pdf_stream(
 
 
 # ---------------------------------------------------------------------------
-# POST /convert/pdf-to-docx — PDF to DOCX conversion
+# POST /convert/pdf-to-docx
 # ---------------------------------------------------------------------------
 
 @router.post("/convert/pdf-to-docx")
 async def convert_pdf_to_docx(file: UploadFile = File(...)):
     """
     Convert an uploaded PDF to a downloadable DOCX file.
-
-    Handles all PDF types:
-      - Native text PDF → PyMuPDF extraction → DOCX
-      - Scanned/image PDF → PaddleOCR-VL → DOCX
-      - Mixed PDF → best available per page → DOCX
-
-    Returns the .docx file as a binary download.
-    No AI inference — fast conversion without GPU queue wait.
+    Handles native, scanned, and mixed PDFs. No AI inference.
     """
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
@@ -642,12 +391,10 @@ async def convert_pdf_to_docx(file: UploadFile = File(...)):
 
         def _do_convert():
             from s_pdf_to_docx import _extract_blocks_ocr, _build_docx
-
             all_blocks = []
             for page in pages:
                 blocks = _extract_blocks_ocr(page.page_content)
                 all_blocks.append(blocks)
-
             return _build_docx(all_blocks, file.filename)
 
         loop = asyncio.get_running_loop()
