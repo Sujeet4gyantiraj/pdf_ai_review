@@ -4100,3 +4100,15 @@ ModuleNotFoundError: No module named 'llm_model'
 [2026-03-26 06:32:56 +0000] [1454237] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
 [2026-03-26 06:32:56 +0000] [1454239] [INFO] Booting worker with pid: 1454239
 [2026-03-26 06:32:56 +0000] [1454244] [INFO] Booting worker with pid: 1454244
+[2026-03-26 06:50:42 +0000] [1467696] [INFO] Starting gunicorn 25.1.0
+[2026-03-26 06:50:42 +0000] [1467696] [INFO] Listening at: http://0.0.0.0:8001 (1467696)
+[2026-03-26 06:50:42 +0000] [1467696] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-26 06:50:42 +0000] [1467696] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-26 06:50:42 +0000] [1467699] [INFO] Booting worker with pid: 1467699
+[2026-03-26 06:50:42 +0000] [1467700] [INFO] Booting worker with pid: 1467700
+[2026-03-26 06:51:15 +0000] [1467700] [INFO] Started server process [1467700]
+[2026-03-26 06:51:15 +0000] [1467700] [INFO] Waiting for application startup.
+[2026-03-26 06:51:15 +0000] [1467700] [INFO] Application startup complete.
+[2026-03-26 06:51:58 +0000] [1467699] [INFO] Started server process [1467699]
+[2026-03-26 06:51:58 +0000] [1467699] [INFO] Waiting for application startup.
+[2026-03-26 06:51:58 +0000] [1467699] [INFO] Application startup complete.
