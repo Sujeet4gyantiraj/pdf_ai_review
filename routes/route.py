@@ -9,12 +9,13 @@ import asyncio
 import logging
 from functools import partial
 
-from s_pdf_utils import load_pdf, get_page_count, all_pages_blank
-from s_ai_model import generate_analysis, generate_analysis_stream
-from s_json_utils import extract_json
-from s_db import log_request
-from t_key_clause_extraction import classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
-from t_risk_detection import analyze_document_risks
+from utils.pdf_utils import load_pdf, get_page_count, all_pages_blank
+from llm_model.ai_model import generate_analysis, generate_analysis_stream
+from utils.json_utils import extract_json
+from db_files.db import log_request
+from feature_modules.t_key_clause_extraction import classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
+from feature_modules.t_risk_detection import analyze_document_risks
+from utils.pdf_to_docx import _extract_blocks_ocr, _build_docx
 
 logger = logging.getLogger(__name__)
 
@@ -483,7 +484,7 @@ async def convert_pdf_to_docx(file: UploadFile = File(...)):
         logger.info(f"[{request_id}] extracted {len(pages)} page(s)")
 
         def _do_convert():
-            from s_pdf_to_docx import _extract_blocks_ocr, _build_docx
+            
             all_blocks = []
             for page in pages:
                 blocks = _extract_blocks_ocr(page.page_content)

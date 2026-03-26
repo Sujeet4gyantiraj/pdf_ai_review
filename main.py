@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from s_route import router
-from s_db import init_db, close_pool
+from routes.route import router
+from db_files.db import init_db, close_pool
 
 # ---------------------------------------------------------------------------
 # Logging

@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-from s_json_utils import extract_json
+from utils.json_utils import extract_json
 
 
 logger = logging.getLogger(__name__)

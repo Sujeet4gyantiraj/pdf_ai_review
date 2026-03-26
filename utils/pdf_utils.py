@@ -1,5 +1,4 @@
 import re
-import os
 import time
 import logging
 import warnings
@@ -47,46 +46,21 @@ _PDF_TYPE_SAMPLE_PAGES = 5
 # ---------------------------------------------------------------------------
 # OCR timeout — if PaddleOCR takes longer than this per page, abort and
 # insert a placeholder. Prevents a single bad page from freezing the server.
+# 60s is generous for a single page (normal is 7-10s).
 # ---------------------------------------------------------------------------
-OCR_PAGE_TIMEOUT = 30   # seconds per page
+OCR_PAGE_TIMEOUT = 60   # seconds per page
 
 # ---------------------------------------------------------------------------
-# Stagger worker startup to prevent simultaneous GPU memory allocation.
-#
-# When gunicorn spawns multiple workers at the same time, each tries to load
-# PaddleOCR-VL into GPU memory simultaneously. This causes:
-#   - PyTorch/Paddle C++ dispatcher conflicts (deregisterImpl_ crash)
-#   - CUDA out-of-memory spikes
-#   - "No module named utils" errors from race conditions
-#
-# Solution: each worker waits (worker_slot * STAGGER_SECONDS) before loading.
-# Worker slots are assigned by hashing the PID into 0..MAX_WORKERS-1.
-# With 4 workers and 15s stagger: loads at 0s, 15s, 30s, 45s.
+# PaddleOCR-VL — loaded once at import time
 # ---------------------------------------------------------------------------
-_MAX_WORKERS     = 4    # must match --workers in gunicorn service file
-_STAGGER_SECONDS = 15   # seconds between each worker's model load
-
-_worker_slot = os.getpid() % _MAX_WORKERS
-_stagger_delay = _worker_slot * _STAGGER_SECONDS
-
-if _stagger_delay > 0:
-    logger.info(
-        f"[pdf_utils] Worker PID={os.getpid()} slot={_worker_slot} "
-        f"— waiting {_stagger_delay}s before loading PaddleOCR-VL "
-        f"(prevents simultaneous GPU init crash)"
-    )
-    time.sleep(_stagger_delay)
-
-# ---------------------------------------------------------------------------
-# PaddleOCR-VL — loaded once per worker process at import time
-# ---------------------------------------------------------------------------
-logger.info(f"[pdf_utils] Loading PaddleOCR-VL 1.5 (PID={os.getpid()}) ...")
+logger.info("[pdf_utils] Loading PaddleOCR-VL 1.5 ...")
 t0      = time.perf_counter()
 _ocr_vl = PaddleOCRVL("v1.5")
-logger.info(f"[pdf_utils] PaddleOCR-VL ready (PID={os.getpid()}, {time.perf_counter() - t0:.2f}s)")
+logger.info(f"[pdf_utils] PaddleOCR-VL ready ({time.perf_counter() - t0:.2f}s)")
 
-# Dedicated single-thread executor for OCR — one GPU job at a time per worker.
-# Using a single thread guarantees no concurrent GPU calls within this worker.
+# Dedicated single-thread executor for OCR — one GPU job at a time
+# Using a single thread guarantees no concurrent GPU calls which can
+# cause CUDA OOM errors or unpredictable slowdowns.
 _OCR_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ocr_worker")
 
 
@@ -260,7 +234,7 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
       Tier 2 — PaddleOCR-VL   (serial GPU, ~7-10s/page, with timeout + retry)
       Tier 3 — Placeholder     ("[Page N: content could not be extracted]")
 
-    OCR timeout: each page is given OCR_PAGE_TIMEOUT seconds (default 30s).
+    OCR timeout: each page is given OCR_PAGE_TIMEOUT seconds (default 60s).
     If PaddleOCR hangs (e.g. corrupted image), the page gets a placeholder
     after the timeout rather than blocking the server for minutes.
 
@@ -387,6 +361,7 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
 
             t_ocr = time.perf_counter()
             try:
+                # Submit OCR to dedicated single-thread executor
                 future  = _OCR_EXECUTOR.submit(_ocr_predict, img)
                 results = future.result(timeout=OCR_PAGE_TIMEOUT)
                 elapsed = time.perf_counter() - t_ocr
@@ -415,7 +390,7 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
                         f"(attempt {attempt}, dpi={dpi}, {len(page_parts)} block(s), {elapsed:.2f}s)"
                     )
                     paddle_results[idx] = text
-                break
+                break   # success — move to next page
 
             except FuturesTimeoutError:
                 elapsed = time.perf_counter() - t_ocr
@@ -424,9 +399,11 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
                     f"(attempt {attempt}, {elapsed:.1f}s > {OCR_PAGE_TIMEOUT}s limit) "
                     + ("— retrying at higher DPI" if attempt < OCR_RETRY_ATTEMPTS else "— giving up")
                 )
+                # Cancel the hung future so it doesn't hold the executor slot forever
                 future.cancel()
                 if paddle.device.is_compiled_with_cuda():
                     paddle.device.cuda.empty_cache()
+                # Don't break — retry loop will try again at higher DPI
 
             except Exception as e:
                 elapsed = time.perf_counter() - t_ocr
@@ -439,11 +416,13 @@ def load_pdf(file_path: str, max_pages: int | None = None) -> list[Document]:
                     paddle.device.cuda.empty_cache()
 
         else:
+            # All attempts exhausted (either errors or timeouts)
             logger.error(
                 f"[pdf_utils] Page {page_num}: all OCR attempts failed/timed out — placeholder"
             )
             paddle_results[idx] = f"[Page {page_num}: content could not be extracted]"
 
+        # Ensure a result exists even if the loop fell through unexpectedly
         if idx not in paddle_results:
             paddle_results[idx] = f"[Page {page_num}: content could not be extracted]"
 
