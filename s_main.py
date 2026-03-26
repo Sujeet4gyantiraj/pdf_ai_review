@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from s_route import router
-from t_document_route import router as document_router
+#from t_document_route import router as document_router
 from s_db import init_db, close_pool
 
 # ---------------------------------------------------------------------------
@@ -83,4 +83,4 @@ app = FastAPI(
 )
 
 app.include_router(router)
-app.include_router(document_router)
+#app.include_router(document_router)
