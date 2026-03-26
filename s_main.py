@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from s_route import router
+from t_document_route import router as document_router
 from s_db import init_db, close_pool
 
 # ---------------------------------------------------------------------------
@@ -43,15 +44,15 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Lifespan — DB pool open on startup, closed on shutdown
+# Lifespan
 # ---------------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up...")
-    await init_db()      # creates pdf_requests table if not exists, opens pool
+    await init_db()
     yield
-    await close_pool()   # gracefully closes all DB connections
+    await close_pool()
     logger.info("Shutting down.")
 
 
@@ -59,5 +60,27 @@ async def lifespan(app: FastAPI):
 # App
 # ---------------------------------------------------------------------------
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="PDF AI Review API",
+    description="""
+## PDF AI Review + Legal Document Generation API
+
+### PDF Analysis
+- **POST /analyze** — Analyse a PDF, return overview, summary, highlights
+- **POST /analyze/stream** — Same but streams results via SSE
+- **POST /key-clause-extraction** — Extract key clauses by document type
+- **POST /detect-risks** — Detect legal/financial risks in a document
+- **POST /convert/pdf-to-docx** — Convert PDF to DOCX
+
+### Document Generation
+- **GET /documents/types** — List all supported document types
+- **POST /documents/extract-fields** — Extract fields from description (no generation)
+- **POST /documents/generate** — Generate a complete legal document
+- **POST /documents/generate/stream** — Generate with real-time token streaming
+""",
+    version="2.0.0",
+    lifespan=lifespan,
+)
+
 app.include_router(router)
+app.include_router(document_router)
