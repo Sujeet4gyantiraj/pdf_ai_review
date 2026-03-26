@@ -364,76 +364,131 @@ Rules:
 
 def _get_missing_fields(document_type: str, fields: dict) -> list[str]:
     return [
-        f for f in _SCHEMAS[document_type]["required"]
-        if not fields.get(f) or fields.get(f) == "Not Specified"
+        field for field in _SCHEMAS[document_type]["required"]
+        if not fields.get(field) or fields.get(field) in ["Not Specified", "_____________"]
     ]
-
 
 # ---------------------------------------------------------------------------
 # Step 3: Generate full document text
 # ---------------------------------------------------------------------------
+async def _generate_document_text(document_type, fields, user_query):
 
-async def _generate_document_text(
-    document_type: str,
-    fields: dict[str, Any],
-    user_query: str,
-) -> tuple[str, int, int]:
-    """
-    Returns (document_text, input_tokens, output_tokens).
-    """
-    doc_name     = SUPPORTED_DOCUMENT_TYPES[document_type]
+    doc_name = SUPPORTED_DOCUMENT_TYPES[document_type]
     instructions = _DOCUMENT_INSTRUCTIONS[document_type]
 
-    field_lines = "\n".join(
-        f"  {k.replace('_', ' ').title()}: {v}"
-        for k, v in fields.items()
-        if v and v != "Not Specified"
+    # ------------------------------------------------------------
+    # Step 1: Convert missing values → blank placeholders
+    # ------------------------------------------------------------
+    def to_blank(value):
+        if not value or value == "Not Specified":
+            return "_____________"   # visible blank for PDF filling
+        return value
+
+    processed_fields = {
+        key: to_blank(value)
+        for key, value in fields.items()
+    }
+
+    field_text = "\n".join(
+        f"{k}: {v}" for k, v in processed_fields.items()
     )
 
-    system = f"""You are a senior legal document drafter with 20+ years of experience.
-Generate a complete, professional, legally-sound {doc_name}.
+    # ------------------------------------------------------------
+    # Step 2: Call LLM with strict instructions
+    # ------------------------------------------------------------
+    for attempt in range(2):
+
+        system_prompt = f"""
+You are a senior legal expert.
+
+Generate a complete {doc_name}.
 
 {instructions}
 
-Formatting rules:
-- Section headings in ALL CAPS followed by a colon (e.g. "1. PARTIES:")
-- Numbered sub-clauses within each section (1.1, 1.2, etc.)
-- Formal legal language throughout
-- Be specific — use the actual names, dates, and amounts provided
-- If a value is "Not Specified" use a reasonable legal standard/placeholder like [TO BE AGREED]
-- End with a SIGNATURES section with lines for each party
-- Do NOT wrap output in markdown — plain text only"""
+STRICT RULES:
+- Use formal legal language
+- NEVER skip any section
+- ALWAYS generate FULL document
+- If any value is "_____________", KEEP it as blank (do NOT replace it)
+- Do NOT invent missing data
+- Use proper legal clauses and numbering
+- Output must be plain text only (NO markdown)
+"""
 
-    user = f"""Generate a complete {doc_name} using these details:
+        user_prompt = f"""
+Fields:
+{field_text}
 
-{field_lines}
+User description:
+{user_query}
 
-Additional context:
-\"\"\"{user_query}\"\"\"
+Generate the FULL legal document now.
+"""
 
-Write the full document now."""
+        client = _get_client()
+        kwargs = _get_model_kwargs(max_tokens=2500)
 
-    client = _get_client()
-    kwargs = _get_model_kwargs(max_tokens=4096)
-    kwargs["messages"] = [
-        {"role": "system", "content": system},
-        {"role": "user",   "content": user},
-    ]
-    # Plain text output — do NOT use json_object format for document generation
+        kwargs["messages"] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
 
-    response      = await client.chat.completions.create(**kwargs)
-    document_text = response.choices[0].message.content or ""
-    in_tok        = response.usage.prompt_tokens
-    out_tok       = response.usage.completion_tokens
+        response = await client.chat.completions.create(**kwargs)
 
-    logger.info(
-        f"[doc_gen] document generated — "
-        f"type={document_type} length={len(document_text)} chars "
-        f"tokens={in_tok}in/{out_tok}out"
-    )
-    return document_text, in_tok, out_tok
+        text = response.choices[0].message.content or ""
 
+        logger.info(f"[doc_gen] RAW OUTPUT: {repr(text[:300])}")
 
+        # --------------------------------------------------------
+        # Step 3: Validate response
+        # --------------------------------------------------------
+        if text and len(text.strip()) > 50:
+            return (
+                text.strip(),
+                response.usage.prompt_tokens,
+                response.usage.completion_tokens,
+            )
+
+        logger.warning(f"[doc_gen] empty/short response retry {attempt + 1}")
+
+    # ------------------------------------------------------------
+    # Step 4: FINAL FALLBACK (guaranteed document)
+    # ------------------------------------------------------------
+    logger.warning("[doc_gen] using fallback template")
+
+    fallback_document = f"""
+{doc_name.upper()}
+
+1. PARTIES
+Party 1: _____________
+Party 2: _____________
+
+2. EFFECTIVE DATE
+_____________
+
+3. PURPOSE
+_____________
+
+4. TERM
+_____________
+
+5. PAYMENT / CONSIDERATION
+_____________
+
+6. GOVERNING LAW
+_____________
+
+7. GENERAL PROVISIONS
+This Agreement shall be binding upon the parties.
+
+8. SIGNATURES
+
+Party 1 Signature: ______________________
+
+Party 2 Signature: ______________________
+"""
+
+    return fallback_document.strip(), 0, 0
 # ---------------------------------------------------------------------------
 # Step 4: Render document text → PDF bytes using reportlab
 # ---------------------------------------------------------------------------
