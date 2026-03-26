@@ -263,3 +263,177 @@ async def extract_text_from_upload(
     text = "\n\n".join(p.page_content for p in pages)
 
     return text, pages_to_read, total_pages, request_id, t_start, file_path
+
+
+
+
+
+    # ONLY showing UPDATED / IMPORTANT PARTS (drop-in replace)
+
+# ---------------------------
+# ADD THIS HELPER
+# ---------------------------
+
+def _apply_defaults(document_type: str, fields: dict) -> dict:
+    DEFAULTS = {
+        "nda": {
+            "governing_law": "India",
+            "duration_years": "2",
+            "purpose": "Business evaluation"
+        }
+    }
+
+    defaults = DEFAULTS.get(document_type, {})
+    for k, v in defaults.items():
+        if fields.get(k) == "Not Specified":
+            fields[k] = v
+    return fields
+
+
+# ---------------------------
+# IMPROVED EXTRACTION
+# ---------------------------
+
+async def _extract_fields(document_type: str, user_query: str) -> dict:
+    fields = await _extract_fields_once(document_type, user_query)
+
+    # Retry if weak
+    weak_count = sum(1 for v in fields.values() if v == "Not Specified")
+    if weak_count >= len(fields) * 0.7:
+        logger.warning("[doc_gen] weak extraction → retrying")
+        fields = await _extract_fields_retry(document_type, user_query)
+
+    return fields
+
+
+async def _extract_fields_once(document_type: str, user_query: str) -> dict:
+    schema = _SCHEMAS[document_type]
+    doc_name = SUPPORTED_DOCUMENT_TYPES[document_type]
+
+    system = f"""
+Extract structured data for {doc_name}.
+Return ONLY JSON.
+
+Fields:
+{schema["required"] + schema["optional"]}
+
+Rules:
+- Use exact keys
+- Missing → "Not Specified"
+"""
+
+    client = _get_client()
+    kwargs = _get_model_kwargs(1000)
+    kwargs["messages"] = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_query},
+    ]
+    kwargs["response_format"] = {"type": "json_object"}
+
+    res = await client.chat.completions.create(**kwargs)
+    raw = res.choices[0].message.content or "{}"
+
+    return _extract_fields_from_json(raw)
+
+
+async def _extract_fields_retry(document_type: str, user_query: str) -> dict:
+    doc_name = SUPPORTED_DOCUMENT_TYPES[document_type]
+
+    system = f"""
+You are a legal expert.
+
+Extract ALL possible structured fields for {doc_name}.
+Infer intelligently if possible.
+
+Return JSON only.
+"""
+
+    client = _get_client()
+    kwargs = _get_model_kwargs(1000)
+    kwargs["messages"] = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_query},
+    ]
+    kwargs["response_format"] = {"type": "json_object"}
+
+    res = await client.chat.completions.create(**kwargs)
+    raw = res.choices[0].message.content or "{}"
+
+    return _extract_fields_from_json(raw)
+
+
+# ---------------------------
+# DOCUMENT GENERATION FIX
+# ---------------------------
+
+async def _generate_document_text(document_type, fields, user_query):
+
+    for attempt in range(2):  # retry logic
+        doc_name = SUPPORTED_DOCUMENT_TYPES[document_type]
+
+        system = f"""
+Generate a complete {doc_name}.
+
+Use legal structure.
+Use placeholders if needed.
+Plain text only.
+"""
+
+        client = _get_client()
+        kwargs = _get_model_kwargs(max_tokens=2000)  # FIXED
+
+        kwargs["messages"] = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": str(fields)},
+        ]
+
+        res = await client.chat.completions.create(**kwargs)
+
+        text = res.choices[0].message.content or ""
+
+        if text.strip():
+            return text, res.usage.prompt_tokens, res.usage.completion_tokens
+
+        logger.warning(f"[doc_gen] empty response retry {attempt+1}")
+
+    raise ValueError("LLM failed to generate document")
+
+
+# ---------------------------
+# MAIN FUNCTION FIX
+# ---------------------------
+
+async def generate_document(document_type: str, user_query: str):
+
+    if len(user_query.split()) < 5:
+        raise ValueError("User query too short")
+
+    fields = await _extract_fields(document_type, user_query)
+
+    logger.info(f"[doc_gen] fields:\n{json.dumps(fields, indent=2)}")
+
+    fields = _apply_defaults(document_type, fields)
+
+    missing = _get_missing_fields(document_type, fields)
+
+    document_text, in_tok, out_tok = await _generate_document_text(
+        document_type, fields, user_query
+    )
+
+    if not document_text.strip():
+        raise ValueError("Empty document generated")
+
+    pdf_bytes = _render_pdf(document_text, SUPPORTED_DOCUMENT_TYPES[document_type])
+
+    return {
+        "status": "missing_fields" if missing else "success",
+        "document_type": document_type,
+        "document_name": SUPPORTED_DOCUMENT_TYPES[document_type],
+        "fields": fields,
+        "missing_fields": missing,
+        "document": document_text,
+        "pdf_bytes": pdf_bytes,
+        "word_count": len(document_text.split()),
+        "input_tokens": in_tok,
+        "output_tokens": out_tok,
+    }

@@ -157,70 +157,37 @@ async def extract_document_fields(request: DocumentGenerateRequest) -> dict:
     "/generate",
     summary="Generate a legal document — returns JSON with text and PDF",
 )
-async def generate_document_endpoint(request: DocumentGenerateRequest) -> dict:
-    """
-    Generates a complete legal document.
-
-    Returns:
-    - `fields` — all extracted structured fields
-    - `missing_fields` — required fields not found (document still generated with defaults)
-    - `document` — full document as plain text
-    - `pdf_base64` — base64-encoded PDF for download
-    - `word_count`, `generation_time_s`
-
-    For a direct PDF file download use POST /documents/generate/download instead.
-    """
-    import base64
+@router.post("/generate")
+async def generate_document_endpoint(request: DocumentGenerateRequest):
 
     request_id = str(uuid.uuid4())[:8]
-    t_start    = time.perf_counter()
 
-    logger.info(f"[{request_id}] ── DOC GENERATE — type='{request.document_type}'")
-
-    doc_type = resolve_document_type(request.document_type)
-    if not doc_type:
+    if len(request.user_query.split()) < 5:
         raise HTTPException(
             status_code=400,
-            detail={
-                "error":           "Unsupported document type",
-                "provided":        request.document_type,
-                "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
-                "supported_names": list(SUPPORTED_DOCUMENT_TYPES.values()),
-            }
+            detail="Please provide more detailed input (parties, dates, etc.)"
         )
+
+    doc_type = resolve_document_type(request.document_type)
+
+    if not doc_type:
+        raise HTTPException(status_code=400, detail="Invalid document type")
 
     try:
         result = await generate_document(doc_type, request.user_query)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.exception(f"[{request_id}] document generation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Document generation failed: {str(e)}")
+        logger.exception(f"[{request_id}] error: {e}")
+        raise HTTPException(status_code=500, detail="Internal error")
 
-    elapsed = time.perf_counter() - t_start
-    logger.info(
-        f"[{request_id}] ── COMPLETE — {elapsed:.2f}s "
-        f"words={result.get('word_count', 0)} "
-        f"missing={result.get('missing_fields', [])}"
-    )
-
-    # Convert PDF bytes to base64
-    pdf_bytes  = result.pop("pdf_bytes", b"")
-    pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8") if pdf_bytes else ""
+    import base64
+    pdf_base64 = base64.b64encode(result["pdf_bytes"]).decode()
 
     return {
-        "status":             result["status"],
-        "document_type":      result["document_type"],
-        "document_name":      result["document_name"],
-        "fields":             result["fields"],
-        "missing_fields":     result["missing_fields"],
-        "document":           result["document"],
-        "pdf_base64":         pdf_base64,
-        "word_count":         result["word_count"],
-        "input_tokens":       result.get("input_tokens", 0),
-        "output_tokens":      result.get("output_tokens", 0),
-        "generation_time_s":  round(elapsed, 2),
-        "request_id":         request_id,
+        **result,
+        "pdf_base64": pdf_base64
     }
-
 
 # ---------------------------------------------------------------------------
 # POST /documents/generate/download
