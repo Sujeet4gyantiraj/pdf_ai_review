@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 # from fastapi import FastAPI, UploadFile, File, Query
 # import os, json, re
@@ -457,20 +458,70 @@ from ai_models import generate_analysis
 from pdf_utils import extract_text_from_pdf, chunk_text
 from ai_model import generate_analysis
 >>>>>>> 6f1bd9d3f0173d994d02a09062b130ad518bb7d2
+=======
+import logging
+import logging.config
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from routes.route import router
+from db_files.db import init_db, close_pool
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging.config.dictConfig({
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        }
+    },
+    "handlers": {
+        "console": {
+            "class":     "logging.StreamHandler",
+            "formatter": "standard",
+            "level":     "INFO",
+            "stream":    "ext://sys.stdout",
+        },
+        "file": {
+            "class":     "logging.handlers.RotatingFileHandler",
+            "formatter": "standard",
+            "level":     "DEBUG",
+            "filename":  "app.log",
+            "maxBytes":  10 * 1024 * 1024,
+            "backupCount": 5,
+            "encoding":  "utf-8",
+        },
+    },
+    "root": {"level": "DEBUG", "handlers": ["console", "file"]},
+})
+>>>>>>> 6a4bccb06f6baa94d57b15498bbfe847c9bc4e6d
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
 
-UPLOAD_FOLDER = "temp"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# ---------------------------------------------------------------------------
+# Lifespan — DB pool open on startup, closed on shutdown
+# ---------------------------------------------------------------------------
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting up...")
+    await init_db()      # creates pdf_requests table if not exists, opens pool
+    yield
+    await close_pool()   # gracefully closes all DB connections
+    logger.info("Shutting down.")
 
 
-def clean_text(text: str) -> str:
-    """Clean extracted PDF text"""
-    text = text.replace("\n\n", "\n")
-    return text.strip()
+# ---------------------------------------------------------------------------
+# App
+# ---------------------------------------------------------------------------
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 def extract_json(text: str):
     """Cleanly extract and structure JSON from Mistral output"""
@@ -720,3 +771,7 @@ async def analyze_pdf(
 =======
     return final_output
 >>>>>>> 6f1bd9d3f0173d994d02a09062b130ad518bb7d2
+=======
+app = FastAPI(lifespan=lifespan)
+app.include_router(router)
+>>>>>>> 6a4bccb06f6baa94d57b15498bbfe847c9bc4e6d
