@@ -2,11 +2,15 @@
 t_document_route.py
 
 FastAPI router for document generation.
+All requests are logged to the document_requests table in PostgreSQL.
 
 Endpoints:
   GET  /documents/types                 List all supported document types
+  GET  /documents/stats                 Aggregate stats from DB
+  GET  /documents/recent                Recent document requests from DB
   POST /documents/generate              Generate → JSON (text + base64 docx)
   POST /documents/generate/download     Generate → DOCX file download
+  POST /documents/generate/stream       Generate → SSE token stream
   POST /documents/extract-fields        Extract fields only (no generation)
 """
 
@@ -21,6 +25,11 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
+from s_db import (
+    log_document_request,
+    get_document_stats,
+    get_recent_documents,
+)
 from t_document_generator import (
     generate_document,
     classify_intent,
@@ -40,7 +49,7 @@ router = APIRouter(prefix="/documents", tags=["Document Generation"])
 
 
 # ---------------------------------------------------------------------------
-# Request model — document_type is optional
+# Request model
 # ---------------------------------------------------------------------------
 
 class DocumentGenerateRequest(BaseModel):
@@ -48,23 +57,24 @@ class DocumentGenerateRequest(BaseModel):
         default=None,
         description=(
             "Type of document to generate. "
-            "If omitted, the type is automatically detected from user_query. "
+            "If omitted, automatically detected from user_query. "
             "Supported: nda, job_offer, freelancer_agreement, service_agreement, "
             "consulting_agreement, lease_agreement, employment_contract"
         ),
-        examples=["nda", "job_offer", None],
+        examples=["nda", "employment_contract", None],
     )
     user_query: str = Field(
         ...,
         min_length=20,
         description=(
-            "Free-text description of the document you need. "
-            "Include party names, dates, amounts, jurisdiction, and special clauses. "
-            "If document_type is not provided, this text is used to detect the type automatically."
+            "Free-text description of the document you need under Indian law. "
+            "Include party names, dates, amounts in INR, state jurisdiction, "
+            "and any special clauses."
         ),
         examples=[
-            "I need an NDA between TechCorp Inc and John Smith, covering our AI roadmap "
-            "for 2 years, governed by California law. Effective April 1, 2026.",
+            "NDA between TechCorp Pvt Ltd (Mumbai) and Rajan Shah (contractor). "
+            "Purpose: sharing AI product roadmap. Duration 2 years. "
+            "Governed by Maharashtra law. Effective 1st April 2026.",
         ],
     )
 
@@ -81,14 +91,8 @@ def _sse(event: str, data: dict) -> str:
 # GET /documents/types
 # ---------------------------------------------------------------------------
 
-@router.get(
-    "/types",
-    summary="List all supported document types with field schemas",
-)
+@router.get("/types", summary="List all supported document types")
 async def list_document_types() -> dict:
-    """
-    Returns all supported document types with their required and optional fields.
-    """
     types = []
     for slug, display_name in SUPPORTED_DOCUMENT_TYPES.items():
         schema = _SCHEMAS.get(slug, {"required": [], "optional": []})
@@ -98,52 +102,65 @@ async def list_document_types() -> dict:
             "required_fields": schema.get("required", []),
             "optional_fields": schema.get("optional", []),
         })
-    return {
-        "status":         "success",
-        "total":          len(types),
-        "document_types": types,
-    }
+    return {"status": "success", "total": len(types), "document_types": types}
+
+
+# ---------------------------------------------------------------------------
+# GET /documents/stats
+# ---------------------------------------------------------------------------
+
+@router.get("/stats", summary="Aggregate document generation statistics")
+async def document_stats() -> dict:
+    """
+    Returns aggregate stats from the document_requests table:
+    total requests, success/error counts, avg word count,
+    avg generation time, total tokens — grouped by document type.
+    """
+    stats = await get_document_stats()
+    return {"status": "success", **stats}
+
+
+# ---------------------------------------------------------------------------
+# GET /documents/recent
+# ---------------------------------------------------------------------------
+
+@router.get("/recent", summary="Recent document generation requests")
+async def recent_documents(limit: int = 20) -> dict:
+    """
+    Returns the most recent document generation requests from the database.
+    Maximum 100 records.
+    """
+    limit = min(limit, 100)
+    rows  = await get_recent_documents(limit)
+    return {"status": "success", "total": len(rows), "documents": rows}
 
 
 # ---------------------------------------------------------------------------
 # POST /documents/extract-fields
 # ---------------------------------------------------------------------------
 
-@router.post(
-    "/extract-fields",
-    summary="Extract document fields without generating the document",
-)
+@router.post("/extract-fields", summary="Extract fields without generating document")
 async def extract_document_fields(request: DocumentGenerateRequest) -> dict:
-    """
-    Extracts structured fields from user_query without generating the document.
-    If document_type is omitted, it is automatically detected.
-    """
     request_id = str(uuid.uuid4())[:8]
 
     if request.document_type:
         doc_type = resolve_document_type(request.document_type)
         if not doc_type:
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "error":           "Unsupported document type",
-                    "provided":        request.document_type,
-                    "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
-                }
-            )
+            raise HTTPException(status_code=400, detail={
+                "error":           "Unsupported document type",
+                "provided":        request.document_type,
+                "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
+            })
         detected = False
     else:
         doc_type = await classify_intent(request.user_query)
         detected = True
         if not doc_type:
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "error": "Could not determine document type from description.",
-                    "hint":  "Please specify document_type explicitly.",
-                    "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
-                }
-            )
+            raise HTTPException(status_code=422, detail={
+                "error": "Could not determine document type.",
+                "hint":  "Please specify document_type explicitly.",
+                "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
+            })
 
     try:
         fields  = await _extract_fields(doc_type, request.user_query)
@@ -169,61 +186,88 @@ async def extract_document_fields(request: DocumentGenerateRequest) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# POST /documents/generate
-# Returns JSON with plain text + base64 DOCX
+# POST /documents/generate  — JSON response + DB log
 # ---------------------------------------------------------------------------
 
-@router.post(
-    "/generate",
-    summary="Generate a legal document — returns JSON with text and DOCX",
-)
+@router.post("/generate", summary="Generate document — returns JSON with text and DOCX")
 async def generate_document_endpoint(request: DocumentGenerateRequest) -> dict:
     """
-    Generates a complete legal document.
-
-    - document_type is optional — auto-detected if omitted
-    - Returns document as plain text AND base64-encoded DOCX
-    - For direct DOCX download use POST /documents/generate/download
+    Generates a complete legal document under Indian law.
+    Every request is logged to the document_requests table.
     """
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
+    status     = "error"
+    error_msg  = None
 
-    logger.info(
-        f"[{request_id}] ── DOC GENERATE — "
-        f"type='{request.document_type or 'auto-detect'}'"
-    )
+    logger.info(f"[{request_id}] ── DOC GENERATE — type='{request.document_type or 'auto'}'")
 
     try:
         result = await generate_document(request.document_type, request.user_query)
     except Exception as e:
+        error_msg = str(e)
         logger.exception(f"[{request_id}] error: {e}")
+        await log_document_request(
+            request_id=request_id,
+            document_type=request.document_type or "unknown",
+            document_name="",
+            user_query=request.user_query,
+            status="error",
+            completion_time_s=time.perf_counter() - t_start,
+            endpoint="/documents/generate",
+            error_message=error_msg,
+        )
         raise HTTPException(status_code=500, detail=f"Document generation failed: {str(e)}")
 
     if result["status"] == "unknown_type":
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "error":           result.get("message", "Unknown document type"),
-                "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
-            }
+        await log_document_request(
+            request_id=request_id,
+            document_type=request.document_type or "unknown",
+            document_name="",
+            user_query=request.user_query,
+            status="unknown_type",
+            completion_time_s=time.perf_counter() - t_start,
+            endpoint="/documents/generate",
+            error_message=result.get("message"),
         )
+        raise HTTPException(status_code=422, detail={
+            "error":           result.get("message"),
+            "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
+        })
 
-    elapsed    = time.perf_counter() - t_start
-    docx_bytes = result.pop("docx_bytes", b"")
-    docx_b64   = base64.b64encode(docx_bytes).decode("utf-8") if docx_bytes else ""
+    elapsed        = time.perf_counter() - t_start
+    docx_bytes     = result.pop("docx_bytes", b"")
+    docx_b64       = base64.b64encode(docx_bytes).decode("utf-8") if docx_bytes else ""
+    detected       = request.document_type is None
+
+    # Log to database
+    await log_document_request(
+        request_id        = request_id,
+        document_type     = result["document_type"],
+        document_name     = result["document_name"],
+        user_query        = request.user_query,
+        status            = result["status"],
+        type_was_detected = detected,
+        missing_fields    = result.get("missing_fields", []),
+        word_count        = result.get("word_count", 0),
+        docx_size_bytes   = len(docx_bytes),
+        input_tokens      = result.get("input_tokens", 0),
+        output_tokens     = result.get("output_tokens", 0),
+        completion_time_s = elapsed,
+        endpoint          = "/documents/generate",
+        fields            = result.get("fields", {}),
+    )
 
     logger.info(
         f"[{request_id}] ── COMPLETE — {elapsed:.2f}s "
-        f"type={result['document_type']} "
-        f"words={result.get('word_count', 0)} "
-        f"missing={result.get('missing_fields', [])}"
+        f"type={result['document_type']} words={result.get('word_count', 0)}"
     )
 
     return {
         "status":             result["status"],
         "document_type":      result["document_type"],
         "document_name":      result["document_name"],
-        "type_was_detected":  request.document_type is None,
+        "type_was_detected":  detected,
         "fields":             result["fields"],
         "missing_fields":     result["missing_fields"],
         "document":           result["document"],
@@ -237,45 +281,55 @@ async def generate_document_endpoint(request: DocumentGenerateRequest) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# POST /documents/generate/download
-# Returns DOCX file directly
+# POST /documents/generate/download  — DOCX file + DB log
 # ---------------------------------------------------------------------------
 
 @router.post(
     "/generate/download",
-    summary="Generate a legal document — returns DOCX file for download",
+    summary="Generate document — returns DOCX file download",
     response_class=Response,
 )
 async def generate_document_download(request: DocumentGenerateRequest):
     """
-    Generates a complete legal document and returns it as a downloadable DOCX file.
-    document_type is optional — auto-detected if omitted.
-
-    Response headers include X-Document-Type, X-Word-Count, X-Missing-Fields,
-    X-Generation-Time, X-Status, X-Request-Id.
+    Generates a complete legal document and returns it as a downloadable DOCX.
+    Every request is logged to the document_requests table.
     """
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
 
-    logger.info(
-        f"[{request_id}] ── DOC DOWNLOAD — "
-        f"type='{request.document_type or 'auto-detect'}'"
-    )
+    logger.info(f"[{request_id}] ── DOC DOWNLOAD — type='{request.document_type or 'auto'}'")
 
     try:
         result = await generate_document(request.document_type, request.user_query)
     except Exception as e:
         logger.exception(f"[{request_id}] error: {e}")
+        await log_document_request(
+            request_id=request_id,
+            document_type=request.document_type or "unknown",
+            document_name="",
+            user_query=request.user_query,
+            status="error",
+            completion_time_s=time.perf_counter() - t_start,
+            endpoint="/documents/generate/download",
+            error_message=str(e),
+        )
         raise HTTPException(status_code=500, detail=f"Document generation failed: {str(e)}")
 
     if result["status"] == "unknown_type":
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "error":           result.get("message", "Unknown document type"),
-                "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
-            }
+        await log_document_request(
+            request_id=request_id,
+            document_type=request.document_type or "unknown",
+            document_name="",
+            user_query=request.user_query,
+            status="unknown_type",
+            completion_time_s=time.perf_counter() - t_start,
+            endpoint="/documents/generate/download",
+            error_message=result.get("message"),
         )
+        raise HTTPException(status_code=422, detail={
+            "error":           result.get("message"),
+            "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
+        })
 
     elapsed    = time.perf_counter() - t_start
     docx_bytes = result.get("docx_bytes", b"")
@@ -283,6 +337,24 @@ async def generate_document_download(request: DocumentGenerateRequest):
     missing    = result.get("missing_fields", [])
     detected   = request.document_type is None
     filename   = f"{doc_type}_{request_id}.docx"
+
+    # Log to database
+    await log_document_request(
+        request_id        = request_id,
+        document_type     = doc_type,
+        document_name     = result["document_name"],
+        user_query        = request.user_query,
+        status            = result["status"],
+        type_was_detected = detected,
+        missing_fields    = missing,
+        word_count        = result.get("word_count", 0),
+        docx_size_bytes   = len(docx_bytes),
+        input_tokens      = result.get("input_tokens", 0),
+        output_tokens     = result.get("output_tokens", 0),
+        completion_time_s = elapsed,
+        endpoint          = "/documents/generate/download",
+        fields            = result.get("fields", {}),
+    )
 
     logger.info(
         f"[{request_id}] ── DOWNLOAD COMPLETE — {elapsed:.2f}s "
@@ -308,41 +380,39 @@ async def generate_document_download(request: DocumentGenerateRequest):
 
 
 # ---------------------------------------------------------------------------
-# POST /documents/generate/stream
-# SSE streaming — fields first, then tokens, then done with DOCX
+# POST /documents/generate/stream  — SSE stream + DB log on completion
 # ---------------------------------------------------------------------------
 
-@router.post(
-    "/generate/stream",
-    summary="Generate a legal document with real-time token streaming",
-)
+@router.post("/generate/stream", summary="Generate document with real-time token streaming")
 async def generate_document_stream(request: DocumentGenerateRequest):
     """
-    Streams document generation via Server-Sent Events.
-    document_type is optional — auto-detected if omitted.
+    Streams document generation via SSE.
+    Logs to document_requests table when generation completes.
 
-    Event sequence:
-    - status   — pipeline stage updates
-    - detected — emitted if type was auto-detected
-    - fields   — extracted structured fields
-    - token    — one raw text delta from the LLM
-    - done     — final metadata including base64 DOCX
-    - error    — if something fails
+    Events: status, detected, fields, token, done, error
     """
     import os
 
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
 
-    logger.info(
-        f"[{request_id}] ── DOC STREAM — "
-        f"type='{request.document_type or 'auto-detect'}'"
-    )
+    logger.info(f"[{request_id}] ── DOC STREAM — type='{request.document_type or 'auto'}'")
 
     async def _generate():
+        doc_type_final  = request.document_type or "unknown"
+        doc_name_final  = ""
+        status_final    = "error"
+        missing_final:  list  = []
+        fields_final:   dict  = {}
+        word_count      = 0
+        docx_size       = 0
+        in_tok          = 0
+        out_tok         = 0
+        detected        = False
+        error_msg       = None
+
         try:
-            # Step 0: Resolve or detect type
-            detected = False
+            # Step 0: Resolve type
             if request.document_type:
                 doc_type = resolve_document_type(request.document_type)
                 if not doc_type:
@@ -352,15 +422,13 @@ async def generate_document_stream(request: DocumentGenerateRequest):
                     })
                     return
             else:
-                yield _sse("status", {
-                    "step":    "classifying",
-                    "message": "Detecting document type from your description...",
-                })
+                yield _sse("status", {"step": "classifying",
+                                       "message": "Detecting document type..."})
                 doc_type = await classify_intent(request.user_query)
                 detected = True
                 if not doc_type:
                     yield _sse("error", {
-                        "message":         "Could not determine document type. Please specify document_type.",
+                        "message":         "Could not determine document type.",
                         "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
                     })
                     return
@@ -370,21 +438,22 @@ async def generate_document_stream(request: DocumentGenerateRequest):
                     "message":       f"Detected: {SUPPORTED_DOCUMENT_TYPES[doc_type]}",
                 })
 
-            doc_name = SUPPORTED_DOCUMENT_TYPES[doc_type]
+            doc_type_final = doc_type
+            doc_name_final = SUPPORTED_DOCUMENT_TYPES[doc_type]
 
             # Step 1: Extract fields
-            yield _sse("status", {
-                "step":    "extracting_fields",
-                "message": f"Extracting details for {doc_name}...",
-            })
+            yield _sse("status", {"step": "extracting_fields",
+                                   "message": f"Extracting details for {doc_name_final}..."})
             fields  = await _extract_fields(doc_type, request.user_query)
             missing = _get_missing_fields(doc_type, fields)
+            fields_final  = fields
+            missing_final = missing
 
             yield _sse("fields", {
                 "fields":            fields,
                 "missing_fields":    missing,
                 "document_type":     doc_type,
-                "document_name":     doc_name,
+                "document_name":     doc_name_final,
                 "type_was_detected": detected,
             })
 
@@ -397,22 +466,19 @@ async def generate_document_stream(request: DocumentGenerateRequest):
             )
 
             system = gen_prompt
-            user   = f"""Use these details to generate the complete {doc_name}:
+            user   = f"""Use these details to generate the complete {doc_name_final} under Indian law:
 
-{field_lines if field_lines else "(Use standard template values)"}
+{field_lines if field_lines else "(Use standard Indian law template values)"}
 
 Additional context:
 \"\"\"{request.user_query}\"\"\"
 
-Write the complete {doc_name} now. Start directly with the document title."""
+Write the complete {doc_name_final} now. Start directly with the document title."""
 
-            yield _sse("status", {
-                "step":    "generating_document",
-                "message": f"Drafting {doc_name}...",
-            })
+            yield _sse("status", {"step": "generating_document",
+                                   "message": f"Drafting {doc_name_final}..."})
 
             client = _get_client()
-            # CRITICAL: use_json=False for document generation
             kwargs = _api_kwargs(max_tokens=32000, use_json=False)
             kwargs["messages"]       = [
                 {"role": "system", "content": system},
@@ -422,8 +488,6 @@ Write the complete {doc_name} now. Start directly with the document title."""
             kwargs["stream_options"] = {"include_usage": True}
 
             full_document = ""
-            in_tok        = 0
-            out_tok       = 0
 
             async with await client.chat.completions.create(**kwargs) as stream:
                 async for chunk in stream:
@@ -435,27 +499,32 @@ Write the complete {doc_name} now. Start directly with the document title."""
                         in_tok  = chunk.usage.prompt_tokens
                         out_tok = chunk.usage.completion_tokens
 
+            word_count = len(full_document.split())
+
             # Step 3: Render DOCX
             yield _sse("status", {"step": "rendering_docx", "message": "Rendering DOCX..."})
-            docx_bytes = _render_docx(full_document, doc_name)
+            docx_bytes = _render_docx(full_document, doc_name_final)
             docx_b64   = base64.b64encode(docx_bytes).decode("utf-8")
+            docx_size  = len(docx_bytes)
 
-            elapsed = time.perf_counter() - t_start
+            status_final = "missing_fields" if missing else "success"
+            elapsed      = time.perf_counter() - t_start
+
             logger.info(
                 f"[{request_id}] ── STREAM COMPLETE — {elapsed:.2f}s "
-                f"type={doc_type} words={len(full_document.split())} "
+                f"type={doc_type} words={word_count} "
                 f"tokens={in_tok}in/{out_tok}out"
             )
 
             yield _sse("done", {
-                "status":             "missing_fields" if missing else "success",
+                "status":             status_final,
                 "document_type":      doc_type,
-                "document_name":      doc_name,
+                "document_name":      doc_name_final,
                 "type_was_detected":  detected,
                 "missing_fields":     missing,
-                "word_count":         len(full_document.split()),
+                "word_count":         word_count,
                 "docx_base64":        docx_b64,
-                "docx_size_bytes":    len(docx_bytes),
+                "docx_size_bytes":    docx_size,
                 "generation_time_s":  round(elapsed, 2),
                 "input_tokens":       in_tok,
                 "output_tokens":      out_tok,
@@ -464,8 +533,31 @@ Write the complete {doc_name} now. Start directly with the document title."""
             })
 
         except Exception as e:
+            error_msg    = str(e)
+            status_final = "error"
             logger.exception(f"[{request_id}] stream error: {e}")
             yield _sse("error", {"message": f"Document generation failed: {str(e)}"})
+
+        finally:
+            # Always log to DB regardless of success or failure
+            elapsed = time.perf_counter() - t_start
+            await log_document_request(
+                request_id        = request_id,
+                document_type     = doc_type_final,
+                document_name     = doc_name_final,
+                user_query        = request.user_query,
+                status            = status_final,
+                type_was_detected = detected,
+                missing_fields    = missing_final,
+                word_count        = word_count,
+                docx_size_bytes   = docx_size,
+                input_tokens      = in_tok,
+                output_tokens     = out_tok,
+                completion_time_s = elapsed,
+                endpoint          = "/documents/generate/stream",
+                error_message     = error_msg,
+                fields            = fields_final,
+            )
 
     return StreamingResponse(
         _generate(),
