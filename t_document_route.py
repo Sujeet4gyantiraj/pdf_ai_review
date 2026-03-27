@@ -25,24 +25,30 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
+# ── Database ─────────────────────────────────────────────────────────────────
 from s_db import (
     log_document_request,
     get_document_stats,
     get_recent_documents,
 )
+
+# ── Core generation logic ─────────────────────────────────────────────────────
 from t_document_generator import (
     generate_document,
-    classify_intent,
-    resolve_document_type,
     SUPPORTED_DOCUMENT_TYPES,
     _SCHEMAS,
     _extract_fields,
     _get_missing_fields,
     _render_docx,
-    _GENERATION_PROMPTS,
     _api_kwargs,
     _get_client,
 )
+
+# ── Prompts (moved to t_prompts.py) ──────────────────────────────────────────
+from t_prompts import GENERATION_PROMPTS
+
+# ── Intent classification (moved to t_intent.py) ─────────────────────────────
+from t_intent import classify_intent, resolve_document_type
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["Document Generation"])
@@ -111,11 +117,6 @@ async def list_document_types() -> dict:
 
 @router.get("/stats", summary="Aggregate document generation statistics")
 async def document_stats() -> dict:
-    """
-    Returns aggregate stats from the document_requests table:
-    total requests, success/error counts, avg word count,
-    avg generation time, total tokens — grouped by document type.
-    """
     stats = await get_document_stats()
     return {"status": "success", **stats}
 
@@ -126,10 +127,6 @@ async def document_stats() -> dict:
 
 @router.get("/recent", summary="Recent document generation requests")
 async def recent_documents(limit: int = 20) -> dict:
-    """
-    Returns the most recent document generation requests from the database.
-    Maximum 100 records.
-    """
     limit = min(limit, 100)
     rows  = await get_recent_documents(limit)
     return {"status": "success", "total": len(rows), "documents": rows}
@@ -186,18 +183,13 @@ async def extract_document_fields(request: DocumentGenerateRequest) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# POST /documents/generate  — JSON response + DB log
+# POST /documents/generate — JSON response + DB log
 # ---------------------------------------------------------------------------
 
 @router.post("/generate", summary="Generate document — returns JSON with text and DOCX")
 async def generate_document_endpoint(request: DocumentGenerateRequest) -> dict:
-    """
-    Generates a complete legal document under Indian law.
-    Every request is logged to the document_requests table.
-    """
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
-    status     = "error"
     error_msg  = None
 
     logger.info(f"[{request_id}] ── DOC GENERATE — type='{request.document_type or 'auto'}'")
@@ -208,39 +200,38 @@ async def generate_document_endpoint(request: DocumentGenerateRequest) -> dict:
         error_msg = str(e)
         logger.exception(f"[{request_id}] error: {e}")
         await log_document_request(
-            request_id=request_id,
-            document_type=request.document_type or "unknown",
-            document_name="",
-            user_query=request.user_query,
-            status="error",
-            completion_time_s=time.perf_counter() - t_start,
-            endpoint="/documents/generate",
-            error_message=error_msg,
+            request_id        = request_id,
+            document_type     = request.document_type or "unknown",
+            document_name     = "",
+            user_query        = request.user_query,
+            status            = "error",
+            completion_time_s = time.perf_counter() - t_start,
+            endpoint          = "/documents/generate",
+            error_message     = error_msg,
         )
         raise HTTPException(status_code=500, detail=f"Document generation failed: {str(e)}")
 
     if result["status"] == "unknown_type":
         await log_document_request(
-            request_id=request_id,
-            document_type=request.document_type or "unknown",
-            document_name="",
-            user_query=request.user_query,
-            status="unknown_type",
-            completion_time_s=time.perf_counter() - t_start,
-            endpoint="/documents/generate",
-            error_message=result.get("message"),
+            request_id        = request_id,
+            document_type     = request.document_type or "unknown",
+            document_name     = "",
+            user_query        = request.user_query,
+            status            = "unknown_type",
+            completion_time_s = time.perf_counter() - t_start,
+            endpoint          = "/documents/generate",
+            error_message     = result.get("message"),
         )
         raise HTTPException(status_code=422, detail={
             "error":           result.get("message"),
             "supported_types": list(SUPPORTED_DOCUMENT_TYPES.keys()),
         })
 
-    elapsed        = time.perf_counter() - t_start
-    docx_bytes     = result.pop("docx_bytes", b"")
-    docx_b64       = base64.b64encode(docx_bytes).decode("utf-8") if docx_bytes else ""
-    detected       = request.document_type is None
+    elapsed    = time.perf_counter() - t_start
+    docx_bytes = result.pop("docx_bytes", b"")
+    docx_b64   = base64.b64encode(docx_bytes).decode("utf-8") if docx_bytes else ""
+    detected   = request.document_type is None
 
-    # Log to database
     await log_document_request(
         request_id        = request_id,
         document_type     = result["document_type"],
@@ -281,7 +272,7 @@ async def generate_document_endpoint(request: DocumentGenerateRequest) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# POST /documents/generate/download  — DOCX file + DB log
+# POST /documents/generate/download — DOCX file + DB log
 # ---------------------------------------------------------------------------
 
 @router.post(
@@ -290,10 +281,6 @@ async def generate_document_endpoint(request: DocumentGenerateRequest) -> dict:
     response_class=Response,
 )
 async def generate_document_download(request: DocumentGenerateRequest):
-    """
-    Generates a complete legal document and returns it as a downloadable DOCX.
-    Every request is logged to the document_requests table.
-    """
     request_id = str(uuid.uuid4())[:8]
     t_start    = time.perf_counter()
 
@@ -304,27 +291,27 @@ async def generate_document_download(request: DocumentGenerateRequest):
     except Exception as e:
         logger.exception(f"[{request_id}] error: {e}")
         await log_document_request(
-            request_id=request_id,
-            document_type=request.document_type or "unknown",
-            document_name="",
-            user_query=request.user_query,
-            status="error",
-            completion_time_s=time.perf_counter() - t_start,
-            endpoint="/documents/generate/download",
-            error_message=str(e),
+            request_id        = request_id,
+            document_type     = request.document_type or "unknown",
+            document_name     = "",
+            user_query        = request.user_query,
+            status            = "error",
+            completion_time_s = time.perf_counter() - t_start,
+            endpoint          = "/documents/generate/download",
+            error_message     = str(e),
         )
         raise HTTPException(status_code=500, detail=f"Document generation failed: {str(e)}")
 
     if result["status"] == "unknown_type":
         await log_document_request(
-            request_id=request_id,
-            document_type=request.document_type or "unknown",
-            document_name="",
-            user_query=request.user_query,
-            status="unknown_type",
-            completion_time_s=time.perf_counter() - t_start,
-            endpoint="/documents/generate/download",
-            error_message=result.get("message"),
+            request_id        = request_id,
+            document_type     = request.document_type or "unknown",
+            document_name     = "",
+            user_query        = request.user_query,
+            status            = "unknown_type",
+            completion_time_s = time.perf_counter() - t_start,
+            endpoint          = "/documents/generate/download",
+            error_message     = result.get("message"),
         )
         raise HTTPException(status_code=422, detail={
             "error":           result.get("message"),
@@ -338,7 +325,6 @@ async def generate_document_download(request: DocumentGenerateRequest):
     detected   = request.document_type is None
     filename   = f"{doc_type}_{request_id}.docx"
 
-    # Log to database
     await log_document_request(
         request_id        = request_id,
         document_type     = doc_type,
@@ -380,7 +366,7 @@ async def generate_document_download(request: DocumentGenerateRequest):
 
 
 # ---------------------------------------------------------------------------
-# POST /documents/generate/stream  — SSE stream + DB log on completion
+# POST /documents/generate/stream — SSE stream + DB log on completion
 # ---------------------------------------------------------------------------
 
 @router.post("/generate/stream", summary="Generate document with real-time token streaming")
@@ -399,20 +385,20 @@ async def generate_document_stream(request: DocumentGenerateRequest):
     logger.info(f"[{request_id}] ── DOC STREAM — type='{request.document_type or 'auto'}'")
 
     async def _generate():
-        doc_type_final  = request.document_type or "unknown"
-        doc_name_final  = ""
-        status_final    = "error"
-        missing_final:  list  = []
-        fields_final:   dict  = {}
-        word_count      = 0
-        docx_size       = 0
-        in_tok          = 0
-        out_tok         = 0
-        detected        = False
-        error_msg       = None
+        doc_type_final = request.document_type or "unknown"
+        doc_name_final = ""
+        status_final   = "error"
+        missing_final: list = []
+        fields_final:  dict = {}
+        word_count     = 0
+        docx_size      = 0
+        in_tok         = 0
+        out_tok        = 0
+        detected       = False
+        error_msg      = None
 
         try:
-            # Step 0: Resolve type
+            # Step 0: Resolve or detect type
             if request.document_type:
                 doc_type = resolve_document_type(request.document_type)
                 if not doc_type:
@@ -422,8 +408,10 @@ async def generate_document_stream(request: DocumentGenerateRequest):
                     })
                     return
             else:
-                yield _sse("status", {"step": "classifying",
-                                       "message": "Detecting document type..."})
+                yield _sse("status", {
+                    "step":    "classifying",
+                    "message": "Detecting document type...",
+                })
                 doc_type = await classify_intent(request.user_query)
                 detected = True
                 if not doc_type:
@@ -442,8 +430,10 @@ async def generate_document_stream(request: DocumentGenerateRequest):
             doc_name_final = SUPPORTED_DOCUMENT_TYPES[doc_type]
 
             # Step 1: Extract fields
-            yield _sse("status", {"step": "extracting_fields",
-                                   "message": f"Extracting details for {doc_name_final}..."})
+            yield _sse("status", {
+                "step":    "extracting_fields",
+                "message": f"Extracting details for {doc_name_final}...",
+            })
             fields  = await _extract_fields(doc_type, request.user_query)
             missing = _get_missing_fields(doc_type, fields)
             fields_final  = fields
@@ -458,7 +448,7 @@ async def generate_document_stream(request: DocumentGenerateRequest):
             })
 
             # Step 2: Stream document generation
-            gen_prompt  = _GENERATION_PROMPTS[doc_type]
+            gen_prompt  = GENERATION_PROMPTS[doc_type]   # ← from t_prompts.py
             field_lines = "\n".join(
                 f"  {k.replace('_', ' ').title()}: {v}"
                 for k, v in fields.items()
@@ -475,8 +465,10 @@ Additional context:
 
 Write the complete {doc_name_final} now. Start directly with the document title."""
 
-            yield _sse("status", {"step": "generating_document",
-                                   "message": f"Drafting {doc_name_final}..."})
+            yield _sse("status", {
+                "step":    "generating_document",
+                "message": f"Drafting {doc_name_final}...",
+            })
 
             client = _get_client()
             kwargs = _api_kwargs(max_tokens=32000, use_json=False)
@@ -539,7 +531,6 @@ Write the complete {doc_name_final} now. Start directly with the document title.
             yield _sse("error", {"message": f"Document generation failed: {str(e)}"})
 
         finally:
-            # Always log to DB regardless of success or failure
             elapsed = time.perf_counter() - t_start
             await log_document_request(
                 request_id        = request_id,
