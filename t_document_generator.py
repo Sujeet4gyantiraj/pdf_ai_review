@@ -1,20 +1,13 @@
 """
 t_document_generator.py
 
-Business-level legal document generation engine — INDIA JURISDICTION.
+Business-level legal document generation engine — India jurisdiction.
 
-All documents are drafted under Indian law:
-  - Indian Contract Act, 1872
-  - Specific Relief Act, 1963
-  - Information Technology Act, 2000
-  - Indian Stamp Act, 1899
-  - Transfer of Property Act, 1882 (lease)
-  - Industrial Disputes Act, 1947 (employment)
-  - Copyright Act, 1957 (IP)
-
-Supported types:
-  nda, job_offer, freelancer_agreement, service_agreement,
-  consulting_agreement, lease_agreement, employment_contract
+This file contains ONLY the core generation logic.
+Prompts   → t_prompts.py
+Intent    → t_intent.py
+DB        → s_db.py
+Routes    → t_document_route.py
 """
 
 import os
@@ -25,6 +18,10 @@ from io import BytesIO
 from typing import Any
 
 from openai import AsyncOpenAI
+
+# Import prompts and intent from separate modules
+from t_prompts import EXTRACTION_PROMPTS, GENERATION_PROMPTS
+from t_intent  import classify_intent, resolve_document_type
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +37,7 @@ _MCT     = {"gpt-5-nano", "gpt-4.1-nano", "gpt-4o-mini", "o1", "o1-mini", "o3-mi
 
 
 def _get_client() -> AsyncOpenAI:
-    key = _API_KEY or os.environ.get("OPENAI_API_KEY", "")
+    key = os.environ.get("OPENAI_API_KEY", _API_KEY)
     return AsyncOpenAI(api_key=key)
 
 
@@ -49,6 +46,9 @@ def _api_kwargs(max_tokens: int, use_json: bool = False) -> dict:
     Build OpenAI API kwargs.
     use_json=True  → field extraction   (response_format: json_object)
     use_json=False → document generation (plain text, NO response_format)
+
+    IMPORTANT: Never set response_format for document generation —
+    gpt-5-nano returns empty content when json_object is set on plain-text calls.
     """
     model  = os.environ.get("MODEL_NAME", _MODEL)
     kwargs: dict = {"model": model}
@@ -76,44 +76,6 @@ SUPPORTED_DOCUMENT_TYPES: dict[str, str] = {
     "lease_agreement":       "Lease Agreement",
     "employment_contract":   "Employment Contract",
 }
-
-_TYPE_ALIASES: dict[str, str] = {
-    "non disclosure agreement":  "nda",
-    "non-disclosure agreement":  "nda",
-    "non_disclosure_agreement":  "nda",
-    "confidentiality agreement": "nda",
-    "job offer":                 "job_offer",
-    "offer letter":              "job_offer",
-    "job offer letter":          "job_offer",
-    "freelance agreement":       "freelancer_agreement",
-    "freelancer":                "freelancer_agreement",
-    "service":                   "service_agreement",
-    "consulting":                "consulting_agreement",
-    "consultant agreement":      "consulting_agreement",
-    "lease":                     "lease_agreement",
-    "rental agreement":          "lease_agreement",
-    "leave and licence":         "lease_agreement",
-    "employment":                "employment_contract",
-    "employment agreement":      "employment_contract",
-    "appointment letter":        "job_offer",
-}
-
-
-def resolve_document_type(raw: str) -> str | None:
-    cleaned  = raw.lower().strip().replace("-", "_").replace(" ", "_")
-    if cleaned in SUPPORTED_DOCUMENT_TYPES:
-        return cleaned
-    readable = raw.lower().strip()
-    if readable in _TYPE_ALIASES:
-        return _TYPE_ALIASES[readable]
-    for alias, slug in _TYPE_ALIASES.items():
-        if alias in readable or readable in alias:
-            return slug
-    for slug in SUPPORTED_DOCUMENT_TYPES:
-        if slug in cleaned or cleaned in slug:
-            return slug
-    return None
-
 
 # ---------------------------------------------------------------------------
 # Field schemas
@@ -182,598 +144,7 @@ _SCHEMAS: dict[str, dict[str, list[str]]] = {
 
 
 # ---------------------------------------------------------------------------
-# Per-document-type EXTRACTION prompts — India specific fields
-# ---------------------------------------------------------------------------
-
-_EXTRACTION_PROMPTS: dict[str, str] = {
-
-    "nda": """You are a legal assistant specialising in Indian Non-Disclosure Agreements.
-Extract fields from the user description. Return ONLY a valid JSON object.
-
-Required JSON keys:
-disclosing_party    - name of company/person sharing confidential info
-receiving_party     - name of company/person receiving confidential info
-effective_date      - when the NDA takes effect (DD/MM/YYYY or Month DD, YYYY)
-purpose             - why confidential information is being shared
-duration_years      - how long the NDA lasts (e.g. "2 years")
-governing_state     - Indian state whose laws govern (e.g. "Maharashtra", "Karnataka")
-
-Optional JSON keys:
-confidential_info_description - what specific info is covered
-exclusions          - what is NOT confidential
-return_of_materials - must materials be returned on termination
-remedies            - remedies for breach
-signatory_names     - names of signatories
-stamp_duty_state    - state for stamp duty purposes
-
-Set any field not mentioned to "Not Specified". Return ONLY the JSON object.""",
-
-    "job_offer": """You are an HR specialist drafting Indian Job Offer / Appointment Letters.
-Extract fields from the user description. Return ONLY a valid JSON object.
-
-Required JSON keys:
-candidate_name  - full name of the candidate
-company_name    - name of the company
-job_title       - position being offered
-start_date      - proposed date of joining (DD/MM/YYYY)
-ctc             - Cost to Company (annual CTC in INR, e.g. "12,00,000 INR per annum")
-employment_type - full-time / part-time / contract / internship
-reporting_to    - manager or supervisor name/designation
-
-Optional JSON keys:
-work_location   - city and office address or remote
-probation_period - probation duration (e.g. "6 months")
-benefits        - PF, gratuity, health insurance, etc.
-esop            - ESOP or stock options
-joining_bonus   - one-time joining bonus in INR
-offer_expiry_date - deadline to accept offer
-hr_contact      - HR contact name and email
-notice_period   - notice period after probation
-
-Set any field not mentioned to "Not Specified". Return ONLY the JSON object.""",
-
-    "freelancer_agreement": """You are a contracts specialist drafting Indian Freelancer Agreements.
-Extract fields from the user description. Return ONLY a valid JSON object.
-
-Required JSON keys:
-client_name          - name of company/person hiring the freelancer
-freelancer_name      - name of the freelancer
-project_description  - what work is being done
-start_date           - when work begins
-end_date             - when work is due
-payment_amount       - total payment in INR (e.g. "50,000 INR")
-payment_schedule     - when/how payment is made (milestone/on-completion/monthly)
-governing_state      - Indian state governing the agreement
-
-Optional JSON keys:
-deliverables         - specific outputs expected
-revision_rounds      - number of revision rounds included
-intellectual_property - who owns the work product
-confidentiality      - confidentiality requirements
-kill_fee             - cancellation fee
-late_payment_penalty - late payment penalty
-gst_applicable       - whether GST is applicable and GST numbers
-
-Set any field not mentioned to "Not Specified". Return ONLY the JSON object.""",
-
-    "service_agreement": """You are a contracts specialist drafting Indian Service Agreements.
-Extract fields from the user description. Return ONLY a valid JSON object.
-
-Required JSON keys:
-service_provider     - name of company/person providing services
-client               - name of company/person receiving services
-services_description - description of the services
-start_date           - service start date
-end_date             - service end date
-fee                  - total fee or rate in INR
-payment_terms        - payment schedule (Net 30, monthly advance, etc.)
-governing_state      - Indian state governing the agreement
-
-Optional JSON keys:
-service_levels       - SLA or performance standards
-termination_notice   - notice period to terminate
-limitation_of_liability - liability cap amount
-indemnification      - indemnification terms
-insurance_requirements - required insurance coverage
-dispute_resolution   - arbitration or court
-gst_number           - GST registration numbers of both parties
-
-Set any field not mentioned to "Not Specified". Return ONLY the JSON object.""",
-
-    "consulting_agreement": """You are a contracts specialist drafting Indian Consulting Agreements.
-Extract fields from the user description. Return ONLY a valid JSON object.
-
-Required JSON keys:
-consultant_name  - name of consultant or firm
-client_name      - name of client company
-scope_of_work    - description of consulting services
-start_date       - engagement start date
-end_date         - engagement end date
-consulting_fee   - fee in INR (hourly/daily/project basis)
-payment_terms    - how and when payment is made
-governing_state  - Indian state governing the agreement
-
-Optional JSON keys:
-expenses_reimbursement - expense reimbursement policy
-non_compete_period     - non-compete duration after engagement
-non_solicitation       - non-solicitation clause
-intellectual_property  - ownership of work product
-confidentiality_period - how long confidentiality lasts
-termination_clause     - termination conditions and notice
-tds_applicable         - whether TDS is deductible and at what rate
-
-Set any field not mentioned to "Not Specified". Return ONLY the JSON object.""",
-
-    "lease_agreement": """You are a real estate attorney drafting Indian Lease / Leave and Licence Agreements.
-Extract fields from the user description. Return ONLY a valid JSON object.
-
-Required JSON keys:
-landlord_name    - full name of landlord/licensor
-tenant_name      - full name of tenant(s)/licensee(s)
-property_address - full address of the property including city, state, PIN code
-lease_start_date - when the lease/licence begins
-lease_end_date   - when the lease/licence ends
-monthly_rent     - monthly rent in INR
-security_deposit - security deposit in INR (usually 2-6 months rent)
-governing_state  - Indian state where property is located
-
-Optional JSON keys:
-maintenance_charges - monthly maintenance amount
-pet_policy          - whether pets are allowed
-utilities_included  - electricity, water, gas included or not
-lock_in_period      - minimum lock-in period
-subletting_policy   - whether subletting is allowed
-renewal_terms       - how the lease can be renewed
-notice_period       - notice required to vacate
-stamp_duty_value    - stamp duty value for registration
-
-Set any field not mentioned to "Not Specified". Return ONLY the JSON object.""",
-
-    "employment_contract": """You are an employment law specialist drafting Indian Employment Contracts.
-Extract fields from the user description. Return ONLY a valid JSON object.
-
-Required JSON keys:
-employer_name  - name of the employing company
-employee_name  - full name of employee
-job_title      - employee job title / designation
-department     - department or team
-start_date     - date of joining (DD/MM/YYYY)
-ctc            - annual Cost to Company in INR
-work_hours     - hours per day or week (e.g. "9 hours/day, 5 days/week")
-governing_state - Indian state whose laws govern the contract
-
-Optional JSON keys:
-probation_period   - probationary period duration (typically 3-6 months)
-notice_period      - notice period required by both parties
-non_compete        - non-compete restrictions after leaving
-non_solicitation   - non-solicitation clause
-benefits           - PF, ESI, health insurance, gratuity, etc.
-leave_policy       - casual leave, sick leave, earned leave entitlements
-termination_clause - grounds and process for termination
-intellectual_property_assignment - IP ownership clause
-pf_applicable      - whether PF/EPF is applicable
-gratuity_applicable - whether gratuity is applicable
-
-Set any field not mentioned to "Not Specified". Return ONLY the JSON object.""",
-}
-
-
-# ---------------------------------------------------------------------------
-# Per-document-type GENERATION prompts — India law specific
-# ---------------------------------------------------------------------------
-
-_GENERATION_PROMPTS: dict[str, str] = {
-
-    "nda": """You are a senior advocate specialising in Indian contract and IP law.
-Draft a complete, enforceable Non-Disclosure Agreement governed by Indian law.
-
-Legal framework references:
-- Indian Contract Act, 1872 (Sections 27, 73, 74)
-- Information Technology Act, 2000
-- Indian Stamp Act, 1899
-- Copyright Act, 1957
-
-Include these sections:
-1. PARTIES AND RECITALS
-2. DEFINITIONS
-   2.1 Confidential Information
-   2.2 Exclusions from Confidential Information
-3. OBLIGATIONS OF RECEIVING PARTY
-   3.1 Non-Disclosure Obligation
-   3.2 Standard of Care
-   3.3 Permitted Disclosures (including disclosures required by SEBI, RBI, or courts)
-4. TERM AND TERMINATION
-5. RETURN OR DESTRUCTION OF MATERIALS
-6. REMEDIES AND RELIEF
-   6.1 Injunctive Relief under Specific Relief Act, 1963
-   6.2 Damages under Indian Contract Act, 1872
-7. GENERAL PROVISIONS
-   7.1 Governing Law and Jurisdiction (Indian courts)
-   7.2 Dispute Resolution (arbitration under Arbitration and Conciliation Act, 1996)
-   7.3 Entire Agreement
-   7.4 Amendments
-   7.5 Stamp Duty
-8. SIGNATURE BLOCK
-
-Formatting:
-- Section headings in ALL CAPS with number
-- Sub-clauses numbered 1.1, 1.2 etc.
-- Formal legal language compliant with Indian law
-- Use Indian currency (INR/Rupees) where applicable
-- Reference relevant Indian statutes where appropriate
-- Plain text only, no markdown
-- Use actual values provided, use [TO BE AGREED] for missing values""",
-
-    "job_offer": """You are a senior HR professional and employment law expert in India.
-Draft a complete Job Offer / Appointment Letter compliant with Indian labour law.
-
-Legal framework references:
-- Industrial Employment (Standing Orders) Act, 1946
-- Shops and Establishments Act (state-specific)
-- Employees Provident Fund Act, 1952
-- Payment of Gratuity Act, 1972
-- Maternity Benefit Act, 1961
-- Sexual Harassment of Women at Workplace Act, 2013 (POSH)
-
-Include these sections:
-1. DATE AND ADDRESSEE
-2. OPENING — welcome and congratulate the candidate
-3. DESIGNATION AND DEPARTMENT
-4. COMPENSATION STRUCTURE
-   - Gross CTC breakdown (basic, HRA, special allowance, etc.)
-   - PF / EPF contribution
-   - Gratuity eligibility
-5. BENEFITS
-   - Medical / health insurance
-   - Leave entitlements (CL, SL, PL as per Shops Act)
-   - Other perks
-6. DATE OF JOINING AND WORK LOCATION
-7. PROBATION PERIOD AND CONFIRMATION
-8. NOTICE PERIOD
-9. CODE OF CONDUCT AND POLICIES
-   - POSH policy reference
-   - Confidentiality obligation
-10. CONDITIONS OF EMPLOYMENT
-    - Background verification
-    - Document submission
-11. ACCEPTANCE INSTRUCTIONS
-12. CLOSING
-13. SIGNATURE BLOCK
-
-Formatting:
-- Warm professional tone for a letter
-- Reference Indian statutes where appropriate
-- CTC in INR (Indian Rupees)
-- Plain text only, no markdown""",
-
-    "freelancer_agreement": """You are an Indian contracts attorney specialising in IT and creative services law.
-Draft a complete Freelancer / Independent Contractor Agreement under Indian law.
-
-Legal framework references:
-- Indian Contract Act, 1872
-- Copyright Act, 1957 (Section 17 — work for hire)
-- Information Technology Act, 2000
-- Goods and Services Tax Act, 2017 (GST)
-- Income Tax Act, 1961 (TDS under Section 194C / 194J)
-
-Include these sections:
-1. PARTIES AND RECITALS
-2. SCOPE OF WORK
-   2.1 Project Description
-   2.2 Deliverables
-   2.3 Timeline and Milestones
-3. COMPENSATION AND PAYMENT
-   3.1 Project Fee (in INR)
-   3.2 Payment Schedule
-   3.3 GST (if applicable — GSTIN of both parties)
-   3.4 TDS Deduction (Section 194C or 194J as applicable)
-   3.5 Late Payment Interest
-4. REVISIONS AND CHANGE ORDERS
-5. INTELLECTUAL PROPERTY
-   5.1 Assignment of Copyright under Copyright Act, 1957
-   5.2 Moral Rights Waiver
-   5.3 Freelancer Portfolio Rights
-6. CONFIDENTIALITY
-7. INDEPENDENT CONTRACTOR STATUS
-   7.1 No Employer-Employee Relationship
-   7.2 Tax Responsibility
-   7.3 No PF / ESI / Gratuity Obligation
-8. CANCELLATION AND KILL FEE
-9. LIMITATION OF LIABILITY
-10. DISPUTE RESOLUTION
-    - Arbitration under Arbitration and Conciliation Act, 1996
-    - Seat of arbitration
-11. GENERAL PROVISIONS
-    - Governing Law (Indian law)
-    - Stamp Duty
-12. SIGNATURE BLOCK
-
-Formatting:
-- Section headings in ALL CAPS with number
-- Sub-clauses numbered
-- Formal legal language under Indian law
-- All amounts in INR
-- Plain text only, no markdown""",
-
-    "service_agreement": """You are an Indian commercial contracts attorney.
-Draft a complete Service Agreement governed by Indian law.
-
-Legal framework references:
-- Indian Contract Act, 1872
-- Specific Relief Act, 1963
-- Information Technology Act, 2000
-- GST Act, 2017
-- Arbitration and Conciliation Act, 1996
-
-Include these sections:
-1. PARTIES
-2. DEFINITIONS
-3. SCOPE OF SERVICES
-   3.1 Services Description
-   3.2 Service Standards and SLAs
-   3.3 Change in Scope
-4. TERM AND RENEWAL
-5. FEES AND PAYMENT
-   5.1 Service Fees (in INR)
-   5.2 Payment Terms
-   5.3 GST (GSTIN details)
-   5.4 TDS Deduction
-   5.5 Late Payment Interest
-6. INTELLECTUAL PROPERTY
-7. CONFIDENTIALITY AND DATA PROTECTION
-   - Reference IT Act, 2000 and DPDP Act, 2023
-8. REPRESENTATIONS AND WARRANTIES
-9. LIMITATION OF LIABILITY
-10. INDEMNIFICATION
-11. TERMINATION
-    11.1 Termination for Convenience
-    11.2 Termination for Cause
-    11.3 Effect of Termination
-12. DISPUTE RESOLUTION
-    - Arbitration under Arbitration and Conciliation Act, 1996
-    - Governing Law: Indian law
-    - Jurisdiction: courts of [governing state]
-13. GENERAL PROVISIONS
-14. SIGNATURE BLOCK
-
-Formatting:
-- Section headings in ALL CAPS with number
-- Sub-clauses numbered
-- Formal legal language under Indian law
-- All amounts in INR
-- Plain text only, no markdown""",
-
-    "consulting_agreement": """You are an Indian commercial attorney specialising in professional services.
-Draft a complete Consulting Agreement governed by Indian law.
-
-Legal framework references:
-- Indian Contract Act, 1872
-- Copyright Act, 1957
-- Income Tax Act, 1961 (TDS Section 194J)
-- GST Act, 2017
-- Arbitration and Conciliation Act, 1996
-
-Include these sections:
-1. PARTIES
-2. SCOPE OF CONSULTING SERVICES
-   2.1 Scope of Work
-   2.2 Deliverables
-   2.3 Consultant's Resources
-3. TERM
-4. COMPENSATION AND EXPENSES
-   4.1 Consulting Fees (in INR)
-   4.2 Expense Reimbursement
-   4.3 GST (if applicable)
-   4.4 TDS under Section 194J
-   4.5 Invoicing and Payment Timeline
-5. INTELLECTUAL PROPERTY
-   5.1 Work Product Ownership
-   5.2 Background IP
-   5.3 Licence Grant
-6. CONFIDENTIALITY
-7. NON-COMPETE AND NON-SOLICITATION
-   7.1 Non-Competition
-   7.2 Non-Solicitation of Employees
-   7.3 Non-Solicitation of Clients
-8. INDEPENDENT CONTRACTOR STATUS
-   - No PF / ESI / Gratuity obligation
-9. REPRESENTATIONS AND WARRANTIES
-10. LIMITATION OF LIABILITY
-11. TERMINATION
-12. DISPUTE RESOLUTION
-    - Arbitration under Arbitration and Conciliation Act, 1996
-    - Governing Law: Indian law
-13. GENERAL PROVISIONS
-14. SIGNATURE BLOCK
-
-Formatting:
-- Section headings in ALL CAPS with number
-- Sub-clauses numbered
-- Formal legal language under Indian law
-- All amounts in INR
-- Plain text only, no markdown""",
-
-    "lease_agreement": """You are an Indian property law attorney specialising in residential and commercial leases.
-Draft a complete Leave and Licence / Lease Agreement compliant with Indian property law.
-
-Legal framework references:
-- Transfer of Property Act, 1882
-- Registration Act, 1908 (mandatory registration if term > 12 months)
-- Indian Stamp Act, 1899 (state-specific stamp duty)
-- Rent Control Act (state-specific)
-- Maharashtra Rent Control Act / Delhi Rent Act (as applicable)
-
-Include these sections:
-1. PARTIES AND PROPERTY
-   - Full names, addresses, Aadhaar/PAN references
-   - Complete property description with area in sq.ft.
-2. NATURE OF AGREEMENT
-   - Leave and Licence (preferred) or Lease
-   - Distinction from tenancy under Rent Control Act
-3. LICENCE / LEASE TERM
-   - Start date, end date, lock-in period
-4. LICENCE FEE / RENT
-   4.1 Monthly Amount (in INR)
-   4.2 Due Date (e.g. 1st of each month)
-   4.3 Mode of Payment (bank transfer, cheque, UPI)
-   4.4 Annual Escalation clause (typically 5-10%)
-5. REFUNDABLE SECURITY DEPOSIT
-   4.1 Amount (in INR)
-   4.2 Conditions for Deduction
-   4.3 Return Timeline (typically 30-60 days after vacating)
-6. MAINTENANCE AND SOCIETY CHARGES
-7. UTILITIES AND SERVICES
-8. PERMITTED USE
-9. RESTRICTION ON SUBLETTING / ASSIGNMENT
-10. ALTERATIONS AND REPAIRS
-    10.1 Licensor / Landlord Obligations
-    10.2 Licensee / Tenant Obligations
-11. ENTRY BY LICENSOR / LANDLORD
-12. TERMINATION AND NOTICE PERIOD
-13. VACATION OF PREMISES AND MOVE-OUT
-14. STAMP DUTY AND REGISTRATION
-    - Applicable state stamp duty
-    - Registration under Registration Act, 1908
-15. GENERAL PROVISIONS
-    - Governing Law and Jurisdiction
-16. SCHEDULE A — Property Details
-17. SIGNATURE BLOCK WITH WITNESSES
-
-Formatting:
-- Section headings in ALL CAPS with number
-- Sub-clauses numbered
-- Formal legal language under Indian property law
-- All amounts in INR
-- Reference state-specific laws where appropriate
-- Plain text only, no markdown""",
-
-    "employment_contract": """You are an Indian employment law attorney.
-Draft a complete Employment Contract / Appointment Letter compliant with Indian labour law.
-
-Legal framework references:
-- Industrial Employment (Standing Orders) Act, 1946
-- Employees Provident Fund and Miscellaneous Provisions Act, 1952
-- Payment of Gratuity Act, 1972
-- Payment of Bonus Act, 1965
-- Maternity Benefit Act, 1961
-- Sexual Harassment of Women at Workplace (Prevention, Prohibition and Redressal) Act, 2013
-- Shops and Establishments Act (state-specific)
-- Labour Codes (Code on Wages 2019, Code on Social Security 2020)
-- Income Tax Act, 1961 (TDS on salary)
-- Digital Personal Data Protection Act, 2023
-
-Include these sections:
-1. PARTIES
-2. APPOINTMENT AND DESIGNATION
-   2.1 Job Title and Grade
-   2.2 Department and Reporting Structure
-   2.3 Place of Work
-3. DATE OF JOINING AND COMMENCEMENT
-4. NATURE OF EMPLOYMENT
-   - Permanent / Contract / Fixed-term
-5. COMPENSATION AND BENEFITS
-   5.1 Cost to Company (CTC) — annual in INR
-   5.2 CTC Breakup (Basic, HRA, Special Allowance, LTA, etc.)
-   5.3 Provident Fund (EPF) — 12% of Basic under EPF Act, 1952
-   5.4 Gratuity — as per Payment of Gratuity Act, 1972
-   5.5 Health and Medical Insurance
-   5.6 Performance Bonus / Variable Pay
-   5.7 Income Tax (TDS deduction)
-6. WORKING HOURS
-   - As per Shops and Establishments Act of [governing state]
-7. LEAVE ENTITLEMENTS
-   7.1 Earned / Privileged Leave
-   7.2 Casual Leave
-   7.3 Sick / Medical Leave
-   7.4 Maternity / Paternity Leave
-   7.5 National and Festival Holidays
-8. PROBATIONARY PERIOD
-   - Duration, confirmation process, extension
-9. NOTICE PERIOD
-   - During probation and post-confirmation
-10. CODE OF CONDUCT AND POLICIES
-    - Company policies, POSH compliance
-    - Prevention of Sexual Harassment (POSH Act, 2013)
-11. CONFIDENTIALITY AND NON-DISCLOSURE
-12. INTELLECTUAL PROPERTY ASSIGNMENT
-    - All work product vests in employer
-    - Reference Copyright Act, 1957
-13. NON-COMPETE AND NON-SOLICITATION
-    - Reasonable restrictions under Section 27, Indian Contract Act
-14. TERMINATION OF EMPLOYMENT
-    14.1 Resignation by Employee
-    14.2 Termination by Employer
-    14.3 Termination for Cause (misconduct, etc.)
-    14.4 Retirement
-    14.5 Full and Final Settlement
-15. POST-TERMINATION OBLIGATIONS
-16. DATA PROTECTION
-    - Digital Personal Data Protection Act, 2023
-17. GRIEVANCE REDRESSAL
-    - Internal Complaints Committee (POSH)
-    - HR escalation process
-18. GOVERNING LAW AND DISPUTE RESOLUTION
-    - Governing law: Laws of India
-    - Jurisdiction: courts of [governing state]
-    - Arbitration under Arbitration and Conciliation Act, 1996
-19. GENERAL PROVISIONS
-20. SIGNATURE BLOCK
-
-Formatting:
-- Section headings in ALL CAPS with number
-- Sub-clauses numbered
-- Formal legal language under Indian law
-- All amounts in INR
-- Reference specific Indian statutes throughout
-- Plain text only, no markdown""",
-}
-
-
-# ---------------------------------------------------------------------------
-# Intent classification
-# ---------------------------------------------------------------------------
-
-_INTENT_SYSTEM = """You are a legal document classifier for Indian legal documents.
-Read the description and return ONLY the matching slug.
-
-Slugs:
-nda                  - Non-Disclosure Agreement, confidentiality agreement
-job_offer            - Job offer letter, appointment letter, offer of employment
-freelancer_agreement - Freelancer contract, independent contractor agreement
-service_agreement    - Service agreement, vendor agreement, SLA, AMC
-consulting_agreement - Consulting agreement, advisory agreement, retainer
-lease_agreement      - Lease, rent agreement, leave and licence, rental deed
-employment_contract  - Employment contract, employment agreement, service contract
-
-Return ONLY the slug. No explanation. If none match return unknown."""
-
-
-async def classify_intent(user_query: str) -> str | None:
-    client = _get_client()
-    kwargs = _api_kwargs(max_tokens=20, use_json=False)
-    kwargs["messages"] = [
-        {"role": "system", "content": _INTENT_SYSTEM},
-        {"role": "user",   "content": f"Classify:\n\"\"\"{user_query[:800]}\"\"\""},
-    ]
-    try:
-        response = await client.chat.completions.create(**kwargs)
-        raw      = (response.choices[0].message.content or "").strip().lower()
-        raw      = re.sub(r'[^a-z_]', '', raw)
-        if raw in SUPPORTED_DOCUMENT_TYPES:
-            logger.info(f"[doc_gen] intent classified: '{raw}'")
-            return raw
-        resolved = resolve_document_type(raw)
-        if resolved:
-            return resolved
-        logger.warning(f"[doc_gen] intent unknown: '{raw}'")
-        return None
-    except Exception as e:
-        logger.error(f"[doc_gen] intent classification failed: {e}")
-        return None
-
-
-# ---------------------------------------------------------------------------
-# Own JSON extractor
+# Own JSON extractor — no dependency on s_json_utils
 # ---------------------------------------------------------------------------
 
 def _parse_json(raw: str) -> dict:
@@ -792,19 +163,20 @@ def _parse_json(raw: str) -> dict:
                 return data
         except json.JSONDecodeError:
             pass
-    logger.warning("[doc_gen] could not parse JSON")
+    logger.warning("[doc_gen] could not parse JSON from model response")
     return {}
 
 
 # ---------------------------------------------------------------------------
-# Step 1: Extract fields
+# Step 1: Extract fields using EXTRACTION_PROMPTS from t_prompts.py
 # ---------------------------------------------------------------------------
 
 async def _extract_fields(document_type: str, user_query: str) -> dict[str, Any]:
     schema = _SCHEMAS[document_type]
-    system = _EXTRACTION_PROMPTS[document_type]
+    system = EXTRACTION_PROMPTS[document_type]   # ← from t_prompts.py
 
     client = _get_client()
+    # use_json=True → sets response_format=json_object for reliable JSON output
     kwargs = _api_kwargs(max_tokens=4096, use_json=True)
     kwargs["messages"] = [
         {"role": "system", "content": system},
@@ -816,14 +188,17 @@ async def _extract_fields(document_type: str, user_query: str) -> dict[str, Any]
 
     response = await client.chat.completions.create(**kwargs)
     raw      = response.choices[0].message.content or "{}"
+
     logger.info(
         f"[doc_gen] field extraction "
         f"tokens={response.usage.prompt_tokens}in/{response.usage.completion_tokens}out "
         f"finish={response.choices[0].finish_reason}"
     )
+    logger.debug(f"[doc_gen] extraction raw: {raw[:300]}")
 
     fields = _parse_json(raw)
 
+    # Ensure all required fields exist
     for field in schema["required"]:
         if field not in fields or not fields[field]:
             fields[field] = "Not Specified"
@@ -846,7 +221,7 @@ def _get_missing_fields(document_type: str, fields: dict) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Step 3: Generate document text
+# Step 3: Generate document text using GENERATION_PROMPTS from t_prompts.py
 # ---------------------------------------------------------------------------
 
 async def _generate_document_text(
@@ -855,7 +230,7 @@ async def _generate_document_text(
     user_query: str,
 ) -> tuple[str, int, int]:
     doc_name   = SUPPORTED_DOCUMENT_TYPES[document_type]
-    gen_prompt = _GENERATION_PROMPTS[document_type]
+    gen_prompt = GENERATION_PROMPTS[document_type]   # ← from t_prompts.py
 
     field_lines = "\n".join(
         f"  {k.replace('_', ' ').title()}: {v}"
@@ -875,6 +250,7 @@ Additional context from user:
 Write the complete {doc_name} now. Start directly with the document title."""
 
     client = _get_client()
+    # CRITICAL: use_json=False — never set response_format for plain text generation
     kwargs = _api_kwargs(max_tokens=32000, use_json=False)
     kwargs["messages"] = [
         {"role": "system", "content": system},
@@ -894,7 +270,10 @@ Write the complete {doc_name} now. Start directly with the document title."""
     )
 
     if not document_text.strip():
-        logger.error(f"[doc_gen] empty response — finish={finish}")
+        logger.error(
+            f"[doc_gen] empty response — finish={finish} "
+            f"model={os.environ.get('MODEL_NAME', _MODEL)}"
+        )
 
     return document_text, in_tok, out_tok
 
@@ -959,7 +338,6 @@ def _render_docx(document_text: str, document_name: str) -> bytes:
     run.font.size      = Pt(20)
     run.font.color.rgb = WHITE
 
-    # India jurisdiction tag
     para2 = cell.add_paragraph()
     para2.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run2  = para2.add_run("Governed by the Laws of India")
@@ -1024,7 +402,10 @@ def _render_docx(document_text: str, document_name: str) -> bytes:
             p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
             continue
 
-        if in_signature and re.match(r'^(Name|Title|Date|Company|Designation|Signature|Witness|Place|PAN|Aadhaar)\s*:', stripped, re.I):
+        if in_signature and re.match(
+            r'^(Name|Title|Date|Company|Designation|Signature|Witness|Place|PAN|Aadhaar)\s*:',
+            stripped, re.I
+        ):
             label, _, rest = stripped.partition(":")
             lp  = doc.add_paragraph()
             lr  = lp.add_run(label.strip() + ":")
@@ -1086,46 +467,57 @@ async def generate_document(
     document_type: str | None,
     user_query: str,
 ) -> dict:
+    """
+    Main entry point.
+
+    document_type: canonical slug OR None (auto-detected via t_intent.classify_intent)
+    user_query   : free-text description
+
+    Returns dict with keys:
+      status, document_type, document_name, fields, missing_fields,
+      document, docx_bytes, word_count, input_tokens, output_tokens
+    """
     total_in_tok  = 0
     total_out_tok = 0
 
+    # ── Resolve or auto-detect document type ──────────────────────────────
     if document_type:
-        doc_type = resolve_document_type(document_type)
+        doc_type = resolve_document_type(document_type)   # ← from t_intent.py
         if not doc_type:
             return {
-                "status":        "unknown_type",
-                "document_type": document_type,
-                "document_name": "",
-                "fields":        {},
+                "status":         "unknown_type",
+                "document_type":  document_type,
+                "document_name":  "",
+                "fields":         {},
                 "missing_fields": [],
-                "document":      "",
-                "docx_bytes":    b"",
-                "word_count":    0,
-                "input_tokens":  0,
-                "output_tokens": 0,
+                "document":       "",
+                "docx_bytes":     b"",
+                "word_count":     0,
+                "input_tokens":   0,
+                "output_tokens":  0,
                 "message": (
                     f"'{document_type}' is not supported. "
                     f"Supported: {', '.join(SUPPORTED_DOCUMENT_TYPES.keys())}"
                 ),
             }
     else:
-        logger.info("[doc_gen] document_type not provided — classifying intent...")
-        doc_type = await classify_intent(user_query)
+        logger.info("[doc_gen] document_type not provided — classifying intent via t_intent...")
+        doc_type = await classify_intent(user_query)      # ← from t_intent.py
         if not doc_type:
             return {
-                "status":        "unknown_type",
-                "document_type": None,
-                "document_name": "",
-                "fields":        {},
+                "status":         "unknown_type",
+                "document_type":  None,
+                "document_name":  "",
+                "fields":         {},
                 "missing_fields": [],
-                "document":      "",
-                "docx_bytes":    b"",
-                "word_count":    0,
-                "input_tokens":  total_in_tok,
-                "output_tokens": total_out_tok,
+                "document":       "",
+                "docx_bytes":     b"",
+                "word_count":     0,
+                "input_tokens":   total_in_tok,
+                "output_tokens":  total_out_tok,
                 "message": (
-                    "Could not determine document type. "
-                    "Please specify document_type. "
+                    "Could not determine document type from description. "
+                    "Please specify document_type explicitly. "
                     f"Supported: {', '.join(SUPPORTED_DOCUMENT_TYPES.keys())}"
                 ),
             }
@@ -1133,17 +525,22 @@ async def generate_document(
     doc_name = SUPPORTED_DOCUMENT_TYPES[doc_type]
     logger.info(f"[doc_gen] generating '{doc_name}' ({len(user_query)} chars)")
 
-    fields  = await _extract_fields(doc_type, user_query)
+    # ── Step 1: Extract fields ─────────────────────────────────────────────
+    fields = await _extract_fields(doc_type, user_query)
+
+    # ── Step 2: Check missing ──────────────────────────────────────────────
     missing = _get_missing_fields(doc_type, fields)
     if missing:
-        logger.warning(f"[doc_gen] missing: {missing}")
+        logger.warning(f"[doc_gen] missing required fields: {missing}")
 
+    # ── Step 3: Generate document text ────────────────────────────────────
     document_text, in_tok, out_tok = await _generate_document_text(
         doc_type, fields, user_query
     )
     total_in_tok  += in_tok
     total_out_tok += out_tok
 
+    # ── Step 4: Render DOCX ───────────────────────────────────────────────
     docx_bytes = _render_docx(document_text, doc_name)
 
     return {
