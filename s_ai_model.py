@@ -24,10 +24,12 @@ if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY is not set in environment variables. Please set it in your .env file.")
 
 # Models that only accept default temperature (1) and reject 0.0
-_FIXED_TEMPERATURE_MODELS = {"gpt-5-nano", "gpt-4o-mini", "o1", "o1-mini", "o3-mini", "o3"}
-
+_FIXED_TEMPERATURE_MODELS      = {"gpt-5-nano", "gpt-4.1-nano", "gpt-4o-mini", "o1", "o1-mini", "o3-mini", "o3"}
 # Models that use max_completion_tokens instead of max_tokens
-_MAX_COMPLETION_TOKENS_MODELS = {"gpt-4o-mini", "gpt-5-nano", "o1", "o1-mini", "o3-mini", "o3"}
+_MAX_COMPLETION_TOKENS_MODELS  = {"gpt-4o-mini", "gpt-5-nano", "gpt-4.1-nano", "o1", "o1-mini", "o3-mini", "o3"}
+
+
+
 
 # Token chunking
 # 120,000 fits comfortably within gpt-4o / gpt-4o-mini 128k context window

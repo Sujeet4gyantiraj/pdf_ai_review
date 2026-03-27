@@ -95,3 +95,4 @@ pdf2docx
 python-docx
 python-dotenv
 reportlab
+python-docx
