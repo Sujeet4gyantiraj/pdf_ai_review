@@ -5289,3 +5289,101 @@ Traceback (most recent call last):
   File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/encoders.py", line 69, in <lambda>
     bytes: lambda o: o.decode(),
 UnicodeDecodeError: 'utf-8' codec can't decode byte 0x93 in position 10: invalid start byte
+[2026-03-27 05:17:50 +0000] [1819106] [INFO] Handling signal: int
+[2026-03-27 05:17:50 +0000] [1819109] [INFO] Shutting down
+[2026-03-27 05:17:50 +0000] [1819114] [INFO] Shutting down
+[2026-03-27 05:17:51 +0000] [1819109] [INFO] Waiting for application shutdown.
+[2026-03-27 05:17:51 +0000] [1819109] [INFO] Application shutdown complete.
+[2026-03-27 05:17:51 +0000] [1819109] [INFO] Finished server process [1819109]
+[2026-03-27 05:17:51 +0000] [1819114] [INFO] Waiting for application shutdown.
+[2026-03-27 05:17:51 +0000] [1819114] [INFO] Application shutdown complete.
+[2026-03-27 05:17:51 +0000] [1819114] [INFO] Finished server process [1819114]
+[2026-03-27 05:17:52 +0000] [1819106] [WARNING] Worker (pid:1819109) was sent SIGINT!
+[2026-03-27 05:17:52 +0000] [1819106] [WARNING] Worker (pid:1819114) was sent SIGINT!
+[2026-03-27 05:17:52 +0000] [1819106] [INFO] Shutting down: Master
+[2026-03-27 05:17:52 +0000] [1828329] [INFO] Starting gunicorn 25.1.0
+[2026-03-27 05:17:52 +0000] [1828329] [INFO] Listening at: http://0.0.0.0:8001 (1828329)
+[2026-03-27 05:17:52 +0000] [1828329] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-27 05:17:52 +0000] [1828329] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-27 05:17:52 +0000] [1828336] [INFO] Booting worker with pid: 1828336
+[2026-03-27 05:17:52 +0000] [1828337] [INFO] Booting worker with pid: 1828337
+[2026-03-27 05:18:24 +0000] [1828336] [INFO] Started server process [1828336]
+[2026-03-27 05:18:24 +0000] [1828336] [INFO] Waiting for application startup.
+[2026-03-27 05:18:24 +0000] [1828336] [INFO] Application startup complete.
+[2026-03-27 05:18:38 +0000] [1828337] [INFO] Started server process [1828337]
+[2026-03-27 05:18:38 +0000] [1828337] [INFO] Waiting for application startup.
+[2026-03-27 05:18:39 +0000] [1828337] [INFO] Application startup complete.
+[2026-03-27 05:30:32 +0000] [1828329] [INFO] Handling signal: int
+[2026-03-27 05:30:32 +0000] [1828337] [INFO] Shutting down
+[2026-03-27 05:30:32 +0000] [1828336] [INFO] Shutting down
+[2026-03-27 05:30:32 +0000] [1828337] [INFO] Waiting for application shutdown.
+[2026-03-27 05:30:32 +0000] [1828337] [INFO] Application shutdown complete.
+[2026-03-27 05:30:32 +0000] [1828337] [INFO] Finished server process [1828337]
+[2026-03-27 05:30:32 +0000] [1828336] [INFO] Waiting for application shutdown.
+[2026-03-27 05:30:32 +0000] [1828336] [INFO] Application shutdown complete.
+[2026-03-27 05:30:32 +0000] [1828336] [INFO] Finished server process [1828336]
+[2026-03-27 05:30:33 +0000] [1828329] [WARNING] Worker (pid:1828337) was sent SIGINT!
+[2026-03-27 05:30:33 +0000] [1828329] [WARNING] Worker (pid:1828336) was sent SIGINT!
+[2026-03-27 05:30:34 +0000] [1828329] [INFO] Shutting down: Master
+[2026-03-27 05:30:34 +0000] [1832827] [INFO] Starting gunicorn 25.1.0
+[2026-03-27 05:30:34 +0000] [1832827] [INFO] Listening at: http://0.0.0.0:8001 (1832827)
+[2026-03-27 05:30:34 +0000] [1832827] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-03-27 05:30:34 +0000] [1832827] [INFO] Control socket listening at /home/ubuntu/pdf_ai_review/gunicorn.ctl
+[2026-03-27 05:30:34 +0000] [1832830] [INFO] Booting worker with pid: 1832830
+[2026-03-27 05:30:34 +0000] [1832831] [INFO] Booting worker with pid: 1832831
+[2026-03-27 05:31:37 +0000] [1832830] [INFO] Started server process [1832830]
+[2026-03-27 05:31:37 +0000] [1832830] [INFO] Waiting for application startup.
+[2026-03-27 05:31:38 +0000] [1832830] [INFO] Application startup complete.
+[2026-03-27 05:31:52 +0000] [1832831] [INFO] Started server process [1832831]
+[2026-03-27 05:31:52 +0000] [1832831] [INFO] Waiting for application startup.
+[2026-03-27 05:31:52 +0000] [1832831] [INFO] Application startup complete.
+[2026-03-27 05:34:05 +0000] [1832831] [WARNING] Invalid HTTP request received.
+[2026-03-27 05:35:04 +0000] [1832831] [ERROR] Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/applications.py", line 1134, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/routing.py", line 119, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/routing.py", line 105, in app
+    response = await f(request)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/routing.py", line 446, in app
+    content = await serialize_response(
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/routing.py", line 301, in serialize_response
+    return jsonable_encoder(response_content)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/encoders.py", line 289, in jsonable_encoder
+    encoded_value = jsonable_encoder(
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/encoders.py", line 318, in jsonable_encoder
+    return ENCODERS_BY_TYPE[type(obj)](obj)
+  File "/home/ubuntu/ai_env/lib/python3.10/site-packages/fastapi/encoders.py", line 69, in <lambda>
+    bytes: lambda o: o.decode(),
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x93 in position 10: invalid start byte
+[2026-03-27 05:38:33 +0000] [1832831] [WARNING] Invalid HTTP request received.
+[2026-03-27 05:41:31 +0000] [1832831] [WARNING] Invalid HTTP request received.

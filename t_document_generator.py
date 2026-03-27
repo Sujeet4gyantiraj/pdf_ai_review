@@ -336,7 +336,7 @@ Rules:
     user = f"Description:\n\"\"\"{user_query}\"\"\"\n\nExtract all fields as a JSON object."
 
     client = _get_client()
-    kwargs = _get_model_kwargs(max_tokens=1000)
+    kwargs = _get_model_kwargs(max_tokens=4096)
     kwargs["messages"] = [
         {"role": "system", "content": system},
         {"role": "user",   "content": user},
@@ -426,7 +426,7 @@ Generate the FULL legal document now.
 """
 
         client = _get_client()
-        kwargs = _get_model_kwargs(max_tokens=2500)
+        kwargs = _get_model_kwargs(max_tokens=4096)
 
         kwargs["messages"] = [
             {"role": "system", "content": system_prompt},
