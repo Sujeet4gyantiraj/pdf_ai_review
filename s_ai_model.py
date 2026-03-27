@@ -32,7 +32,7 @@ _MAX_COMPLETION_TOKENS_MODELS = {"gpt-4o-mini", "gpt-5-nano", "o1", "o1-mini", "
 # Token chunking
 # 120,000 fits comfortably within gpt-4o / gpt-4o-mini 128k context window
 # leaving ~8k tokens headroom for system prompt + output
-TOKEN_CHUNK_SIZE    = 120000
+TOKEN_CHUNK_SIZE    = 800000
 TOKEN_CHUNK_OVERLAP = 500
 
 # Max output tokens per API call
