@@ -25,7 +25,7 @@ Generate a complete, well-structured HTML document for an offer letter based on 
 User Request: {user_request}
 
 Ensure the HTML includes `<html>`, `<head>`, `<style>`, `<body>`, `<p>`, `<h1>`, etc., as appropriate for a formal letter.
-Extract key information like employee name, salary, and position from the user's request and incorporate it into the letter.
+For key fields like employee name, salary, position, and dates, include the `contenteditable='true'` attribute on the HTML element containing that information.
 Do NOT include any markdown, backticks, or extra text outside the HTML structure.""",
         input_variables=["user_request"]
     ),
@@ -35,7 +35,7 @@ Generate a complete, well-structured HTML document for an invoice based on the f
 
 User Request: {user_request}
 
-Include typical invoice fields like client name, item list, quantities, prices, total amount, and date.
+Include typical invoice fields like client name, item list, quantities, prices, total amount, and date. For each of these key pieces of information, add the `contenteditable='true'` attribute to their respective HTML elements.
 Ensure the HTML is clean and formatted for readability.
 Do NOT include any markdown, backticks, or extra text outside the HTML structure.""",
         input_variables=["user_request"]
@@ -47,6 +47,7 @@ Generate a complete HTML document based on the user's prompt and document ID.
 User Prompt: {user_prompt}
 Document ID: {document_id}
 
+For any prominent text content that could be edited, add the `contenteditable='true'` attribute to its HTML element (e.g., a paragraph or heading).
 Ensure the HTML is well-formed. Do NOT include any markdown or extra text outside the HTML.""",
         input_variables=["user_prompt", "document_id"]
     )
