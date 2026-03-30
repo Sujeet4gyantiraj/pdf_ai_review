@@ -11,6 +11,7 @@ class SimulatedPromptTemplate:
         formatted_template = self.template
         for var in self.input_variables:
             if var in kwargs:
+                # Replace placeholders with actual values, ensuring proper escaping if necessary
                 formatted_template = formatted_template.replace(f"{{{var}}}", str(kwargs[var]))
         return formatted_template
 
@@ -18,48 +19,35 @@ class SimulatedPromptTemplate:
 # These could be loaded from external files or a database in a real application
 prompt_templates = {
     "offer_letter": SimulatedPromptTemplate(
-        template=(
-            "You are an AI assistant that generates professional offer letters in HTML format. "
-            "Generate a complete, well-structured HTML document for an offer letter based on the following details:
+        template="""You are an AI assistant that generates professional offer letters in HTML format.
+Generate a complete, well-structured HTML document for an offer letter based on the following details:
 
-"
-            "User Request: {user_request}
+User Request: {user_request}
 
-"
-            "Ensure the HTML includes `<html>`, `<head>`, `<style>`, `<body>`, `<p>`, `<h1>`, etc., as appropriate for a formal letter. "
-            "Extract key information like employee name, salary, and position from the user's request and incorporate it into the letter. "
-            "Do NOT include any markdown, backticks, or extra text outside the HTML structure."
-        ),
+Ensure the HTML includes `<html>`, `<head>`, `<style>`, `<body>`, `<p>`, `<h1>`, etc., as appropriate for a formal letter.
+Extract key information like employee name, salary, and position from the user's request and incorporate it into the letter.
+Do NOT include any markdown, backticks, or extra text outside the HTML structure.""",
         input_variables=["user_request"]
     ),
     "invoice": SimulatedPromptTemplate(
-        template=(
-            "You are an AI assistant that generates invoices in HTML format. "
-            "Generate a complete, well-structured HTML document for an invoice based on the following details:
+        template="""You are an AI assistant that generates invoices in HTML format.
+Generate a complete, well-structured HTML document for an invoice based on the following details:
 
-"
-            "User Request: {user_request}
+User Request: {user_request}
 
-"
-            "Include typical invoice fields like client name, item list, quantities, prices, total amount, and date. "
-            "Ensure the HTML is clean and formatted for readability. "
-            "Do NOT include any markdown, backticks, or extra text outside the HTML structure."
-        ),
+Include typical invoice fields like client name, item list, quantities, prices, total amount, and date.
+Ensure the HTML is clean and formatted for readability.
+Do NOT include any markdown, backticks, or extra text outside the HTML structure.""",
         input_variables=["user_request"]
     ),
     "example_type": SimulatedPromptTemplate(
-        template=(
-            "You are an AI assistant that generates example HTML documents. "
-            "Generate a complete HTML document based on the user's prompt and document ID.
+        template="""You are an AI assistant that generates example HTML documents.
+Generate a complete HTML document based on the user's prompt and document ID.
 
-"
-            "User Prompt: {user_prompt}
-"
-            "Document ID: {document_id}
+User Prompt: {user_prompt}
+Document ID: {document_id}
 
-"
-            "Ensure the HTML is well-formed. Do NOT include any markdown or extra text outside the HTML."
-        ),
+Ensure the HTML is well-formed. Do NOT include any markdown or extra text outside the HTML.""",
         input_variables=["user_prompt", "document_id"]
     )
 }
