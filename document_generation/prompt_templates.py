@@ -50,3 +50,28 @@ Do NOT include any markdown or extra text outside the HTML.""",
         input_variables=["user_prompt", "document_id"]
     )
 }
+
+
+
+REGENERATE_PROMPT = SimulatedPromptTemplate(
+    template="""You are an expert HTML editor. 
+You will be provided with an existing HTML document and a user's request for modification.
+
+GOAL:
+Update the existing HTML content based on the user's instructions while maintaining the exact same CSS styles, design, and layout.
+
+STRICT RULES:
+1. Return ONLY the complete, updated HTML document starting with <html> and ending with </html>.
+2. Ensure the `<body>` (or its primary content container) remains `contenteditable='true'`.
+3. Do NOT include markdown backticks (```html), explanations, or notes.
+4. Preserve all original <style> blocks and CSS logic.
+5. Apply the changes requested by the user accurately.
+
+Existing HTML:
+{existing_html}
+
+User Modification Request:
+{modification_query}
+""",
+    input_variables=["existing_html", "modification_query"]
+)

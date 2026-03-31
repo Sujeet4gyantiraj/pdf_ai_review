@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from fastapi.responses import HTMLResponse
 from s_ai_model import run_llm
-from .prompt_templates import SimulatedPromptTemplate, prompt_templates # Import from new file
+from .prompt_templates import SimulatedPromptTemplate, prompt_templates, REGENERATE_PROMPT 
 
 router = APIRouter()
 
@@ -40,3 +40,43 @@ async def generate_document_html(request: DocumentGenerationRequest):
         return generated_html
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI model generation failed: {str(e)}")
+    
+
+
+class DocumentRegenerationRequest(BaseModel):
+    existing_html: str
+    modification_query: str
+
+
+def clean_html_output(raw_html: str) -> str:
+    """Removes common LLM artifacts like markdown code blocks."""
+    cleaned = raw_html.replace("```html", "").replace("```", "").strip()
+    return cleaned
+
+@router.post("/regenerate-html", response_class=HTMLResponse)
+async def regenerate_document_html(request: DocumentRegenerationRequest):
+    """
+    Updates an existing HTML response based on a modification query.
+    """
+    if not request.existing_html.strip():
+        raise HTTPException(status_code=400, detail="Existing HTML content is empty.")
+
+    # Format the specialized regeneration prompt
+    system_prompt = REGENERATE_PROMPT.format(
+        existing_html=request.existing_html,
+        modification_query=request.modification_query
+    )
+
+    try:
+        # Call AI with the modification request
+        updated_raw = await run_llm(
+            text=f"Modify this document as follows: {request.modification_query}",
+            system_prompt=system_prompt,
+        )
+
+        # Clean backticks and return as HTML
+        cleaned_html = clean_html_output(updated_raw)
+        return HTMLResponse(content=cleaned_html)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Regeneration failed: {str(e)}")
