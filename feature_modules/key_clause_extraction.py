@@ -4,9 +4,9 @@ import uuid
 import os
 import logging
 
-from s_ai_model import run_llm
-from s_pdf_utils import load_pdf, get_page_count, all_pages_blank
-from backupfiles.t_utils import extract_json_from_text
+from llm_model.ai_model import run_llm
+from utils.pdf_utils import load_pdf, get_page_count, all_pages_blank
+from utils.json_utils import extract_json as extract_json_from_text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

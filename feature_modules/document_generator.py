@@ -20,8 +20,8 @@ from typing import Any
 from openai import AsyncOpenAI
 
 # Import prompts and intent from separate modules
-from t_prompts import EXTRACTION_PROMPTS, GENERATION_PROMPTS
-from t_intent  import classify_intent, resolve_document_type
+from feature_modules.prompts import EXTRACTION_PROMPTS, GENERATION_PROMPTS
+from feature_modules.intent  import classify_intent, resolve_document_type
 
 logger = logging.getLogger(__name__)
 

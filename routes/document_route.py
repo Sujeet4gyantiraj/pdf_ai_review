@@ -26,14 +26,14 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 # ── Database ─────────────────────────────────────────────────────────────────
-from s_db import (
+from db_files.db import (
     log_document_request,
     get_document_stats,
     get_recent_documents,
 )
 
 # ── Core generation logic ─────────────────────────────────────────────────────
-from t_document_generator import (
+from feature_modules.document_generator import (
     generate_document,
     SUPPORTED_DOCUMENT_TYPES,
     _SCHEMAS,
@@ -45,10 +45,10 @@ from t_document_generator import (
 )
 
 # ── Prompts (moved to t_prompts.py) ──────────────────────────────────────────
-from t_prompts import GENERATION_PROMPTS
+from feature_modules.prompts import GENERATION_PROMPTS
 
 # ── Intent classification (moved to t_intent.py) ─────────────────────────────
-from t_intent import classify_intent, resolve_document_type
+from feature_modules.intent import classify_intent, resolve_document_type
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["Document Generation"])
