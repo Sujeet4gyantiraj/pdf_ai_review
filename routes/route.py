@@ -10,7 +10,7 @@ import logging
 from functools import partial
 
 from utils.pdf_utils import load_pdf, get_page_count, all_pages_blank
-from llm_model.ai_model import generate_analysis, generate_analysis_stream
+from llm_model.ai_model import generate_analysis, generate_analysis_stream, transcribe_audio
 from utils.json_utils import extract_json
 from db_files.db import log_request
 from feature_modules.key_clause_extraction import classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
@@ -443,6 +443,42 @@ async def analyze_pdf_stream(
             "Connection":        "keep-alive",
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# POST /speech-to-text
+# ---------------------------------------------------------------------------
+
+_ALLOWED_AUDIO_EXTENSIONS = {
+    ".flac", ".m4a", ".mp3", ".mp4", ".mpeg", ".mpga",
+    ".oga", ".ogg", ".wav", ".webm",
+}
+
+@router.post("/speech-to-text")
+async def speech_to_text(file: UploadFile = File(...)):
+    """
+    Transcribe an uploaded audio file to text using OpenAI Whisper.
+    Supported formats: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm.
+    Returns: {"text": "<transcription>"}
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided.")
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in _ALLOWED_AUDIO_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported audio format '{ext}'. Allowed: {', '.join(sorted(_ALLOWED_AUDIO_EXTENSIONS))}",
+        )
+
+    try:
+        audio_bytes = await file.read()
+        transcript = await transcribe_audio(audio_bytes, file.filename)
+    except Exception as e:
+        logger.exception(f"[speech-to-text] transcription failed: {e}")
+        raise HTTPException(status_code=500, detail="Audio transcription failed.")
+
+    return {"text": transcript}
 
 
 # ---------------------------------------------------------------------------

@@ -335,6 +335,29 @@ async def _run_inference_stream(messages: list[dict], label: str = ""):
 #   - setting json_object without "json" in messages → 400 error from OpenAI
 # ---------------------------------------------------------------------------
 
+async def transcribe_audio(audio_bytes: bytes, filename: str) -> str:
+    """
+    Transcribe audio using OpenAI Whisper.
+    Accepts any format supported by the Whisper API
+    (flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm).
+    Returns the transcribed text string.
+    """
+    import io
+    t0 = time.perf_counter()
+    try:
+        audio_file = (filename, io.BytesIO(audio_bytes))
+        response = await _client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file,
+        )
+        elapsed = time.perf_counter() - t0
+        logger.info(f"[transcribe_audio] done in {elapsed:.2f}s — {len(response.text)} chars")
+        return response.text
+    except Exception as e:
+        logger.exception(f"[transcribe_audio] Whisper API call failed: {e}")
+        raise
+
+
 async def run_llm(
     text: str,
     system_prompt: str,
