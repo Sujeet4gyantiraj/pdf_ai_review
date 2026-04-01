@@ -4,10 +4,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from s_route import router
-from t_document_route import router as document_router
+from routes.route import router
+
 from document_generation.document_generator import router as document_generate_router
-from s_db import init_db, close_pool
+from db_files.db import init_db, close_pool
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="PDF AI Review API",
     description="""
-## PDF AI Review + Legal Document Generation API
+## PDF AI Review + Document Generation API
 
 ### PDF Analysis
 - **POST /analyze** — Analyse a PDF, return overview, summary, highlights
@@ -73,16 +73,13 @@ app = FastAPI(
 - **POST /detect-risks** — Detect legal/financial risks in a document
 - **POST /convert/pdf-to-docx** — Convert PDF to DOCX
 
-### Document Generation
-- **GET /documents/types** — List all supported document types
-- **POST /documents/extract-fields** — Extract fields from description (no generation)
-- **POST /documents/generate** — Generate a complete legal document
-- **POST /documents/generate/stream** — Generate with real-time token streaming
+### Document Generation (HTML)
+- **POST /generate-html** — Generate an HTML document of any type from a text prompt
+- **POST /regenerate-html** — Modify an existing HTML document by document_id
 """,
     version="2.0.0",
     lifespan=lifespan,
 )
 
 app.include_router(router)
-app.include_router(document_router)
 app.include_router(document_generate_router)

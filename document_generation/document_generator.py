@@ -1,154 +1,192 @@
 import json
 import os
+import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 from fastapi.responses import HTMLResponse
-from s_ai_model import run_llm
-from .prompt_templates import SimulatedPromptTemplate, prompt_templates, REGENERATE_PROMPT 
+from openai import AsyncOpenAI
+from dotenv import load_dotenv
+from .prompt_templates import DOCUMENT_GENERATION_PROMPT, REGENERATE_PROMPT
 
+load_dotenv()
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# --- Local File Storage Helpers ---
-DB_FILE = "html_db.json"
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
 
-def get_storage():
-    """Load the JSON storage file."""
-    if not os.path.exists(DB_FILE):
+_MODEL      = os.environ.get("MODEL_NAME", "gpt-5-nano")
+_API_KEY    = os.environ.get("OPENAI_API_KEY", "")
+_CLIENT     = AsyncOpenAI(api_key=_API_KEY)
+
+# HTML documents can be large — use a higher output token limit than the
+# default 4096 used by run_llm (which is designed for text analysis).
+_HTML_MAX_OUTPUT_TOKENS = 16000
+
+# Models that do not support the temperature parameter
+_FIXED_TEMPERATURE_MODELS = {
+    "gpt-5-nano", "gpt-4.1-nano", "gpt-4o-mini",
+    "o1", "o1-mini", "o3-mini", "o3",
+}
+
+# Models that use max_completion_tokens instead of max_tokens
+_MAX_COMPLETION_TOKENS_MODELS = {
+    "gpt-5-nano", "gpt-4.1-nano", "gpt-4o-mini",
+    "o1", "o1-mini", "o3-mini", "o3",
+}
+
+# ---------------------------------------------------------------------------
+# Storage — absolute path anchored to this file's directory
+# ---------------------------------------------------------------------------
+
+_DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "html_db.json")
+
+
+def get_storage() -> dict:
+    if not os.path.exists(_DB_FILE):
         return {}
     try:
-        with open(DB_FILE, "r", encoding="utf-8") as f:
+        with open(_DB_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    except:
+    except (json.JSONDecodeError, OSError):
         return {}
 
-def update_storage(doc_id: str, html_content: str):
-    """Save or update a document in the JSON storage."""
+
+def update_storage(doc_id: str, html_content: str) -> None:
     db = get_storage()
     db[doc_id] = html_content
-    with open(DB_FILE, "w", encoding="utf-8") as f:
+    with open(_DB_FILE, "w", encoding="utf-8") as f:
         json.dump(db, f, indent=4)
 
-# --- Request Models ---
+
+# ---------------------------------------------------------------------------
+# Request Models
+# ---------------------------------------------------------------------------
 
 class DocumentGenerationRequest(BaseModel):
     document_id: str
-    document_type: str
     user_prompt: str
 
+
 class DocumentRegenerationRequest(BaseModel):
-    document_id: str  # Use ID to look up the saved HTML
+    document_id: str
     modification_query: str
 
-# --- Output Cleaning ---
 
-def clean_html_output(raw_html: str) -> str:
-    """Removes common LLM artifacts like markdown code blocks."""
-    cleaned = raw_html.strip()
+# ---------------------------------------------------------------------------
+# LLM caller — dedicated for HTML generation with higher output token limit
+# ---------------------------------------------------------------------------
+
+async def _call_llm(system_prompt: str, user_message: str) -> str:
+    model = os.environ.get("MODEL_NAME", _MODEL)
+
+    kwargs: dict = {
+        "model":    model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_message},
+        ],
+    }
+
+    if model not in _FIXED_TEMPERATURE_MODELS:
+        kwargs["temperature"] = 0.3
+
+    if model in _MAX_COMPLETION_TOKENS_MODELS:
+        kwargs["max_completion_tokens"] = _HTML_MAX_OUTPUT_TOKENS
+    else:
+        kwargs["max_tokens"] = _HTML_MAX_OUTPUT_TOKENS
+
+    try:
+        response = await _CLIENT.chat.completions.create(**kwargs)
+        content  = response.choices[0].message.content or ""
+        logger.info(
+            f"[html-gen] in={response.usage.prompt_tokens} "
+            f"out={response.usage.completion_tokens} "
+            f"model={model}"
+        )
+        return content
+    except Exception as e:
+        logger.exception(f"[html-gen] OpenAI call failed: {e}")
+        raise
+
+
+# ---------------------------------------------------------------------------
+# Output cleaning
+# ---------------------------------------------------------------------------
+
+def _clean_html(raw: str) -> str:
+    cleaned = raw.strip()
     if "```" in cleaned:
         cleaned = cleaned.replace("```html", "").replace("```", "").strip()
-    
-    # Extract only the content between <html> tags if AI added extra text
     start = cleaned.find("<html")
-    end = cleaned.rfind("</html>")
+    end   = cleaned.rfind("</html>")
     if start != -1 and end != -1:
         cleaned = cleaned[start : end + 7]
     return cleaned
 
-# --- Endpoints ---
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 
 @router.post("/generate-html", response_class=HTMLResponse)
 async def generate_document_html(request: DocumentGenerationRequest):
     """
-    Generates HTML, saves it to html_db.json using the provided document_id, 
-    and returns the raw HTML.
+    Generates an HTML document of any type based on user_prompt.
+    The LLM infers the document type automatically from the prompt.
+    Saves to html_db.json and returns raw HTML.
     """
-    selected_template = prompt_templates.get(request.document_type)
-
-    if not selected_template:
-        # Use the "default" template if the requested document_type is not found
-        selected_template = prompt_templates.get("default")
-        if not selected_template:
-            # This should ideally not happen if "default" is always present
-            raise HTTPException(status_code=500, detail="Default prompt template not found.")
-        # Optionally, log that a default template is being used
-        print(f"Warning: Document type '{request.document_type}' not found. Using default template.")
-
-
-    # Format prompt
-    # The default template only uses 'user_request'
-    if request.document_type == "example_type":
-        system_prompt = selected_template.format(
-            user_prompt=request.user_prompt,
-            document_id=request.document_id
-        )
-    elif request.document_type in ["offer_letter", "invoice", "default"]: # Explicitly include "default" here
-        system_prompt = selected_template.format(user_request=request.user_prompt)
-    else: # Fallback for any other custom templates that might exist
-        system_prompt = selected_template.format(user_request=request.user_prompt)
+    system_prompt = DOCUMENT_GENERATION_PROMPT.format(user_request=request.user_prompt)
 
     try:
-        # 1. Generate
-        generated_raw = await run_llm(
-            text=request.user_prompt,
-            system_prompt=system_prompt,
-        )
-        cleaned_html = clean_html_output(generated_raw)
+        raw_html     = await _call_llm(system_prompt, request.user_prompt)
+        cleaned_html = _clean_html(raw_html)
 
         if not cleaned_html.strip():
-            # If after cleaning, the HTML is empty, return a default error HTML
-            print(f"Warning: AI generated empty HTML for document_id: {request.document_id}. Returning default error HTML.")
-            # Include the raw LLM output in the detail for debugging
             raise HTTPException(
-                status_code=500, 
-                detail=f"AI generated empty HTML. Raw LLM Output: {generated_raw}"
+                status_code=500,
+                detail=f"AI generated empty HTML. Raw output: {raw_html[:500]}"
             )
 
-        # 2. Store in JSON file using provided document_id
         update_storage(request.document_id, cleaned_html)
-
-        # 3. Return Raw HTML (Response structure unchanged)
         return HTMLResponse(content=cleaned_html)
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI model generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
 
 @router.post("/regenerate-html", response_class=HTMLResponse)
 async def regenerate_document_html(request: DocumentRegenerationRequest):
     """
-    Looks up HTML from storage by document_id, applies modifications, 
-    updates storage, and returns modified raw HTML.
+    Looks up HTML by document_id, applies user modifications,
+    updates storage, and returns the modified HTML.
     """
-    # 1. Retrieve the saved HTML from the local JSON file
-    db = get_storage()
+    db            = get_storage()
     existing_html = db.get(request.document_id)
 
     if not existing_html:
         raise HTTPException(
-            status_code=404, 
+            status_code=404,
             detail=f"No document found with ID '{request.document_id}'. Generate it first."
         )
 
-    # 2. Prepare the modification prompt using the stored HTML
     system_prompt = REGENERATE_PROMPT.format(
         existing_html=existing_html,
         modification_query=request.modification_query
     )
 
     try:
-        # 3. Call AI to apply changes
-        updated_raw = await run_llm(
-            text=f"Instructions: {request.modification_query}",
-            system_prompt=system_prompt,
-        )
-        cleaned_html = clean_html_output(updated_raw)
+        raw_html     = await _call_llm(system_prompt, request.modification_query)
+        cleaned_html = _clean_html(raw_html)
 
-        # 4. Update the storage with the new version
         update_storage(request.document_id, cleaned_html)
-
-        # 5. Return Raw HTML (Consistent with generate-html)
         return HTMLResponse(content=cleaned_html)
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Regeneration failed: {str(e)}")
