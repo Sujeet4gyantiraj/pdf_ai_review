@@ -48,6 +48,17 @@ Document ID: {document_id}
 Ensure the HTML includes `<html>`, `<head>`, `<style>`, and `<body>`. Make the entire `<body>` tag (or its direct primary content container, like a main `div`) editable by adding the `contenteditable='true'` attribute. All text content inside the body should then be editable.
 Do NOT include any markdown or extra text outside the HTML.""",
         input_variables=["user_prompt", "document_id"]
+    ),
+    "default": SimulatedPromptTemplate(
+        template="""You are an AI assistant that generates professional HTML documents.
+Generate a complete, well-structured HTML document based on the following user request.
+
+User Request: {user_request}
+
+Ensure the HTML includes `<html>`, `<head>`, `<style>`, and `<body>`. Make the entire `<body>` tag (or its direct primary content container, like a main `div`) editable by adding the `contenteditable='true'` attribute. All text content inside the body should then be editable.
+Do NOT include any markdown, backticks, or extra text outside the HTML structure.
+If the request is ambiguous or a specific document type was not provided, generate a general purpose document (e.g., a simple letter, a basic report outline).""",
+        input_variables=["user_request"]
     )
 }
 

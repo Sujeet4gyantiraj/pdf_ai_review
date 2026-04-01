@@ -66,15 +66,25 @@ async def generate_document_html(request: DocumentGenerationRequest):
     selected_template = prompt_templates.get(request.document_type)
 
     if not selected_template:
-        raise HTTPException(status_code=404, detail=f"Prompt template not found: {request.document_type}")
+        # Use the "default" template if the requested document_type is not found
+        selected_template = prompt_templates.get("default")
+        if not selected_template:
+            # This should ideally not happen if "default" is always present
+            raise HTTPException(status_code=500, detail="Default prompt template not found.")
+        # Optionally, log that a default template is being used
+        print(f"Warning: Document type '{request.document_type}' not found. Using default template.")
+
 
     # Format prompt
+    # The default template only uses 'user_request'
     if request.document_type == "example_type":
         system_prompt = selected_template.format(
             user_prompt=request.user_prompt,
             document_id=request.document_id
         )
-    else:
+    elif request.document_type in ["offer_letter", "invoice", "default"]: # Explicitly include "default" here
+        system_prompt = selected_template.format(user_request=request.user_prompt)
+    else: # Fallback for any other custom templates that might exist
         system_prompt = selected_template.format(user_request=request.user_prompt)
 
     try:
@@ -84,6 +94,11 @@ async def generate_document_html(request: DocumentGenerationRequest):
             system_prompt=system_prompt,
         )
         cleaned_html = clean_html_output(generated_raw)
+
+        if not cleaned_html.strip():
+            # If after cleaning, the HTML is empty, return a default error HTML
+            print(f"Warning: AI generated empty HTML for document_id: {request.document_id}. Returning default error HTML.")
+            cleaned_html = """<html><body><h1>Error: Could not generate document.</h1><p>Please try again with a different prompt or document type.</p></body></html>"""
 
         # 2. Store in JSON file using provided document_id
         update_storage(request.document_id, cleaned_html)
