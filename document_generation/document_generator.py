@@ -44,16 +44,19 @@ class DocumentRegenerationRequest(BaseModel):
 
 def clean_html_output(raw_html: str) -> str:
     """Removes common LLM artifacts like markdown code blocks."""
-    cleaned = raw_html.strip()
-    if "```" in cleaned:
-        cleaned = cleaned.replace("```html", "").replace("```", "").strip()
+    # Temporarily bypass cleaning for debugging
+    return raw_html
     
-    # Extract only the content between <html> tags if AI added extra text
-    start = cleaned.find("<html")
-    end = cleaned.rfind("</html>")
-    if start != -1 and end != -1:
-        cleaned = cleaned[start : end + 7]
-    return cleaned
+    # cleaned = raw_html.strip()
+    # if "```" in cleaned:
+    #     cleaned = cleaned.replace("```html", "").replace("```", "").strip()
+    
+    # # Extract only the content between <html> tags if AI added extra text
+    # start = cleaned.find("<html")
+    # end = cleaned.rfind("</html>")
+    # if start != -1 and end != -1:
+    #     cleaned = cleaned[start : end + 7]
+    # return cleaned
 
 # --- Endpoints ---
 
