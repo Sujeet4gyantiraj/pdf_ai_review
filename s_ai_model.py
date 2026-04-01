@@ -40,8 +40,6 @@ MODEL_NAME     = os.environ.get("MODEL_NAME", "gpt-5-nano")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY is not set in environment variables.")
-else:
-    print("OPENAI_API_KEY is set.") # Debugging line
     
 # Models that do NOT support temperature parameter
 _FIXED_TEMPERATURE_MODELS = {
