@@ -11,6 +11,7 @@ router = APIRouter()
 
 # --- Local File Storage Helpers ---
 DB_FILE = "html_db.json"
+DEBUG_LOG_FILE = "debug_html_output.log" # New debug log file
 
 def get_storage():
     """Load the JSON storage file."""
@@ -43,20 +44,25 @@ class DocumentRegenerationRequest(BaseModel):
 # --- Output Cleaning ---
 
 def clean_html_output(raw_html: str) -> str:
-    """Removes common LLM artifacts like markdown code blocks."""
-    # Temporarily bypass cleaning for debugging
-    return raw_html
+    """Removes common LLM artifacts like markdown code blocks and logs raw/cleaned HTML."""
     
-    # cleaned = raw_html.strip()
-    # if "```" in cleaned:
-    #     cleaned = cleaned.replace("```html", "").replace("```", "").strip()
+    with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"\n--- RAW LLM OUTPUT ---\n{raw_html}\n--- END RAW LLM OUTPUT ---\n")
+
+    cleaned = raw_html.strip()
+    if "```" in cleaned:
+        cleaned = cleaned.replace("```html", "").replace("```", "").strip()
     
-    # # Extract only the content between <html> tags if AI added extra text
-    # start = cleaned.find("<html")
-    # end = cleaned.rfind("</html>")
-    # if start != -1 and end != -1:
-    #     cleaned = cleaned[start : end + 7]
-    # return cleaned
+    # Extract only the content between <html> tags if AI added extra text
+    start = cleaned.find("<html")
+    end = cleaned.rfind("</html>")
+    if start != -1 and end != -1:
+        cleaned = cleaned[start : end + 7]
+    
+    with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"\n--- CLEANED HTML OUTPUT ---\n{cleaned}\n--- END CLEANED HTML OUTPUT ---\n")
+
+    return cleaned
 
 # --- Endpoints ---
 
@@ -96,13 +102,22 @@ async def generate_document_html(request: DocumentGenerationRequest):
             text=request.user_prompt,
             system_prompt=system_prompt,
         )
-        
-        # Temporarily bypass cleaning and error checking to see raw LLM output
-        # 2. Store in JSON file using provided document_id (using generated_raw directly)
-        update_storage(request.document_id, generated_raw)
+        cleaned_html = clean_html_output(generated_raw)
+
+        if not cleaned_html.strip():
+            # If after cleaning, the HTML is empty, return a default error HTML
+            print(f"Warning: AI generated empty HTML for document_id: {request.document_id}. Returning default error HTML.")
+            # Include the raw LLM output in the detail for debugging
+            raise HTTPException(
+                status_code=500, 
+                detail="AI generated empty HTML. Check debug_html_output.log for raw LLM output."
+            )
+
+        # 2. Store in JSON file using provided document_id
+        update_storage(request.document_id, cleaned_html)
 
         # 3. Return Raw HTML (Response structure unchanged)
-        return HTMLResponse(content=generated_raw)
+        return HTMLResponse(content=cleaned_html)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI model generation failed: {str(e)}")
