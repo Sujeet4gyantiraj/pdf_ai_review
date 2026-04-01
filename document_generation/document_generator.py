@@ -96,22 +96,13 @@ async def generate_document_html(request: DocumentGenerationRequest):
             text=request.user_prompt,
             system_prompt=system_prompt,
         )
-        cleaned_html = clean_html_output(generated_raw)
-
-        if not cleaned_html.strip():
-            # If after cleaning, the HTML is empty, return a default error HTML
-            print(f"Warning: AI generated empty HTML for document_id: {request.document_id}. Returning default error HTML.")
-            # Include the raw LLM output in the detail for debugging
-            raise HTTPException(
-                status_code=500, 
-                detail=f"AI generated empty HTML. Raw LLM Output: {generated_raw}"
-            )
-
-        # 2. Store in JSON file using provided document_id
-        update_storage(request.document_id, cleaned_html)
+        
+        # Temporarily bypass cleaning and error checking to see raw LLM output
+        # 2. Store in JSON file using provided document_id (using generated_raw directly)
+        update_storage(request.document_id, generated_raw)
 
         # 3. Return Raw HTML (Response structure unchanged)
-        return HTMLResponse(content=cleaned_html)
+        return HTMLResponse(content=generated_raw)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI model generation failed: {str(e)}")
