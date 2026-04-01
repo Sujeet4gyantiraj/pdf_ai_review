@@ -98,7 +98,11 @@ async def generate_document_html(request: DocumentGenerationRequest):
         if not cleaned_html.strip():
             # If after cleaning, the HTML is empty, return a default error HTML
             print(f"Warning: AI generated empty HTML for document_id: {request.document_id}. Returning default error HTML.")
-            cleaned_html = """<html><body><h1>Error: Could not generate document.</h1><p>Please try again with a different prompt or document type.</p></body></html>"""
+            # Include the raw LLM output in the detail for debugging
+            raise HTTPException(
+                status_code=500, 
+                detail=f"AI generated empty HTML. Raw LLM Output: {generated_raw}"
+            )
 
         # 2. Store in JSON file using provided document_id
         update_storage(request.document_id, cleaned_html)
