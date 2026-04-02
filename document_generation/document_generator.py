@@ -190,3 +190,18 @@ async def regenerate_document_html(request: DocumentRegenerationRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Regeneration failed: {str(e)}")
+
+
+@router.get("/get-html/{document_id}", response_class=HTMLResponse)
+async def get_document_html(document_id: str):
+    """
+    Fetches previously generated HTML from html_db.json by document_id.
+    """
+    db = get_storage()
+    html = db.get(document_id)
+    if not html:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No document found with ID '{document_id}'. Generate it first via /generate-html."
+        )
+    return HTMLResponse(content=html)
