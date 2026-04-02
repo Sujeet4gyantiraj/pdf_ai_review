@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from routes.route import router
-
+from routes.convert_route import router as convert_router
 from document_generation.document_generator import router as document_generate_router
 from db_files.db import init_db, close_pool
 
@@ -82,4 +82,5 @@ app = FastAPI(
 )
 
 app.include_router(router)
+app.include_router(convert_router)
 app.include_router(document_generate_router)

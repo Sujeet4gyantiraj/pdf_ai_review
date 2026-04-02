@@ -97,3 +97,7 @@ python-dotenv
 reportlab
 python-docx
 weasyprint
+
+
+# Install LibreOffice (used for conversion)
+sudo apt install libreoffice -y
