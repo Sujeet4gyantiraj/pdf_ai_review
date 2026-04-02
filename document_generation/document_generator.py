@@ -1,9 +1,10 @@
+import io
 import json
 import os
 import logging
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
-from fastapi.responses import HTMLResponse
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from .prompt_templates import DOCUMENT_GENERATION_PROMPT, REGENERATE_PROMPT
@@ -73,6 +74,11 @@ class DocumentGenerationRequest(BaseModel):
 class DocumentRegenerationRequest(BaseModel):
     document_id: str
     modification_query: str
+
+
+class HtmlToPdfRequest(BaseModel):
+    document_id: str | None = None   # fetch HTML from html_db.json
+    html: str | None = None          # or pass raw HTML directly
 
 
 # ---------------------------------------------------------------------------
@@ -205,3 +211,50 @@ async def get_document_html(document_id: str):
             detail=f"No document found with ID '{document_id}'. Generate it first via /generate-html."
         )
     return HTMLResponse(content=html)
+
+
+@router.post("/html-to-pdf")
+async def html_to_pdf(request: HtmlToPdfRequest):
+    """
+    Converts HTML to a PDF file.
+    Provide either:
+      - document_id  → fetches HTML from html_db.json
+      - html         → uses the raw HTML string directly
+    Returns a downloadable PDF.
+    """
+    try:
+        from weasyprint import HTML as WeasyprintHTML
+    except ImportError:
+        raise HTTPException(
+            status_code=500,
+            detail="weasyprint is not installed. Run: pip install weasyprint"
+        )
+
+    if request.document_id:
+        db = get_storage()
+        html_content = db.get(request.document_id)
+        if not html_content:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No document found with ID '{request.document_id}'."
+            )
+        filename = f"{request.document_id}.pdf"
+    elif request.html:
+        html_content = request.html
+        filename = "document.pdf"
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide either 'document_id' or 'html' in the request body."
+        )
+
+    try:
+        pdf_bytes = WeasyprintHTML(string=html_content).write_pdf()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF conversion failed: {str(e)}")
+
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
