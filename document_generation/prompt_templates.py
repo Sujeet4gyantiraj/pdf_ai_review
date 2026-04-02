@@ -31,7 +31,20 @@ Instructions:
 - Add contenteditable='true' to the main content container inside <body> so the user can edit it directly in the browser.
 - Use professional formatting, appropriate sections, and placeholder values where specific details are not provided.
 - Do NOT include markdown backticks, explanations, or any text outside the HTML structure.
-- Return ONLY the complete HTML document starting with <html> and ending with </html>.""",
+- Return ONLY the complete HTML document starting with <html> and ending with </html>.
+
+STRICT DESIGN RULES — follow exactly:
+- Layout must be flat and simple. No 3D effects, no shadows (no box-shadow, no text-shadow, no drop-shadow).
+- No gradients (no linear-gradient, no radial-gradient, no background-image).
+- No rounded corners (border-radius must be 0 or not used).
+- No card/panel wrappers with padding and background that create a floating box effect.
+- Body background must be plain white (#ffffff). No colored backgrounds on sections.
+- The document content must fill the full page width. No centered narrow containers with large side margins.
+- Use only these CSS properties for layout: width, padding, margin, border, font, color, text-align, display, table properties.
+- Font: Arial or sans-serif, size 11pt–12pt for body text.
+- Use simple horizontal lines (<hr> or border-bottom) to separate sections instead of colored blocks.
+- Tables must use width:100%, simple 1px solid border, no background colors on rows.
+- The result must look like a clean printed document — not a webpage widget.""",
     input_variables=["user_request"]
 )
 
@@ -53,6 +66,7 @@ STRICT RULES:
 3. Do NOT include markdown backticks (```html), explanations, or notes.
 4. Preserve all original <style> blocks and CSS logic.
 5. Apply the changes requested by the user accurately.
+6. Do NOT introduce box-shadow, text-shadow, gradients, border-radius, or colored background panels — keep the design flat and print-ready.
 
 Existing HTML:
 {existing_html}
