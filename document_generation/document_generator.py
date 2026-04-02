@@ -248,8 +248,42 @@ async def html_to_pdf(request: HtmlToPdfRequest):
             detail="Provide either 'document_id' or 'html' in the request body."
         )
 
+    a4_css = """
+        @page {
+            size: A4 portrait;
+            margin: 15mm 15mm 15mm 15mm;
+        }
+        html, body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+            font-family: Arial, sans-serif;
+            color: #000;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+        }
+        * {
+            box-sizing: border-box;
+            max-width: 100%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            word-wrap: break-word;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    """
+
     try:
-        pdf_bytes = WeasyprintHTML(string=html_content).write_pdf()
+        from weasyprint import CSS
+        pdf_bytes = WeasyprintHTML(string=html_content).write_pdf(
+            stylesheets=[CSS(string=a4_css)]
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF conversion failed: {str(e)}")
 
