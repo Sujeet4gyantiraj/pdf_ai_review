@@ -1,3 +1,4 @@
+import base64
 import io
 import json
 import os
@@ -79,6 +80,11 @@ class DocumentRegenerationRequest(BaseModel):
 class HtmlToPdfRequest(BaseModel):
     document_id: str | None = None   # fetch HTML from html_db.json
     html: str | None = None          # or pass raw HTML directly
+
+
+class Base64TextRequest(BaseModel):
+    doc_id: str
+    base64_data: str
 
 
 # ---------------------------------------------------------------------------
@@ -292,3 +298,23 @@ async def html_to_pdf(request: HtmlToPdfRequest):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/base64-text")
+async def base64_to_text(request: Base64TextRequest):
+    """
+    Decodes base64_data to plain text and updates html_db.json
+    under the given doc_id (same store used by /generate-html).
+    """
+    try:
+        text_content = base64.b64decode(request.base64_data).decode("utf-8")
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid base64_data — could not decode to UTF-8 text."
+        )
+
+    update_storage(request.doc_id, text_content)
+    logger.info(f"[base64-text] updated doc_id='{request.doc_id}' ({len(text_content)} chars)")
+
+    return {"doc_id": request.doc_id, "char_count": len(text_content)}
