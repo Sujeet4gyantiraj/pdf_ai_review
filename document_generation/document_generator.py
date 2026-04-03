@@ -171,15 +171,33 @@ async def generate_document_html(
     Saves to html_db.json and returns raw HTML.
     """
     if not await _is_document_query(request.user_prompt):
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Your query does not appear to be related to document generation. "
-                "Please provide a request to create a specific document, for example: "
-                "'Generate an invoice', 'Create an NDA contract', "
-                "'Draft an offer letter', 'Make a sales report'."
-            )
-        )
+        error_html = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12pt; color: #000; background: #fff; margin: 40px; }
+  h2 { font-size: 14pt; margin-bottom: 12px; }
+  p { margin: 6px 0; }
+  ul { margin: 10px 0 0 20px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+  <h2>Invalid Query</h2>
+  <p>Your query does not appear to be related to document generation.</p>
+  <p>Please provide a request to create a specific document. For example:</p>
+  <ul>
+    <li>Generate an invoice</li>
+    <li>Create an NDA contract</li>
+    <li>Draft an offer letter</li>
+    <li>Make a sales report</li>
+    <li>Create a purchase order</li>
+    <li>Generate a certificate of completion</li>
+  </ul>
+</body>
+</html>"""
+        return HTMLResponse(content=error_html, status_code=400)
 
     system_prompt = DOCUMENT_GENERATION_PROMPT.format(user_request=request.user_prompt)
 
