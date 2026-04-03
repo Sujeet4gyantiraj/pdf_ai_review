@@ -197,7 +197,7 @@ async def generate_document_html(
   </ul>
 </body>
 </html>"""
-        return HTMLResponse(content=error_html, status_code=400)
+        return HTMLResponse(content=error_html, status_code=200)
 
     system_prompt = DOCUMENT_GENERATION_PROMPT.format(user_request=request.user_prompt)
 
