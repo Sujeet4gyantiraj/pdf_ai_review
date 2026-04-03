@@ -69,7 +69,6 @@ async def analyze_pdf(
     file: UploadFile = File(...),
     analysis_type: int = Query(0, ge=0, le=3,
         description="0=all, 1=overview, 2=summary, 3=highlights"),
-    _: None = Depends(verify_api_key),
 ):
     """
     Analyse a PDF and return the full result as a single JSON response.
@@ -190,7 +189,6 @@ async def analyze_pdf(
 @router.post("/key-clause-extraction")
 async def key_clause_extraction(
     file: UploadFile = File(...),
-    _: None = Depends(verify_api_key),
 ):
     text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
         file,
@@ -237,7 +235,6 @@ async def key_clause_extraction(
 @router.post("/detect-risks")
 async def detect_risks(
     file: UploadFile = File(...),
-    _: None = Depends(verify_api_key),
 ):
     """AI Risk Detection Endpoint."""
     text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
@@ -267,7 +264,6 @@ async def analyze_pdf_stream(
     file: UploadFile = File(...),
     analysis_type: int = Query(0, ge=0, le=3,
         description="0=all, 1=overview, 2=summary, 3=highlights"),
-    _: None = Depends(verify_api_key),
 ):
     """
     Analyse a PDF and stream results in real time using Server-Sent Events.
