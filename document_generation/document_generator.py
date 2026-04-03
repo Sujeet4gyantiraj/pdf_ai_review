@@ -23,18 +23,8 @@ _MODEL      = os.environ.get("MODEL_NAME", "gpt-5-nano")
 _API_KEY    = os.environ.get("OPENAI_API_KEY", "")
 _CLIENT     = AsyncOpenAI(api_key=_API_KEY)
 
-# HTML documents can be large — use a higher output token limit than the
-# default 4096 used by run_llm (which is designed for text analysis).
-_HTML_MAX_OUTPUT_TOKENS = 16000
-
 # Models that do not support the temperature parameter
 _FIXED_TEMPERATURE_MODELS = {
-    "gpt-5-nano", "gpt-4.1-nano", "gpt-4o-mini",
-    "o1", "o1-mini", "o3-mini", "o3",
-}
-
-# Models that use max_completion_tokens instead of max_tokens
-_MAX_COMPLETION_TOKENS_MODELS = {
     "gpt-5-nano", "gpt-4.1-nano", "gpt-4o-mini",
     "o1", "o1-mini", "o3-mini", "o3",
 }
@@ -105,19 +95,18 @@ async def _call_llm(system_prompt: str, user_message: str) -> str:
     if model not in _FIXED_TEMPERATURE_MODELS:
         kwargs["temperature"] = 0.3
 
-    if model in _MAX_COMPLETION_TOKENS_MODELS:
-        kwargs["max_completion_tokens"] = _HTML_MAX_OUTPUT_TOKENS
-    else:
-        kwargs["max_tokens"] = _HTML_MAX_OUTPUT_TOKENS
-
     try:
         response = await _CLIENT.chat.completions.create(**kwargs)
-        content  = response.choices[0].message.content or ""
+        choice   = response.choices[0]
+        content  = choice.message.content or ""
+        finish   = choice.finish_reason
         logger.info(
             f"[html-gen] in={response.usage.prompt_tokens} "
             f"out={response.usage.completion_tokens} "
-            f"model={model}"
+            f"finish={finish} model={model}"
         )
+        if finish == "length":
+            logger.warning("[html-gen] Response was cut off by the model's context limit (finish_reason=length)")
         return content
     except Exception as e:
         logger.exception(f"[html-gen] OpenAI call failed: {e}")
@@ -135,7 +124,11 @@ def _clean_html(raw: str) -> str:
     start = cleaned.find("<html")
     end   = cleaned.rfind("</html>")
     if start != -1 and end != -1:
+        # Full, well-formed response
         cleaned = cleaned[start : end + 7]
+    elif start != -1:
+        # Truncated — model stopped before </html>; keep everything from <html
+        cleaned = cleaned[start:]
     return cleaned
 
 
