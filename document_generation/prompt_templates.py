@@ -50,6 +50,23 @@ STRICT DESIGN RULES — follow exactly:
 
 
 # ---------------------------------------------------------------------------
+# Intent check prompt — quickly classifies whether a query is document-related.
+# ---------------------------------------------------------------------------
+
+INTENT_CHECK_PROMPT = SimulatedPromptTemplate(
+    template="""You are a strict query classifier.
+
+Decide whether the user's query is asking to generate, create, or draft any kind of document
+(e.g. invoice, contract, resume, report, certificate, letter, agreement, proposal, form, etc.).
+
+Reply with ONLY one word — exactly "YES" or "NO". No explanation, no punctuation.
+
+User query: {user_request}""",
+    input_variables=["user_request"]
+)
+
+
+# ---------------------------------------------------------------------------
 # Regeneration prompt — modifies an existing HTML document.
 # ---------------------------------------------------------------------------
 

@@ -3,14 +3,18 @@ import os
 import subprocess
 import tempfile
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from auth import verify_api_key
 
 router = APIRouter()
 
 
 @router.post("/convert/docx-to-pdf")
-async def convert_docx_to_pdf(file: UploadFile = File(...)):
+async def convert_docx_to_pdf(
+    file: UploadFile = File(...),
+    _: None = Depends(verify_api_key),
+):
     """
     Accepts a .docx file and returns a converted PDF using LibreOffice headless.
     """

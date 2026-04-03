@@ -3,12 +3,13 @@ import io
 import json
 import os
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
-from .prompt_templates import DOCUMENT_GENERATION_PROMPT, REGENERATE_PROMPT
+from .prompt_templates import DOCUMENT_GENERATION_PROMPT, INTENT_CHECK_PROMPT, REGENERATE_PROMPT
+from auth import verify_api_key
 
 load_dotenv()
 
@@ -133,16 +134,53 @@ def _clean_html(raw: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Intent check — returns True if the query is document-related
+# ---------------------------------------------------------------------------
+
+async def _is_document_query(user_request: str) -> bool:
+    model = os.environ.get("MODEL_NAME", _MODEL)
+    kwargs: dict = {
+        "model":    model,
+        "messages": [
+            {"role": "user", "content": INTENT_CHECK_PROMPT.format(user_request=user_request)},
+        ],
+    }
+    if model not in _FIXED_TEMPERATURE_MODELS:
+        kwargs["temperature"] = 0.0
+    try:
+        response = await _CLIENT.chat.completions.create(**kwargs)
+        answer   = (response.choices[0].message.content or "").strip().upper()
+        return answer.startswith("YES")
+    except Exception:
+        # If the check itself fails, allow the request through so generation can proceed
+        return True
+
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
 @router.post("/generate-html", response_class=HTMLResponse)
-async def generate_document_html(request: DocumentGenerationRequest):
+async def generate_document_html(
+    request: DocumentGenerationRequest,
+    _: None = Depends(verify_api_key),
+):
     """
     Generates an HTML document of any type based on user_prompt.
     The LLM infers the document type automatically from the prompt.
     Saves to html_db.json and returns raw HTML.
     """
+    if not await _is_document_query(request.user_prompt):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Your query does not appear to be related to document generation. "
+                "Please provide a request to create a specific document, for example: "
+                "'Generate an invoice', 'Create an NDA contract', "
+                "'Draft an offer letter', 'Make a sales report'."
+            )
+        )
+
     system_prompt = DOCUMENT_GENERATION_PROMPT.format(user_request=request.user_prompt)
 
     try:
@@ -165,7 +203,10 @@ async def generate_document_html(request: DocumentGenerationRequest):
 
 
 @router.post("/regenerate-html", response_class=HTMLResponse)
-async def regenerate_document_html(request: DocumentRegenerationRequest):
+async def regenerate_document_html(
+    request: DocumentRegenerationRequest,
+    _: None = Depends(verify_api_key),
+):
     """
     Looks up HTML by document_id, applies user modifications,
     updates storage, and returns the modified HTML.
@@ -198,7 +239,10 @@ async def regenerate_document_html(request: DocumentRegenerationRequest):
 
 
 @router.get("/get-html/{document_id}", response_class=HTMLResponse)
-async def get_document_html(document_id: str):
+async def get_document_html(
+    document_id: str,
+    _: None = Depends(verify_api_key),
+):
     """
     Fetches previously generated HTML from html_db.json by document_id.
     """
@@ -213,7 +257,10 @@ async def get_document_html(document_id: str):
 
 
 @router.post("/html-to-pdf")
-async def html_to_pdf(request: HtmlToPdfRequest):
+async def html_to_pdf(
+    request: HtmlToPdfRequest,
+    _: None = Depends(verify_api_key),
+):
     """
     Converts HTML to a PDF file.
     Provide either:
@@ -294,7 +341,10 @@ async def html_to_pdf(request: HtmlToPdfRequest):
 
 
 @router.post("/base64-text")
-async def base64_to_text(request: Base64TextRequest):
+async def base64_to_text(
+    request: Base64TextRequest,
+    _: None = Depends(verify_api_key),
+):
     """
     Decodes base64_data to plain text and updates html_db.json
     under the given doc_id (same store used by /generate-html).

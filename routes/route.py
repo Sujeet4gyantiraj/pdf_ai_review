@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Query, HTTPException
+from fastapi import APIRouter, UploadFile, File, Query, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import os
 import io
@@ -15,6 +15,7 @@ from utils.json_utils import extract_json
 from db_files.db import log_request
 from feature_modules.key_clause_extraction import classify_document, DOCUMENT_HANDLERS, extract_text_from_upload
 from feature_modules.risk_detection import analyze_document_risks
+from auth import verify_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,8 @@ def _sse(event: str, data: dict) -> str:
 async def analyze_pdf(
     file: UploadFile = File(...),
     analysis_type: int = Query(0, ge=0, le=3,
-        description="0=all, 1=overview, 2=summary, 3=highlights")
+        description="0=all, 1=overview, 2=summary, 3=highlights"),
+    _: None = Depends(verify_api_key),
 ):
     """
     Analyse a PDF and return the full result as a single JSON response.
@@ -186,8 +188,10 @@ async def analyze_pdf(
 # ---------------------------------------------------------------------------
 
 @router.post("/key-clause-extraction")
-async def key_clause_extraction(file: UploadFile = File(...)):
-
+async def key_clause_extraction(
+    file: UploadFile = File(...),
+    _: None = Depends(verify_api_key),
+):
     text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
         file,
         endpoint="/key-clause-extraction"
@@ -231,7 +235,10 @@ async def key_clause_extraction(file: UploadFile = File(...)):
 # ---------------------------------------------------------------------------
 
 @router.post("/detect-risks")
-async def detect_risks(file: UploadFile = File(...)):
+async def detect_risks(
+    file: UploadFile = File(...),
+    _: None = Depends(verify_api_key),
+):
     """AI Risk Detection Endpoint."""
     text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
         file,
@@ -259,7 +266,8 @@ async def detect_risks(file: UploadFile = File(...)):
 async def analyze_pdf_stream(
     file: UploadFile = File(...),
     analysis_type: int = Query(0, ge=0, le=3,
-        description="0=all, 1=overview, 2=summary, 3=highlights")
+        description="0=all, 1=overview, 2=summary, 3=highlights"),
+    _: None = Depends(verify_api_key),
 ):
     """
     Analyse a PDF and stream results in real time using Server-Sent Events.
@@ -455,7 +463,10 @@ _ALLOWED_AUDIO_EXTENSIONS = {
 }
 
 @router.post("/speech-to-text")
-async def speech_to_text(file: UploadFile = File(...)):
+async def speech_to_text(
+    file: UploadFile = File(...),
+    _: None = Depends(verify_api_key),
+):
     """
     Transcribe an uploaded audio file to text using OpenAI Whisper.
     Supported formats: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm.
@@ -486,7 +497,10 @@ async def speech_to_text(file: UploadFile = File(...)):
 # ---------------------------------------------------------------------------
 
 @router.post("/convert/pdf-to-docx")
-async def convert_pdf_to_docx(file: UploadFile = File(...)):
+async def convert_pdf_to_docx(
+    file: UploadFile = File(...),
+    _: None = Depends(verify_api_key),
+):
     """
     Convert an uploaded PDF to a downloadable DOCX file.
     Handles native, scanned, and mixed PDFs. No AI inference.
