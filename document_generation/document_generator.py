@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
-from .prompt_templates import DOCUMENT_GENERATION_PROMPT, INTENT_CHECK_PROMPT, REGENERATE_PROMPT
+from .prompt_templates import DOCUMENT_GENERATION_PROMPT, REGENERATE_PROMPT
 from auth import verify_api_key
 
 load_dotenv()
@@ -134,29 +134,6 @@ def _clean_html(raw: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Intent check — returns True if the query is document-related
-# ---------------------------------------------------------------------------
-
-async def _is_document_query(user_request: str) -> bool:
-    model = os.environ.get("MODEL_NAME", _MODEL)
-    kwargs: dict = {
-        "model":    model,
-        "messages": [
-            {"role": "user", "content": INTENT_CHECK_PROMPT.format(user_request=user_request)},
-        ],
-    }
-    if model not in _FIXED_TEMPERATURE_MODELS:
-        kwargs["temperature"] = 0.0
-    try:
-        response = await _CLIENT.chat.completions.create(**kwargs)
-        answer   = (response.choices[0].message.content or "").strip().upper()
-        return answer.startswith("YES")
-    except Exception:
-        # If the check itself fails, allow the request through so generation can proceed
-        return True
-
-
-# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
@@ -170,35 +147,6 @@ async def generate_document_html(
     The LLM infers the document type automatically from the prompt.
     Saves to html_db.json and returns raw HTML.
     """
-    if not await _is_document_query(request.user_prompt):
-        error_html = """<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-  body { font-family: Arial, sans-serif; font-size: 12pt; color: #000; background: #fff; margin: 40px; }
-  h2 { font-size: 14pt; margin-bottom: 12px; }
-  p { margin: 6px 0; }
-  ul { margin: 10px 0 0 20px; }
-  li { margin: 4px 0; }
-</style>
-</head>
-<body>
-  <h2>Invalid Query</h2>
-  <p>Your query does not appear to be related to document generation.</p>
-  <p>Please provide a request to create a specific document. For example:</p>
-  <ul>
-    <li>Generate an invoice</li>
-    <li>Create an NDA contract</li>
-    <li>Draft an offer letter</li>
-    <li>Make a sales report</li>
-    <li>Create a purchase order</li>
-    <li>Generate a certificate of completion</li>
-  </ul>
-</body>
-</html>"""
-        return HTMLResponse(content=error_html, status_code=200)
-
     system_prompt = DOCUMENT_GENERATION_PROMPT.format(user_request=request.user_prompt)
 
     try:

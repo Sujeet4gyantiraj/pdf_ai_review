@@ -20,12 +20,45 @@ class SimulatedPromptTemplate:
 # ---------------------------------------------------------------------------
 
 DOCUMENT_GENERATION_PROMPT = SimulatedPromptTemplate(
-    template="""You are an expert document generator. Based on the user's request, determine the appropriate document type and generate a complete, professional HTML document.
+    template="""You are an expert document generator.
+
+STEP 1 — Check if the user's request is asking to generate, create, or draft any kind of document
+(e.g. invoice, contract, resume, report, certificate, letter, agreement, proposal, purchase order, form, etc.).
+
+If the request is NOT related to document generation, return ONLY this exact HTML and nothing else:
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body {{ font-family: Arial, sans-serif; font-size: 12pt; color: #000; background: #fff; margin: 40px; }}
+  h2 {{ font-size: 14pt; margin-bottom: 12px; }}
+  p {{ margin: 6px 0; }}
+  ul {{ margin: 10px 0 0 20px; }}
+  li {{ margin: 4px 0; }}
+</style>
+</head>
+<body>
+  <h2>Invalid Query</h2>
+  <p>Your query does not appear to be related to document generation.</p>
+  <p>Please provide a request to create a specific document. For example:</p>
+  <ul>
+    <li>Generate an invoice</li>
+    <li>Create an NDA contract</li>
+    <li>Draft an offer letter</li>
+    <li>Make a sales report</li>
+    <li>Create a purchase order</li>
+    <li>Generate a certificate of completion</li>
+  </ul>
+</body>
+</html>
+
+STEP 2 — If the request IS document-related, generate a complete, professional HTML document.
 
 User Request: {user_request}
 
 Instructions:
-- Identify the document type from the user's description (e.g. invoice, offer letter, NDA, contract, resume, report, lease agreement, purchase order, receipt, certificate, or any other document type).
+- Identify the document type from the user's description.
 - Generate a complete, well-structured HTML document that matches the identified type.
 - The HTML must include <html>, <head> (with embedded <style>), and <body> tags.
 - Add contenteditable='true' to the main content container inside <body> so the user can edit it directly in the browser.
