@@ -194,7 +194,7 @@ OUTPUT FORMAT — return ONLY valid JSON in exactly this structure:
 {{
   "document_type": "{doc_type}",
   "document_label": "{profile["label"]}",
-  "risk_score": <integer 0-100 based on total severity>,
+  "risk_score": <integer calculated EXACTLY as: (High_count * 30) + (Medium_count * 15) + (Low_count * 5), capped at 100>,
   "detected_risks": [
     {{
       "risk_name": "<risk category name>",
@@ -219,7 +219,8 @@ Rules:
 - Only include fields that are actually missing
 - If no risks found, return detected_risks as []
 - If no fields missing, return missing_fields as []
-- risk_score 0 = no risk, 100 = extremely high risk
+- risk_score MUST be calculated as: (High_count * 30) + (Medium_count * 15) + (Low_count * 5), capped at 100
+- Example: 2 High + 1 Medium = (2*30) + (1*15) = 75
 
 Document Text:
 ---

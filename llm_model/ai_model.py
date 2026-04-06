@@ -191,6 +191,9 @@ def _build_api_kwargs(
     if model not in _FIXED_TEMPERATURE_MODELS:
         kwargs["temperature"] = 0.0
 
+    # seed: makes output deterministic across repeated calls with the same input
+    kwargs["seed"] = 42
+
     # token limit parameter name differs by model
     if model in _MAX_COMPLETION_TOKENS_MODELS:
         kwargs["max_completion_tokens"] = MAX_OUTPUT_TOKENS
