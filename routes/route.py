@@ -190,10 +190,13 @@ async def analyze_pdf(
 async def key_clause_extraction(
     file: UploadFile = File(...),
 ):
-    text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
+    text, pages_to_read, total_pages, request_id, t_start, file_path = await extract_text_from_upload(
         file,
         endpoint="/key-clause-extraction"
     )
+
+    status    = "success"
+    error_msg = None
 
     try:
         doc_type = await classify_document(text)
@@ -210,6 +213,7 @@ async def key_clause_extraction(
             )
             return result
 
+        status = "unsupported"
         logger.warning(f"[{request_id}] No handler found for doc_type='{doc_type}'")
         return {
             "status": "unsupported",
@@ -218,11 +222,26 @@ async def key_clause_extraction(
         }
 
     except HTTPException:
+        status    = "error"
+        error_msg = "HTTP error"
         raise
     except Exception as e:
+        status    = "error"
+        error_msg = str(e)
         logger.exception(f"[{request_id}] Unhandled error during processing: {e}")
         raise HTTPException(status_code=500, detail="Internal server error during key clause extraction.")
     finally:
+        elapsed = time.perf_counter() - t_start
+        await log_request(
+            request_id        = request_id,
+            pdf_name          = file.filename or "unknown",
+            total_pages       = total_pages,
+            pages_analysed    = pages_to_read,
+            completion_time_s = elapsed,
+            endpoint          = "/key-clause-extraction",
+            status            = status,
+            error_message     = error_msg,
+        )
         if os.path.exists(file_path):
             os.remove(file_path)
             logger.debug(f"[{request_id}] Temp file deleted: '{file_path}'")
@@ -237,10 +256,13 @@ async def detect_risks(
     file: UploadFile = File(...),
 ):
     """AI Risk Detection Endpoint."""
-    text, _, _, request_id, t_start, file_path = await extract_text_from_upload(
+    text, pages_to_read, total_pages, request_id, t_start, file_path = await extract_text_from_upload(
         file,
         endpoint="/detect-risks"
     )
+
+    status    = "success"
+    error_msg = None
 
     try:
         logger.info(f"[{request_id}] Starting Risk Detection...")
@@ -248,9 +270,22 @@ async def detect_risks(
         return result
 
     except Exception as e:
+        status    = "error"
+        error_msg = str(e)
         logger.exception(f"[{request_id}] Risk Analysis failed: {e}")
         raise HTTPException(status_code=500, detail="Internal error during risk detection.")
     finally:
+        elapsed = time.perf_counter() - t_start
+        await log_request(
+            request_id        = request_id,
+            pdf_name          = file.filename or "unknown",
+            total_pages       = total_pages,
+            pages_analysed    = pages_to_read,
+            completion_time_s = elapsed,
+            endpoint          = "/detect-risks",
+            status            = status,
+            error_message     = error_msg,
+        )
         if os.path.exists(file_path):
             os.remove(file_path)
 

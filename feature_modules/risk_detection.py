@@ -142,35 +142,25 @@ _RISK_PROFILES = {
 # ---------------------------------------------------------------------------
 
 async def _detect_document_type(text: str) -> str:
-    prompt = f"""
-Classify the document into EXACTLY ONE of the following categories:
-
-contract
-employment
-nda
-lease
-invoice
-resume
-other
+    prompt = f"""Classify the document into EXACTLY ONE of these categories:
+contract, employment, nda, lease, invoice, resume, other
 
 Definitions:
-- contract  → service agreements, vendor agreements, terms & conditions
+- contract   → service agreements, vendor agreements, terms & conditions
 - employment → offer letters, employment agreements, HR documents
-- nda       → non-disclosure agreements, confidentiality agreements
-- lease     → rental agreements, property leases, tenancy agreements
-- invoice   → billing documents, receipts, payment summaries
-- resume    → CV, job profiles, candidate details
-- other     → anything else
+- nda        → non-disclosure agreements, confidentiality agreements
+- lease      → rental agreements, property leases, tenancy agreements
+- invoice    → billing documents, receipts, payment summaries
+- resume     → CV, job profiles, candidate details
+- other      → anything else
 
-Rules:
-- Return ONLY one word from the list above
-- Do NOT add explanation or punctuation
-- If unsure, return "other"
+Return ONLY one word. No explanation. No punctuation.
 
-Document (first 1500 chars):
-\"\"\"{text[:1500]}\"\"\"
-"""
-    result = await run_llm(text[:1500], prompt)
+Document:
+\"\"\"{text[:1500]}\"\"\""""
+
+    # Pass empty string as text — document is already in the prompt
+    result = await run_llm("", prompt)
     result = result.lower().strip()
 
     for label in _RISK_PROFILES:
@@ -238,9 +228,52 @@ Document Text:
 """
 
     logger.info(f"[risk_detection] Running {doc_type} risk analysis...")
-    raw_output = await run_llm(text, prompt)
-    logger.debug(f"[risk_detection] Raw LLM output: {raw_output[:300]}")
-    return extract_json_from_text(raw_output)
+
+    # Pass empty string as text — document is already embedded in the prompt
+    # to avoid sending the document twice and hitting token limits
+    raw_output = await run_llm("", prompt)
+    logger.info(f"[risk_detection] Raw output length: {len(raw_output)} chars")
+    logger.debug(f"[risk_detection] Raw LLM output: {raw_output[:500]}")
+
+    result = extract_json_from_text(raw_output)
+
+    # Retry once if we got blank/empty data
+    if not result or not result.get("detected_risks") and not result.get("overall_assessment"):
+        logger.warning("[risk_detection] Empty parse on attempt 1 — retrying with stricter prompt")
+        retry_prompt = f"""Return ONLY a raw JSON object. No markdown, no backticks, no explanation.
+
+{{
+  "document_type": "{doc_type}",
+  "document_label": "{profile["label"]}",
+  "risk_score": 0,
+  "detected_risks": [],
+  "missing_fields": [],
+  "overall_assessment": ""
+}}
+
+Now fill in the above JSON by analysing this document for risks:
+{risks_list}
+
+Document:
+---
+{text[:8000]}
+---"""
+        raw_output = await run_llm("", retry_prompt)
+        logger.info(f"[risk_detection] Retry raw output length: {len(raw_output)} chars")
+        result = extract_json_from_text(raw_output)
+
+    if not result:
+        logger.error("[risk_detection] Both attempts returned empty — returning safe default")
+        result = {
+            "document_type": doc_type,
+            "document_label": profile["label"],
+            "risk_score": 0,
+            "detected_risks": [],
+            "missing_fields": [],
+            "overall_assessment": "Risk analysis could not be completed for this document.",
+        }
+
+    return result
 
 
 # ---------------------------------------------------------------------------
