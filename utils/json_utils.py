@@ -204,8 +204,42 @@ def _recover_truncated_json(text: str) -> dict | None:
 
 
 # ---------------------------------------------------------------------------
-# Public API — the one function everyone imports
+# Public API
 # ---------------------------------------------------------------------------
+
+def extract_json_raw(text: str) -> dict:
+    """
+    Extract JSON from LLM output and return it AS-IS — no schema normalization.
+    Use this for key-clause-extraction, risk-detection, and any route that
+    returns its own field structure (NOT overview/summary/highlights).
+    """
+    if not text or not text.strip():
+        return {}
+
+    cleaned = _fix_json_string(text)
+
+    # Strategy 1 — direct parse
+    try:
+        data = json.loads(cleaned)
+        if isinstance(data, dict):
+            return data
+    except json.JSONDecodeError:
+        pass
+
+    # Strategy 2 — isolate { } block
+    brace_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+    if brace_match:
+        candidate = brace_match.group()
+        try:
+            data = json.loads(candidate)
+            if isinstance(data, dict):
+                return data
+        except json.JSONDecodeError:
+            pass
+
+    logger.error("extract_json_raw: could not parse JSON — returning empty dict")
+    return {}
+
 
 def extract_json(text: str) -> dict:
     """

@@ -1,7 +1,7 @@
 # u_risk_detection.py
 import logging
 from llm_model.ai_model import run_llm
-from utils.json_utils import extract_json as extract_json_from_text
+from utils.json_utils import extract_json_raw as extract_json_from_text
 
 logger = logging.getLogger(__name__)
 
