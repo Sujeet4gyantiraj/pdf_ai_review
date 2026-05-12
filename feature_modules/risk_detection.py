@@ -138,6 +138,43 @@ _RISK_PROFILES = {
 
 
 # ---------------------------------------------------------------------------
+# Risk score — percentage of max possible points
+#
+# Points per item:
+#   detected_risks  : High=30  Medium=15  Low=5
+#   missing_fields  : Critical=20  Important=10  Optional=5
+#
+# max_possible = (total_risk_categories * 30) + (total_required_fields * 20)
+# score = round(actual_points / max_possible * 100)
+# ---------------------------------------------------------------------------
+
+def _compute_risk_score(result: dict, doc_type: str) -> int:
+    profile = _RISK_PROFILES[doc_type]
+
+    # Max possible points for this document type
+    max_risks  = len(profile["risks"]) * 30
+    max_fields = len(profile["required_fields"]) * 20
+    max_total  = max_risks + max_fields
+    if max_total == 0:
+        return 0
+
+    # Actual points from detected risks
+    severity_points = {"high": 30, "medium": 15, "low": 5}
+    actual = 0
+    for r in result.get("detected_risks", []):
+        sev = r.get("severity", "").lower()
+        actual += severity_points.get(sev, 0)
+
+    # Actual points from missing fields
+    importance_points = {"critical": 20, "important": 10, "optional": 5}
+    for f in result.get("missing_fields", []):
+        imp = f.get("importance", "").lower()
+        actual += importance_points.get(imp, 0)
+
+    return round(actual / max_total * 100)
+
+
+# ---------------------------------------------------------------------------
 # Step 1 — Detect document type
 # ---------------------------------------------------------------------------
 
@@ -194,7 +231,7 @@ OUTPUT FORMAT — return ONLY valid JSON in exactly this structure:
 {{
   "document_type": "{doc_type}",
   "document_label": "{profile["label"]}",
-  "risk_score": <integer calculated EXACTLY as: (High_count * 30) + (Medium_count * 15) + (Low_count * 5), capped at 100>,
+  "risk_score": 0,
   "detected_risks": [
     {{
       "risk_name": "<risk category name>",
@@ -219,8 +256,7 @@ Rules:
 - Only include fields that are actually missing
 - If no risks found, return detected_risks as []
 - If no fields missing, return missing_fields as []
-- risk_score MUST be calculated as: (High_count * 30) + (Medium_count * 15) + (Low_count * 5), capped at 100
-- Example: 2 High + 1 Medium = (2*30) + (1*15) = 75
+- risk_score must be 0 — it will be computed server-side after your response
 
 Document Text:
 ---
@@ -273,6 +309,10 @@ Document:
             "missing_fields": [],
             "overall_assessment": "Risk analysis could not be completed for this document.",
         }
+
+    # Compute percentage-based score in Python — don't trust LLM math
+    result["risk_score"] = _compute_risk_score(result, doc_type)
+    logger.info(f"[risk_detection] risk_score={result['risk_score']}%")
 
     return result
 
